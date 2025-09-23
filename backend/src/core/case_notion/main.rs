@@ -1,21 +1,50 @@
-use process_mining::{
-    OCEL, export_ocel_json_path, import_ocel_json_from_path, import_ocel_xml_file,
-    ocel::ocel_struct::{OCELEvent, OCELObject, OCELRelationship, OCELType},
+mod advanced;
+mod connected_component;
+mod measures;
+mod traditional;
+mod utils;
+
+use advanced::advanced_case_notion_for_ot;
+use connected_component::connected_components_notion;
+use measures::{
+    absolute_simplicity_of_case_notion,
+    correctness_of_case_notion,
+    extended_simplicity_of_case_notion,
+    fuzzy_homogeneity_of_case_notion,
+    fuzzy_homogeneity_of_case_notion_v2,
+    normal_simplicity_of_case_notion,
+    strict_homogeneity_of_case_notion,
+};
+use traditional::traditional_case_notion_for_ot;
+use utils::{
+    build_event_identifiers,
+    build_object_identifiers,
+    detect_diverging_object_types,
+    map_object_id_to_type,
 };
 
-use std::fs::File;
-use std::io::Write;
+use anyhow::{anyhow, Context, Result};
+use process_mining::{import_ocel_json_from_path, import_ocel_xml_file, OCEL};
+use rayon::prelude::*;
+use rustc_hash::{FxHashMap, FxHashSet};
+use serde::Serialize;
+use std::{
+    collections::BTreeSet,
+    env,
+    fs::File,
+    io::{self, BufWriter},
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize)]
 struct Measure {
     name: String,
     value: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Result_Case_Notion {
+#[derive(Serialize)]
+struct ResultCaseNotion {
     case_notion: String,
     name_of_event_log: String,
     object_type: String,
@@ -23,227 +52,194 @@ struct Result_Case_Notion {
     total_score: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Runtime_Case_Notion {
+#[derive(Serialize)]
+struct RuntimeCaseNotion {
     name_of_event_log: String,
     time: f64,
     method: String,
-    case_notions: Vec<Result_Case_Notion>,
+    case_notions: Vec<ResultCaseNotion>,
 }
-fn main() {
-    // let log = create_leading_example_log();
-    // // write log to file
-    // let file_path = "leading_example_log.json";
-    // export_ocel_json_path(&log, file_path).expect("Error exporting OCEL log to file");
-    // let results = execute_single_log(
-    //     log,
-    //     "acn".to_string(),
-    //     "leading_example_log".to_string(),
-    //     true,
-    // );
-    // return;
-    // Create (or overwrite) the output file.
-    // let file_path = "results_absolute_simplicity_(0.8, 10).json";
-    // let file_path = "results_".to_string() + file_path;
-    // let mut file = File::create(file_path).expect("Unable to create file");
-    // file.write_all(
-    //     serde_json::to_string(&results)
-    //         .expect("error parsing to json")
-    //         .as_bytes(),
-    // )
-    // .expect("error writing to file");
-    // return;
 
-    let log_paths = vec![
-        "/home/richard-schuppener/Downloads/Event_logs/order-management.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/o2c.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/p2p.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/transfer_order.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/recruiting.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/github_pm4py.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/ContainerLogistics.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/socel_hinge.xml",
-        "/home/richard-schuppener/Downloads/Event_logs/BPIC15_1.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/BPIC15_2.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/BPIC15_3.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/BPIC15_4.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/BPIC15_5.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/BPIC17.xmlocel",
-        "/home/richard-schuppener/Downloads/Event_logs/bpic19.xmlocel",
-        // "/home/richard-schuppener/Downloads/Event_logs/angular_github_commits_ocel.xml",
-    ];
+#[derive(Clone, Copy)]
+enum CaseMethod {
+    AdvancedMt,
+    Traditional,
+    ConnectedComponents,
+}
 
-    // Create (or overwrite) the output file.
-    // let file_path = "results_absolute_simplicity_(0.8, 10).json";
-    let file_path = "bpic17+19-results_all_measures_extended_simplicity=(0.6, 20).json";
-    let mut file = File::create(file_path).expect("Unable to create file");
-
-    let methods = vec!["acn_mt", "tdcn", "cccn"];
-
-    let mut results = vec![];
-
-    // for log in logs..
-    // TODO: split results into 2 files. one contains runtime (whole case notion), the other the measurements (per case notion per object type)
-    for log_path in log_paths {
-        let name_of_event_log = log_path
-            .split('/')
-            .last()
-            .unwrap_or("unknown_event_log")
-            .split('.')
-            .next()
-            .unwrap_or("unknown_event_log")
-            .to_string();
-        println!("Processing log: {}", name_of_event_log);
-        let log = import_ocel_xml_file(log_path);
-
-        for method in &methods {
-            use std::time::Instant;
-            let now = Instant::now();
-
-            let mut result = Runtime_Case_Notion {
-                name_of_event_log: name_of_event_log.clone(),
-                time: 0.0, // Placeholder for runtime, can be updated later
-                method: method.to_string(),
-                case_notions: execute_log(
-                    log.clone(),
-                    method.to_string(),
-                    name_of_event_log.clone(),
-                ),
-            };
-
-            let elapsed = now.elapsed();
-
-            result.time = elapsed.as_secs_f64();
-
-            //println!("{:?}", result);
-
-            results.push(result);
+impl CaseMethod {
+    fn key(self) -> &'static str {
+        match self {
+            CaseMethod::AdvancedMt => "acn_mt",
+            CaseMethod::Traditional => "tdcn",
+            CaseMethod::ConnectedComponents => "cccn",
         }
     }
 
-    // Write to file
-    file.write_all(
-        serde_json::to_string(&results)
-            .expect("error parsing to json")
-            .as_bytes(),
-    )
-    .expect("error writing to file");
+    fn case_label(self) -> &'static str {
+        match self {
+            CaseMethod::AdvancedMt => "Advanced Case Notion (Multi-Threaded)",
+            CaseMethod::Traditional => "Traditional Case Notion",
+            CaseMethod::ConnectedComponents => "Connected Components Case Notion",
+        }
+    }
+
+    fn file_suffix(self) -> &'static str {
+        self.key()
+    }
 }
 
-fn execute_log(
+fn main() {
+    if let Err(err) = run() {
+        eprintln!("Error: {err:?}");
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<()> {
+    let log_path = obtain_input_path()?;
+    if !log_path.exists() {
+        return Err(anyhow!(
+            "input path does not exist: {}",
+            log_path.display()
+        ));
+    }
+
+    let log = load_log(&log_path)?;
+    let log_name = extract_log_name(&log_path)?;
+    let log_name_slug = sanitize_for_file_name(&log_name);
+
+    println!("Loaded log \"{log_name}\" from {}", log_path.display());
+
+    let methods = [
+        CaseMethod::AdvancedMt,
+        CaseMethod::Traditional,
+        CaseMethod::ConnectedComponents,
+    ];
+
+    let mut runtime_results = Vec::new();
+
+    for &method in &methods {
+        println!("Executing {}...", method.case_label());
+        let runtime = execute_method(&log, &log_name, method);
+        let output_name = format!("{log_name_slug}_{}.json", method.file_suffix());
+        write_json(&runtime.case_notions, Path::new(&output_name))
+            .with_context(|| format!("failed to write results for {}", method.key()))?;
+        println!("  wrote {}", output_name);
+        runtime_results.push(runtime);
+    }
+
+    let summary_file = format!("{log_name_slug}_summary.json");
+    write_json(&runtime_results, Path::new(&summary_file))
+        .context("failed to write runtime summary")?;
+    println!("Summary written to {summary_file}");
+
+    Ok(())
+}
+
+fn execute_method(log: &OCEL, log_name: &str, method: CaseMethod) -> RuntimeCaseNotion {
+    let log_clone = log.clone();
+    let start = Instant::now();
+    let case_notions = execute_case_notion(log_clone, log_name, method);
+    let elapsed = start.elapsed().as_secs_f64();
+
+    RuntimeCaseNotion {
+        name_of_event_log: log_name.to_string(),
+        time: elapsed,
+        method: method.key().to_string(),
+        case_notions,
+    }
+}
+
+fn execute_case_notion(
     log_res_ocel: OCEL,
-    method: String,
-    name_of_event_log: String,
-) -> Vec<Result_Case_Notion> {
+    log_name: &str,
+    method: CaseMethod,
+) -> Vec<ResultCaseNotion> {
     let total_number_of_events = log_res_ocel.events.len();
     let total_number_of_objects = log_res_ocel.objects.len();
 
-    // --- Precomputation Steps ---
     let obj_id_to_type = map_object_id_to_type(&log_res_ocel.objects);
-    let unique_object_types = log_res_ocel
+    let unique_object_types: FxHashSet<String> = log_res_ocel
         .object_types
         .iter()
         .map(|o| o.name.clone())
-        .collect::<FxHashSet<String>>();
-
-    
-    let unique_activities = log_res_ocel
+        .collect();
+    let unique_activities: FxHashSet<String> = log_res_ocel
         .event_types
         .iter()
         .map(|e| e.name.clone())
-        .collect::<FxHashSet<String>>();
-    println!(
-        "Log loaded: {} events, {} objects, {} object types, {} unique activities",
-        total_number_of_events,
-        total_number_of_objects,
-        unique_object_types.len(),
-        unique_activities.len()
-    );
+        .collect();
+
     let event_identifiers =
         build_event_identifiers(&log_res_ocel.events, &obj_id_to_type, &unique_object_types);
-
-    let object_identifiers = build_object_identifiers(&log_res_ocel.objects, &log_res_ocel.events);
+    let object_identifiers =
+        build_object_identifiers(&log_res_ocel.objects, &log_res_ocel.events);
 
     let cleaned_event_identifiers: FxHashMap<String, (String, BTreeSet<String>)> =
         event_identifiers
             .iter()
-            .map(|(k, v)| (k.clone(), (v.0.clone(), v.1.clone())))
+            .map(|(id, (activity, objects, _))| (id.clone(), (activity.clone(), objects.clone())))
             .collect();
 
-    let mut arches = FxHashSet::default();
+    let mut arches: FxHashSet<(String, String)> = FxHashSet::default();
     for (event_id, (_, object_ids)) in &cleaned_event_identifiers {
         for object_id in object_ids {
             arches.insert((event_id.clone(), object_id.clone()));
         }
     }
 
-    let mut results = vec![];
+    let mut sorted_object_types: Vec<String> = unique_object_types.iter().cloned().collect();
+    sorted_object_types.sort();
 
-    if method == "acn" {
-        let diverging_map = detect_diverging_object_types(
-            &event_identifiers,
-            &unique_object_types,
-            &unique_activities,
-        );
-
-        for object_type in &unique_object_types {
-            let case_notion = advanced_case_notion_for_ot(
-                &cleaned_event_identifiers,
-                &object_identifiers,
-                object_type.clone(),
-                &diverging_map,
-            );
-
-            let list_of_measures = calculate_measures(
-                &case_notion,
+    match method {
+        CaseMethod::AdvancedMt => {
+            let divergence_map = detect_diverging_object_types(
                 &event_identifiers,
-                &object_identifiers,
-                &arches,
-                total_number_of_objects,
-                total_number_of_events,
+                &unique_object_types,
+                &unique_activities,
             );
-            let arithmetic_mean = list_of_measures.iter().map(|m| m.value).sum::<f64>()
-                / list_of_measures.len() as f64;
 
-            // println!(
-            //     "ACN Case notion for object type: {:?}:\nSimplicity of case notion: {}\nCorrectness of case notion: {}\nTotal score for case notion (ot={}): {}\nHomogeneity of case notion (ot={}): {}\n\n----------------------------------\n----------------------------------\n----------------------------------",
-            //     object_type,
-            //     simplicity,
-            //     correctness,
-            //     object_type,
-            //     (2.0 * correctness * simplicity) / (correctness + simplicity),
-            //     object_type,
-            //     homogeneity
-            // );
+            let mut results: Vec<ResultCaseNotion> = sorted_object_types
+                .par_iter()
+                .map(|object_type| {
+                    let case_notion = advanced_case_notion_for_ot(
+                        &cleaned_event_identifiers,
+                        &object_identifiers,
+                        object_type.clone(),
+                        &divergence_map,
+                    );
 
-            results.push(Result_Case_Notion {
-                case_notion: "Advanced Case Notion".to_string(),
-                name_of_event_log: name_of_event_log.clone(),
-                object_type: object_type.to_string(),
-                measures: list_of_measures,
-                total_score: arithmetic_mean,
-            });
+                    let measures = calculate_measures(
+                        &case_notion,
+                        &event_identifiers,
+                        &object_identifiers,
+                        &arches,
+                        total_number_of_objects,
+                        total_number_of_events,
+                    );
+                    let total_score = average_score(&measures);
+
+                    ResultCaseNotion {
+                        case_notion: method.case_label().to_string(),
+                        name_of_event_log: log_name.to_string(),
+                        object_type: object_type.clone(),
+                        measures,
+                        total_score,
+                    }
+                })
+                .collect();
+
+            results.sort_by(|a, b| a.object_type.cmp(&b.object_type));
+            results
         }
-    } else if method == "acn_mt" {
-        let diverging_map = detect_diverging_object_types(
-            &event_identifiers,
-            &unique_object_types,
-            &unique_activities,
-        );
+        CaseMethod::Traditional => {
+            let mut results = Vec::new();
+            for object_type in &sorted_object_types {
+                let case_notion =
+                    traditional_case_notion_for_ot(&object_identifiers, object_type.clone());
 
-        use rayon::prelude::*;
-
-        let mt_results: Vec<Result_Case_Notion> = unique_object_types
-            .par_iter()
-            .map(|object_type| {
-                let case_notion = advanced_case_notion_for_ot(
-                    &cleaned_event_identifiers,
-                    &object_identifiers,
-                    object_type.clone(),
-                    &diverging_map,
-                );
-
-                let list_of_measures = calculate_measures(
+                let measures = calculate_measures(
                     &case_notion,
                     &event_identifiers,
                     &object_identifiers,
@@ -251,36 +247,25 @@ fn execute_log(
                     total_number_of_objects,
                     total_number_of_events,
                 );
-                let arithmetic_mean = list_of_measures.iter().map(|m| m.value).sum::<f64>()
-                    / list_of_measures.len() as f64;
+                let total_score = average_score(&measures);
 
-                // println!(
-                //     "ACN_MT Case notion for object type: {:?}:\nSimplicity of case notion: {}\nCorrectness of case notion: {}\nTotal score for case notion (ot={}): {}\nHomogeneity of case notion (ot={}): {}\n\n----------------------------------\n----------------------------------\n----------------------------------",
-                //     object_type,
-                //     simplicity,
-                //     correctness,
-                //     object_type,
-                //     (2.0 * correctness * simplicity) / (correctness + simplicity),
-                //     object_type,
-                //     homogeneity
-                // );
-                Result_Case_Notion {
-                    case_notion: "Advanced Case Notion (Multi-Threaded)".to_string(),
-                    name_of_event_log: name_of_event_log.clone(),
-                    object_type: object_type.to_string(),
-                    measures: list_of_measures,
-                    total_score: arithmetic_mean,
-                }
-            })
-            .collect();
+                results.push(ResultCaseNotion {
+                    case_notion: method.case_label().to_string(),
+                    name_of_event_log: log_name.to_string(),
+                    object_type: object_type.clone(),
+                    measures,
+                    total_score,
+                });
+            }
+            results
+        }
+        CaseMethod::ConnectedComponents => {
+            let case_notion = connected_components_notion(
+                cleaned_event_identifiers.clone(),
+                object_identifiers.clone(),
+            );
 
-        results.extend(mt_results);
-    } else if method == "tdcn" {
-        for object_type in &unique_object_types {
-            let case_notion =
-                traditional_case_notion_for_ot(&object_identifiers, object_type.clone());
-
-            let list_of_measures = calculate_measures(
+            let measures = calculate_measures(
                 &case_notion,
                 &event_identifiers,
                 &object_identifiers,
@@ -288,61 +273,165 @@ fn execute_log(
                 total_number_of_objects,
                 total_number_of_events,
             );
-            let arithmetic_mean = list_of_measures.iter().map(|m| m.value).sum::<f64>()
-                / list_of_measures.len() as f64;
+            let total_score = average_score(&measures);
 
-            // println!(
-            //     "ACN Case notion for object type: {:?}:\nSimplicity of case notion: {}\nCorrectness of case notion: {}\nTotal score for case notion (ot={}): {}\nHomogeneity of case notion (ot={}): {}\n\n----------------------------------\n----------------------------------\n----------------------------------",
-            //     object_type,
-            //     simplicity,
-            //     correctness,
-            //     object_type,
-            //     (2.0 * correctness * simplicity) / (correctness + simplicity),
-            //     object_type,
-            //     homogeneity
-            // );
-
-            results.push(Result_Case_Notion {
-                case_notion: "Advanced Case Notion".to_string(),
-                name_of_event_log: name_of_event_log.clone(),
-                object_type: object_type.to_string(),
-                measures: list_of_measures,
-                total_score: arithmetic_mean,
-            });
+            vec![ResultCaseNotion {
+                case_notion: method.case_label().to_string(),
+                name_of_event_log: log_name.to_string(),
+                object_type: "None".to_string(),
+                measures,
+                total_score,
+            }]
         }
-    } else if method == "cccn" {
-        let case_notion =
-            connected_components_notion(cleaned_event_identifiers, object_identifiers.clone());
-
-        let list_of_measures = calculate_measures(
-            &case_notion,
-            &event_identifiers,
-            &object_identifiers,
-            &arches,
-            total_number_of_objects,
-            total_number_of_events,
-        );
-        let arithmetic_mean =
-            list_of_measures.iter().map(|m| m.value).sum::<f64>() / list_of_measures.len() as f64;
-
-        // println!(
-        //     "ACN Case notion for object type: {:?}:\nSimplicity of case notion: {}\nCorrectness of case notion: {}\nTotal score for case notion (ot={}): {}\nHomogeneity of case notion (ot={}): {}\n\n----------------------------------\n----------------------------------\n----------------------------------",
-        //     object_type,
-        //     simplicity,
-        //     correctness,
-        //     object_type,
-        //     (2.0 * correctness * simplicity) / (correctness + simplicity),
-        //     object_type,
-        //     homogeneity
-        // );
-
-        results.push(Result_Case_Notion {
-            case_notion: "Advanced Case Notion".to_string(),
-            name_of_event_log: name_of_event_log.clone(),
-            object_type: "None".to_string(),
-            measures: list_of_measures,
-            total_score: arithmetic_mean,
-        });
     }
-    results
 }
+
+fn calculate_measures(
+    case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
+    event_identifiers: &FxHashMap<
+        String,
+        (
+            String,
+            BTreeSet<String>,
+            FxHashMap<String, BTreeSet<String>>,
+        ),
+    >,
+    object_identifiers: &FxHashMap<String, (String, Vec<String>)>,
+    arches: &FxHashSet<(String, String)>,
+    total_number_of_objects: usize,
+    total_number_of_events: usize,
+) -> Vec<Measure> {
+    let normal_simplicity = normal_simplicity_of_case_notion(
+        case_notion,
+        total_number_of_events,
+        total_number_of_objects,
+    );
+    let extended_simplicity = extended_simplicity_of_case_notion(
+        case_notion,
+        total_number_of_events,
+        total_number_of_objects,
+        0.6,
+        20,
+    );
+    let absolute_simplicity = absolute_simplicity_of_case_notion(case_notion, 0.8, 10);
+    let correctness = correctness_of_case_notion(
+        case_notion,
+        arches,
+        total_number_of_events,
+        total_number_of_objects,
+    );
+    let fuzzy_homogeneity =
+        fuzzy_homogeneity_of_case_notion(case_notion, event_identifiers, object_identifiers);
+    let fuzzy_homogeneity_v2 = fuzzy_homogeneity_of_case_notion_v2(
+        case_notion,
+        event_identifiers,
+        object_identifiers,
+    );
+    let strict_homogeneity =
+        strict_homogeneity_of_case_notion(case_notion, event_identifiers, object_identifiers);
+
+    vec![
+        Measure {
+            name: "Normal Simplicity".to_string(),
+            value: normal_simplicity,
+        },
+        Measure {
+            name: "Extended Simplicity".to_string(),
+            value: extended_simplicity,
+        },
+        Measure {
+            name: "Absolute Simplicity".to_string(),
+            value: absolute_simplicity,
+        },
+        Measure {
+            name: "Correctness".to_string(),
+            value: correctness,
+        },
+        Measure {
+            name: "Fuzzy Homogeneity".to_string(),
+            value: fuzzy_homogeneity,
+        },
+        Measure {
+            name: "Fuzzy Homogeneity V2".to_string(),
+            value: fuzzy_homogeneity_v2,
+        },
+        Measure {
+            name: "Strict Homogeneity".to_string(),
+            value: strict_homogeneity,
+        },
+    ]
+}
+
+fn average_score(measures: &[Measure]) -> f64 {
+    if measures.is_empty() {
+        0.0
+    } else {
+        measures.iter().map(|m| m.value).sum::<f64>() / measures.len() as f64
+    }
+}
+
+fn write_json<T: Serialize>(value: &T, output_path: &Path) -> Result<()> {
+    let file = File::create(output_path)
+        .with_context(|| format!("create {}", output_path.display()))?;
+    let writer = BufWriter::new(file);
+    serde_json::to_writer_pretty(writer, value)
+        .with_context(|| format!("serialize {}", output_path.display()))?;
+    Ok(())
+}
+
+fn obtain_input_path() -> Result<PathBuf> {
+    if let Some(arg) = env::args().nth(1) {
+        Ok(PathBuf::from(arg))
+    } else {
+        println!("Enter path to OCEL log (.json/.xml/.xmlocel):");
+        let mut input = String::new();
+        io::stdin()
+            .read_line(&mut input)
+            .context("failed to read path from stdin")?;
+        let trimmed = input.trim();
+        if trimmed.is_empty() {
+            Err(anyhow!("no log path provided"))
+        } else {
+            Ok(PathBuf::from(trimmed))
+        }
+    }
+}
+
+fn load_log(path: &Path) -> Result<OCEL> {
+    let path_str = path
+        .to_str()
+        .context("input path contains invalid UTF-8 characters")?;
+    let ext = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|s| s.to_ascii_lowercase())
+        .unwrap_or_default();
+
+    match ext.as_str() {
+        "json" => import_ocel_json_from_path(path_str)
+            .with_context(|| format!("failed to import json log {}", path.display())),
+        "xml" | "xmlocel" => Ok(import_ocel_xml_file(path_str)),
+        other => Err(anyhow!("unsupported log extension: {other}")),
+    }
+}
+
+fn extract_log_name(path: &Path) -> Result<String> {
+    path.file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow!("failed to derive log name from {}", path.display()))
+}
+
+fn sanitize_for_file_name(input: &str) -> String {
+    input
+        .chars()
+        .map(|c| {
+            if matches!(c, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_' | '-') {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
