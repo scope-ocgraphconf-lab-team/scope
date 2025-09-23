@@ -96,8 +96,18 @@ pub async fn post_ocel_binary(mut multipart: Multipart) -> impl IntoResponse {
                 file_id = Some(v);
             }
             "file" => {
-                let data = field.bytes().await.unwrap_or_default();
-                println!("📥 file bytes: {}", data.len());
+                let data = match field.bytes().await {
+                    Ok(bytes) if !bytes.is_empty() => bytes,
+                    Ok(_) => {
+                        return (StatusCode::BAD_REQUEST, "Uploaded file is empty").into_response();
+                    }
+                    Err(err) => {
+                        eprintln!("failed to read multipart field: {err:?}");
+                        return (StatusCode::BAD_REQUEST, "Failed to read uploaded file")
+                            .into_response();
+                    }
+                };
+                println!("· file bytes: {}", data.len());
                 file_bytes = Some(data);
             }
             other => println!("⚠️ Unknown form field: {other}"),
