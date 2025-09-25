@@ -98,6 +98,109 @@ struct MethodExecution {
     ocels: Vec<CaseNotionOcelOutput>,
 }
 
+struct CaseNotionContext {
+    total_number_of_events: usize,
+    total_number_of_objects: usize,
+    event_identifiers: FxHashMap<
+        String,
+        (
+            String,
+            BTreeSet<String>,
+            FxHashMap<String, BTreeSet<String>>,
+        ),
+    >,
+    object_identifiers: FxHashMap<String, (String, Vec<String>)>,
+    event_lookup: FxHashMap<String, OCELEvent>,
+    object_lookup: FxHashMap<String, OCELObject>,
+    cleaned_event_identifiers: FxHashMap<String, (String, BTreeSet<String>)>,
+    arches: FxHashSet<(String, String)>,
+    sorted_object_types: Vec<String>,
+    divergence_map: FxHashMap<String, FxHashSet<String>>,
+    event_type_defs: Vec<OCELType>,
+    object_type_defs: Vec<OCELType>,
+    default_timestamp: chrono::DateTime<chrono::FixedOffset>,
+}
+
+impl CaseNotionContext {
+    fn new(log: &OCEL) -> Self {
+        let total_number_of_events = log.events.len();
+        let total_number_of_objects = log.objects.len();
+
+        let obj_id_to_type = map_object_id_to_type(&log.objects);
+        let unique_object_types: FxHashSet<String> = log
+            .object_types
+            .iter()
+            .map(|o| o.name.clone())
+            .collect();
+        let unique_activities: FxHashSet<String> = log
+            .event_types
+            .iter()
+            .map(|e| e.name.clone())
+            .collect();
+
+        let event_identifiers =
+            build_event_identifiers(&log.events, &obj_id_to_type, &unique_object_types);
+        let object_identifiers = build_object_identifiers(&log.objects, &log.events);
+
+        let cleaned_event_identifiers: FxHashMap<String, (String, BTreeSet<String>)> =
+            event_identifiers
+                .iter()
+                .map(|(id, (activity, objects, _))| {
+                    (id.clone(), (activity.clone(), objects.clone()))
+                })
+                .collect();
+
+        let mut arches: FxHashSet<(String, String)> = FxHashSet::default();
+        for (event_id, (_, object_ids)) in &cleaned_event_identifiers {
+            for object_id in object_ids {
+                arches.insert((event_id.clone(), object_id.clone()));
+            }
+        }
+
+        let mut sorted_object_types: Vec<String> = unique_object_types.iter().cloned().collect();
+        sorted_object_types.sort_unstable();
+
+        let divergence_map = detect_diverging_object_types(
+            &event_identifiers,
+            &unique_object_types,
+            &unique_activities,
+        );
+
+        let event_lookup: FxHashMap<String, OCELEvent> = log
+            .events
+            .iter()
+            .map(|event| (event.id.clone(), event.clone()))
+            .collect();
+        let object_lookup: FxHashMap<String, OCELObject> = log
+            .objects
+            .iter()
+            .map(|object| (object.id.clone(), object.clone()))
+            .collect();
+
+        let event_type_defs = log.event_types.clone();
+        let object_type_defs = log.object_types.clone();
+
+        let default_timestamp = chrono::DateTime::parse_from_rfc3339("1970-01-01T00:00:00Z")
+            .expect("valid RFC3339 timestamp");
+
+        Self {
+            total_number_of_events,
+            total_number_of_objects,
+            event_identifiers,
+            object_identifiers,
+            event_lookup,
+            object_lookup,
+            cleaned_event_identifiers,
+            arches,
+            sorted_object_types,
+            divergence_map,
+            event_type_defs,
+            object_type_defs,
+            default_timestamp,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 enum CaseMethod {
     AdvancedMt,
@@ -146,6 +249,8 @@ fn run() -> Result<()> {
 
     println!("Loaded log \"{log_name}\" from {}", log_path.display());
 
+    let context = CaseNotionContext::new(&log);
+
     let methods = [
         CaseMethod::AdvancedMt,
         CaseMethod::Traditional,
@@ -156,7 +261,7 @@ fn run() -> Result<()> {
 
     for &method in &methods {
         println!("Executing {}...", method.case_label());
-        let method_execution = execute_method(&log, &log_name, method);
+        let method_execution = execute_method(&log_name, method, &context);
         let output_name = format!("{log_name_slug}_{}.json", method.file_suffix());
         write_json(
             &method_execution.runtime.case_notions,
@@ -186,10 +291,9 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-fn execute_method(log: &OCEL, log_name: &str, method: CaseMethod) -> MethodExecution {
-    let log_clone = log.clone();
+fn execute_method(log_name: &str, method: CaseMethod, context: &CaseNotionContext) -> MethodExecution {
     let start = Instant::now();
-    let computation = execute_case_notion(log_clone, log_name, method);
+    let computation = execute_case_notion(log_name, method, context);
     let elapsed = start.elapsed().as_secs_f64();
 
     let runtime = RuntimeCaseNotion {
@@ -207,63 +311,26 @@ fn execute_method(log: &OCEL, log_name: &str, method: CaseMethod) -> MethodExecu
 }
 
 fn execute_case_notion(
-    log_res_ocel: OCEL,
     log_name: &str,
     method: CaseMethod,
+    context: &CaseNotionContext,
 ) -> CaseNotionComputation {
-    let total_number_of_events = log_res_ocel.events.len();
-    let total_number_of_objects = log_res_ocel.objects.len();
-
-    let obj_id_to_type = map_object_id_to_type(&log_res_ocel.objects);
-    let unique_object_types: FxHashSet<String> = log_res_ocel
-        .object_types
-        .iter()
-        .map(|o| o.name.clone())
-        .collect();
-    let unique_activities: FxHashSet<String> = log_res_ocel
-        .event_types
-        .iter()
-        .map(|e| e.name.clone())
-        .collect();
-
-    let event_type_names: Vec<String> = log_res_ocel
-        .event_types
-        .iter()
-        .map(|e| e.name.clone())
-        .collect();
-    let object_type_names: Vec<String> = log_res_ocel
-        .object_types
-        .iter()
-        .map(|o| o.name.clone())
-        .collect();
-
-    let event_identifiers =
-        build_event_identifiers(&log_res_ocel.events, &obj_id_to_type, &unique_object_types);
-    let object_identifiers = build_object_identifiers(&log_res_ocel.objects, &log_res_ocel.events);
-
-    let cleaned_event_identifiers: FxHashMap<String, (String, BTreeSet<String>)> =
-        event_identifiers
-            .iter()
-            .map(|(id, (activity, objects, _))| (id.clone(), (activity.clone(), objects.clone())))
-            .collect();
-
-    let mut arches: FxHashSet<(String, String)> = FxHashSet::default();
-    for (event_id, (_, object_ids)) in &cleaned_event_identifiers {
-        for object_id in object_ids {
-            arches.insert((event_id.clone(), object_id.clone()));
-        }
-    }
-
-    let mut sorted_object_types: Vec<String> = unique_object_types.iter().cloned().collect();
-    sorted_object_types.sort();
+    let total_number_of_events = context.total_number_of_events;
+    let total_number_of_objects = context.total_number_of_objects;
+    let event_identifiers = &context.event_identifiers;
+    let object_identifiers = &context.object_identifiers;
+    let cleaned_event_identifiers = &context.cleaned_event_identifiers;
+    let arches = &context.arches;
+    let sorted_object_types = &context.sorted_object_types;
+    let divergence_map = &context.divergence_map;
+    let event_type_defs = &context.event_type_defs;
+    let object_type_defs = &context.object_type_defs;
+    let default_timestamp = &context.default_timestamp;
+    let event_lookup = &context.event_lookup;
+    let object_lookup = &context.object_lookup;
 
     match method {
         CaseMethod::AdvancedMt => {
-            let divergence_map = detect_diverging_object_types(
-                &event_identifiers,
-                &unique_object_types,
-                &unique_activities,
-            );
             let case_label = method.case_label().to_string();
             let log_name_owned = log_name.to_string();
 
@@ -316,8 +383,11 @@ fn execute_case_notion(
                             &case_notion,
                             &cleaned_event_identifiers,
                             &object_identifiers,
-                            &event_type_names,
-                            &object_type_names,
+                            event_type_defs,
+                            object_type_defs,
+                            default_timestamp,
+                            event_lookup,
+                            object_lookup,
                         ),
                     };
 
@@ -326,9 +396,9 @@ fn execute_case_notion(
                 .collect();
 
             outputs.sort_by(|a, b| a.0.object_type.cmp(&b.0.object_type));
-            let mut results = Vec::new();
-            let mut graphs = Vec::new();
-            let mut ocels = Vec::new();
+            let mut results = Vec::with_capacity(outputs.len());
+            let mut graphs = Vec::with_capacity(outputs.len());
+            let mut ocels = Vec::with_capacity(outputs.len());
 
             for (result, graph, ocel) in outputs {
                 results.push(result);
@@ -349,7 +419,7 @@ fn execute_case_notion(
             let mut graphs = Vec::new();
             let mut ocels = Vec::new();
 
-            for object_type in &sorted_object_types {
+            for object_type in sorted_object_types {
                 let case_notion =
                     traditional_case_notion_for_ot(&object_identifiers, object_type.clone());
 
@@ -387,8 +457,11 @@ fn execute_case_notion(
                         &case_notion,
                         &cleaned_event_identifiers,
                         &object_identifiers,
-                        &event_type_names,
-                        &object_type_names,
+                        event_type_defs,
+                        object_type_defs,
+                        default_timestamp,
+                        event_lookup,
+                        object_lookup,
                     ),
                 });
             }
@@ -441,8 +514,11 @@ fn execute_case_notion(
                     &case_notion,
                     &cleaned_event_identifiers,
                     &object_identifiers,
-                    &event_type_names,
-                    &object_type_names,
+                    event_type_defs,
+                    object_type_defs,
+                    default_timestamp,
+                    event_lookup,
+                    object_lookup,
                 ),
             }];
 
@@ -539,39 +615,38 @@ fn average_score(measures: &[Measure]) -> f64 {
 fn case_notion_to_cases(
     case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
 ) -> Vec<CaseNotionCase> {
-    let mut cases: Vec<CaseNotionCase> = case_notion
-        .iter()
-        .map(|(events, objects, arches)| {
-            let mut events_sorted = events.clone();
-            events_sorted.sort();
+    let mut cases: Vec<CaseNotionCase> = Vec::with_capacity(case_notion.len());
 
-            let mut objects_sorted = objects.clone();
-            objects_sorted.sort();
+    for (events, objects, arches) in case_notion {
+        let mut events_sorted = events.clone();
+        events_sorted.sort_unstable();
 
-            let mut edges: Vec<CaseNotionArch> = arches
-                .iter()
-                .map(|(source, target)| CaseNotionArch {
-                    source: source.clone(),
-                    target: target.clone(),
-                })
-                .collect();
-            edges.sort_by(|a, b| {
-                let mut ordering = a.source.cmp(&b.source);
-                if ordering == Ordering::Equal {
-                    ordering = a.target.cmp(&b.target);
-                }
-                ordering
-            });
+        let mut objects_sorted = objects.clone();
+        objects_sorted.sort_unstable();
 
-            CaseNotionCase {
-                events: events_sorted,
-                objects: objects_sorted,
-                arches: edges,
+        let mut edges: Vec<CaseNotionArch> = arches
+            .iter()
+            .map(|(source, target)| CaseNotionArch {
+                source: source.clone(),
+                target: target.clone(),
+            })
+            .collect();
+        edges.sort_unstable_by(|a, b| {
+            let mut ordering = a.source.cmp(&b.source);
+            if ordering == Ordering::Equal {
+                ordering = a.target.cmp(&b.target);
             }
-        })
-        .collect();
+            ordering
+        });
 
-    cases.sort_by(|a, b| {
+        cases.push(CaseNotionCase {
+            events: events_sorted,
+            objects: objects_sorted,
+            arches: edges,
+        });
+    }
+
+    cases.sort_unstable_by(|a, b| {
         let mut ordering = a.events.cmp(&b.events);
         if ordering == Ordering::Equal {
             ordering = a.objects.cmp(&b.objects);
@@ -586,35 +661,19 @@ fn case_notion_to_ocels(
     case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
     event_details: &FxHashMap<String, (String, BTreeSet<String>)>,
     object_details: &FxHashMap<String, (String, Vec<String>)>,
-    event_type_names: &[String],
-    object_type_names: &[String],
+    event_type_defs: &[OCELType],
+    object_type_defs: &[OCELType],
+    default_timestamp: &chrono::DateTime<chrono::FixedOffset>,
+    event_lookup: &FxHashMap<String, OCELEvent>,
+    object_lookup: &FxHashMap<String, OCELObject>,
 ) -> Vec<OCEL> {
-    let event_type_defs: Vec<OCELType> = event_type_names
-        .iter()
-        .cloned()
-        .map(|name| OCELType {
-            name,
-            attributes: Vec::new(),
-        })
-        .collect();
-    let object_type_defs: Vec<OCELType> = object_type_names
-        .iter()
-        .cloned()
-        .map(|name| OCELType {
-            name,
-            attributes: Vec::new(),
-        })
-        .collect();
-    let default_timestamp = chrono::DateTime::parse_from_rfc3339("1970-01-01T00:00:00Z")
-        .expect("valid RFC3339 timestamp");
-
     let mut entries: Vec<(Vec<String>, Vec<String>, Vec<(String, String)>)> =
         case_notion.iter().cloned().collect();
 
     for (events, objects, arcs) in &mut entries {
-        events.sort();
-        objects.sort();
-        arcs.sort_by(|a, b| {
+        events.sort_unstable();
+        objects.sort_unstable();
+        arcs.sort_unstable_by(|a, b| {
             let mut ordering = a.0.cmp(&b.0);
             if ordering == Ordering::Equal {
                 ordering = a.1.cmp(&b.1);
@@ -623,7 +682,7 @@ fn case_notion_to_ocels(
         });
     }
 
-    entries.sort_by(|a, b| {
+    entries.sort_unstable_by(|a, b| {
         let mut ordering = a.0.cmp(&b.0);
         if ordering == Ordering::Equal {
             ordering = a.1.cmp(&b.1);
@@ -631,67 +690,93 @@ fn case_notion_to_ocels(
         ordering
     });
 
-    let mut ocels = Vec::new();
+    let mut ocels = Vec::with_capacity(entries.len());
 
     for (events, objects, arcs) in entries {
-        let mut event_records = Vec::new();
-        for event_id in &events {
-            let event_type = event_details
-                .get(event_id)
-                .map(|(activity, _)| activity.clone())
-                .unwrap_or_else(|| "Unknown".to_string());
-
-            let mut related_objects: Vec<String> = arcs
-                .iter()
-                .filter_map(|(source, target)| {
-                    if source == event_id {
-                        Some(target.clone())
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            related_objects.sort();
-
-            let relationships = related_objects
-                .into_iter()
-                .map(|object_id| OCELRelationship {
-                    object_id,
-                    qualifier: String::new(),
-                })
-                .collect();
-
-            let event = OCELEvent {
-                id: event_id.clone(),
-                event_type,
-                time: default_timestamp.clone(),
-                attributes: Vec::new(),
-                relationships,
-            };
-            event_records.push(event);
+        let object_id_set: FxHashSet<String> = objects.iter().cloned().collect();
+        let mut arcs_by_event: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+        for (event_id, object_id) in &arcs {
+            arcs_by_event
+                .entry(event_id.clone())
+                .or_default()
+                .insert(object_id.clone());
         }
 
-        let mut object_records = Vec::new();
-        for object_id in &objects {
-            let object_type = object_details
-                .get(object_id)
-                .map(|(ty, _)| ty.clone())
-                .unwrap_or_else(|| "Unknown".to_string());
+        let mut event_records = Vec::with_capacity(events.len());
+        for event_id in &events {
+            if let Some(original_event) = event_lookup.get(event_id) {
+                let mut event = original_event.clone();
+                if let Some(allowed_objects) = arcs_by_event.get(event_id) {
+                    event
+                        .relationships
+                        .retain(|rel| allowed_objects.contains(&rel.object_id));
+                } else {
+                    event.relationships.clear();
+                }
+                event
+                    .relationships
+                    .sort_unstable_by(|a, b| a.object_id.cmp(&b.object_id));
+                event_records.push(event);
+            } else {
+                let event_type = event_details
+                    .get(event_id)
+                    .map(|(activity, _)| activity.clone())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                let mut relationships: Vec<OCELRelationship> = arcs_by_event
+                    .get(event_id)
+                    .into_iter()
+                    .flat_map(|set| {
+                        let mut ids: Vec<String> = set.iter().cloned().collect();
+                        ids.sort_unstable();
+                        ids.into_iter()
+                    })
+                    .map(|object_id| OCELRelationship {
+                        object_id,
+                        qualifier: String::new(),
+                    })
+                    .collect();
+                relationships
+                    .sort_unstable_by(|a, b| a.object_id.cmp(&b.object_id));
+                event_records.push(OCELEvent {
+                    id: event_id.clone(),
+                    event_type,
+                    time: default_timestamp.clone(),
+                    attributes: Vec::new(),
+                    relationships,
+                });
+            }
+        }
 
-            let object = OCELObject {
-                id: object_id.clone(),
-                object_type,
-                attributes: Vec::new(),
-                relationships: Vec::new(),
-            };
-            object_records.push(object);
+        let mut object_records = Vec::with_capacity(objects.len());
+        for object_id in &objects {
+            if let Some(original_object) = object_lookup.get(object_id) {
+                let mut object = original_object.clone();
+                object
+                    .relationships
+                    .retain(|rel| object_id_set.contains(&rel.object_id));
+                object
+                    .relationships
+                    .sort_unstable_by(|a, b| a.object_id.cmp(&b.object_id));
+                object_records.push(object);
+            } else {
+                let object_type = object_details
+                    .get(object_id)
+                    .map(|(ty, _)| ty.clone())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                object_records.push(OCELObject {
+                    id: object_id.clone(),
+                    object_type,
+                    attributes: Vec::new(),
+                    relationships: Vec::new(),
+                });
+            }
         }
 
         ocels.push(OCEL {
             events: event_records,
             objects: object_records,
-            event_types: event_type_defs.clone(),
-            object_types: object_type_defs.clone(),
+            event_types: event_type_defs.to_vec(),
+            object_types: object_type_defs.to_vec(),
         });
     }
 
