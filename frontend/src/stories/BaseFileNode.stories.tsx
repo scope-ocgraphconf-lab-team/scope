@@ -44,7 +44,7 @@ export const Default: Story = {
     args: {
         ...baseNodeProps,
         title: 'Base File Node',
-        iconName: 'File',
+        iconName: 'fileJson',
         handleOptions: handleOptions,
         dropdownOptions: dropdownOptions,
         data: {
@@ -58,7 +58,7 @@ export const WithAsset: Story = {
     args: {
         ...baseNodeProps,
         title: 'Base File Node',
-        iconName: 'File',
+        iconName: 'fileJson',
         handleOptions: handleOptions,
         dropdownOptions: dropdownOptions,
         data: {
@@ -66,7 +66,7 @@ export const WithAsset: Story = {
             assets: [
                 {
                     id: 'asset-1',
-                    name: 'example_file.csv',
+                    name: 'example_ocel.csv',
                     type: 'ocelFile',
                     origin: 'preprocessed',
                     io: 'input',
