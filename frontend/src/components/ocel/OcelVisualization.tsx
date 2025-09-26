@@ -183,9 +183,6 @@ const OcelVisualization = () => {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [chunk, setChunk] = useState(1);
 
-  // filtering state
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-
   useEffect(() => {
     if (!data) return;
     console.log("Fetched OCEL data:", data);
@@ -193,29 +190,18 @@ const OcelVisualization = () => {
     const events = data.events || [];
     const objects = data.objects || [];
 
-    // filter by type
-    const filteredEvents = events.filter(
-      (evt: any) => selectedTypes.length === 0 || selectedTypes.includes(evt.type)
-    );
-
-    // load only a chunk of filtered events
-    const chunkedEvents = filteredEvents.slice(0, chunk * MAX_CHUNK);
+    // Load only a chunk of events
+    const chunkedEvents = events.slice(0, chunk * MAX_CHUNK);
 
     // Build event nodes
     const eventNodes: Node[] = chunkedEvents.map((evt: any, i: number) => ({
       id: evt.id?.toString(),
       data: { label: evt.type || evt.activity || "Event" },
       position: { x: (i % 10) * 200, y: Math.floor(i / 10) * 100 },
-      style: {
-        background: "#f59e0b",
-        color: "#fff",
-        padding: 6,
-        borderRadius: 5,
-        fontSize: 12,
-      },
+      style: { background: "#f59e0b", color: "#fff", padding: 6, borderRadius: 5, fontSize: 12 },
     }));
 
-    // Collect related objectIds
+    // Collect related objectIds from these events
     const objectIds = new Set<string>();
     chunkedEvents.forEach((evt: any) => {
       (evt.relationships || []).forEach((rel: any) => objectIds.add(rel.objectId));
@@ -226,13 +212,7 @@ const OcelVisualization = () => {
       id: objId.toString(),
       data: { label: objects[objId]?.type || objId },
       position: { x: (i % 10) * 200, y: 600 + Math.floor(i / 10) * 100 },
-      style: {
-        background: "#3b82f6",
-        color: "#fff",
-        padding: 6,
-        borderRadius: 5,
-        fontSize: 12,
-      },
+      style: { background: "#3b82f6", color: "#fff", padding: 6, borderRadius: 5, fontSize: 12 },
     }));
 
     // Build edges
@@ -249,7 +229,7 @@ const OcelVisualization = () => {
 
     setNodes([...eventNodes, ...objectNodes]);
     setEdges(newEdges);
-  }, [data, chunk, selectedTypes]);
+  }, [data, chunk]);
 
   if (!fileId) return <p>No File selected</p>;
   if (isLoading) return <p>Loading...</p>;
@@ -260,56 +240,178 @@ const OcelVisualization = () => {
     setChunk((prev) => prev + 1);
   };
 
-  const toggleType = (type: string) => {
-    setChunk(1); // reset pagination when filtering
-    setSelectedTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
-  };
-
   return (
-    <div className="flex h-[90vh]">
-      {/* Sidebar */}
-      <div className="w-64 border-r border-gray-300 p-4 overflow-y-auto">
-        <h2 className="font-bold mb-2">Filter by Event Type</h2>
-        {data.eventTypes?.map((type: any, index: number) => {
-          const typeName = typeof type === "string" ? type : type.name; // ✅ fix for object types
-          return (
-            <div key={index} className="mb-1">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={selectedTypes.includes(typeName)}
-                  onChange={() => toggleType(typeName)}
-                />
-                {typeName}
-              </label>
-            </div>
-          );
-        })}
-      </div>
+    <div style={{ width: "100%", height: "90vh" }}>
+      <h1 className="font-bold text-xl mb-4">OCEL Visualization</h1>
+      <ReactFlow nodes={nodes} edges={edges} fitView onlyRenderVisibleElements>
+        <MiniMap />
+        <Controls />
+        <Background />
+      </ReactFlow>
 
-      {/* Graph */}
-      <div className="flex-1 relative">
-        <ReactFlow nodes={nodes} edges={edges} fitView onlyRenderVisibleElements>
-          <MiniMap />
-          <Controls />
-          <Background />
-        </ReactFlow>
-
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-          {chunk * MAX_CHUNK < (data.events?.length || 0) && (
-            <button
-              onClick={loadMore}
-              className="px-4 py-2 bg-blue-500 text-white rounded"
-            >
-              Load More Events ({chunk * MAX_CHUNK}/{data.events.length})
-            </button>
-          )}
-        </div>
+      <div className="flex justify-center mt-4">
+        {chunk * MAX_CHUNK < data.events.length && (
+          <button
+            onClick={loadMore}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Load More Events ({chunk * MAX_CHUNK}/{data.events.length})
+          </button>
+        )}
       </div>
     </div>
   );
 };
 
 export default OcelVisualization;
+
+
+
+
+// import { useEffect, useState } from "react";
+// import { useSearchParams } from "react-router-dom";
+// import  {ReactFlow, Background, Controls, MiniMap, Node, Edge } from "@xyflow/react";
+// import "@xyflow/react/dist/style.css";
+// import { useGetOcel } from "~/services/queries";
+
+// const MAX_CHUNK = 500; // how many events to load per chunk
+
+// const OcelVisualization = () => {
+//   const [params] = useSearchParams();
+//   const fileId = params.get("fileId");
+//   const { data, isLoading, error } = useGetOcel(fileId || "");
+
+//   const [nodes, setNodes] = useState<Node[]>([]);
+//   const [edges, setEdges] = useState<Edge[]>([]);
+//   const [chunk, setChunk] = useState(1);
+
+//   // filtering state
+//   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+
+//   useEffect(() => {
+//     if (!data) return;
+//     console.log("Fetched OCEL data:", data);
+
+//     const events = data.events || [];
+//     const objects = data.objects || [];
+
+//     // filter by type
+//     const filteredEvents = events.filter(
+//       (evt: any) => selectedTypes.length === 0 || selectedTypes.includes(evt.type)
+//     );
+
+//     // load only a chunk of filtered events
+//     const chunkedEvents = filteredEvents.slice(0, chunk * MAX_CHUNK);
+
+//     // Build event nodes
+//     const eventNodes: Node[] = chunkedEvents.map((evt: any, i: number) => ({
+//       id: evt.id?.toString(),
+//       data: { label: evt.type || evt.activity || "Event" },
+//       position: { x: (i % 10) * 200, y: Math.floor(i / 10) * 100 },
+//       style: {
+//         background: "#f59e0b",
+//         color: "#fff",
+//         padding: 6,
+//         borderRadius: 5,
+//         fontSize: 12,
+//       },
+//     }));
+
+//     // Collect related objectIds
+//     const objectIds = new Set<string>();
+//     chunkedEvents.forEach((evt: any) => {
+//       (evt.relationships || []).forEach((rel: any) => objectIds.add(rel.objectId));
+//     });
+
+//     // Build object nodes
+//     const objectNodes: Node[] = Array.from(objectIds).map((objId, i) => ({
+//       id: objId.toString(),
+//       data: { label: objects[objId]?.type || objId },
+//       position: { x: (i % 10) * 200, y: 600 + Math.floor(i / 10) * 100 },
+//       style: {
+//         background: "#3b82f6",
+//         color: "#fff",
+//         padding: 6,
+//         borderRadius: 5,
+//         fontSize: 12,
+//       },
+//     }));
+
+//     // Build edges
+//     const newEdges: Edge[] = chunkedEvents.flatMap((evt: any) =>
+//       (evt.relationships || []).map((rel: any, i: number) => ({
+//         id: `${evt.id}-${rel.objectId}-${i}`,
+//         source: evt.id?.toString(),
+//         target: rel.objectId?.toString(),
+//         label: rel.qualifier || "",
+//         style: { stroke: "#999" },
+//         labelStyle: { fill: "#333", fontSize: 10 },
+//       }))
+//     );
+
+//     setNodes([...eventNodes, ...objectNodes]);
+//     setEdges(newEdges);
+//   }, [data, chunk, selectedTypes]);
+
+//   if (!fileId) return <p>No File selected</p>;
+//   if (isLoading) return <p>Loading...</p>;
+//   if (error) return <p>Error loading OCEL data</p>;
+//   if (!data) return <p>No data available</p>;
+
+//   const loadMore = () => {
+//     setChunk((prev) => prev + 1);
+//   };
+
+//   const toggleType = (type: string) => {
+//     setChunk(1); // reset pagination when filtering
+//     setSelectedTypes((prev) =>
+//       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+//     );
+//   };
+
+//   return (
+//     <div className="flex h-[90vh]">
+//       {/* Sidebar */}
+//       <div className="w-64 border-r border-gray-300 p-4 overflow-y-auto">
+//         <h2 className="font-bold mb-2">Filter by Event Type</h2>
+//         {data.eventTypes?.map((type: any, index: number) => {
+//           const typeName = typeof type === "string" ? type : type.name; // ✅ fix for object types
+//           return (
+//             <div key={index} className="mb-1">
+//               <label className="flex items-center gap-2">
+//                 <input
+//                   type="checkbox"
+//                   checked={selectedTypes.includes(typeName)}
+//                   onChange={() => toggleType(typeName)}
+//                 />
+//                 {typeName}
+//               </label>
+//             </div>
+//           );
+//         })}
+//       </div>
+
+//       {/* Graph */}
+//       <div className="flex-1 relative">
+//         <ReactFlow nodes={nodes} edges={edges} fitView onlyRenderVisibleElements>
+//           <MiniMap />
+//           <Controls />
+//           <Background />
+//         </ReactFlow>
+
+//         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+//           {chunk * MAX_CHUNK < (data.events?.length || 0) && (
+//             <button
+//               onClick={loadMore}
+//               className="px-4 py-2 bg-blue-500 text-white rounded"
+//             >
+//               Load More Events ({chunk * MAX_CHUNK}/{data.events.length})
+//             </button>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default OcelVisualization;
