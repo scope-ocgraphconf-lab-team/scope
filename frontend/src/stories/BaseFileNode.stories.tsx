@@ -8,6 +8,14 @@ const meta: Meta<typeof BaseFileNode> = {
     title: 'Explore/BaseFileNode',
     component: BaseFileNode,
     tags: ['autodocs'],
+    parameters: {
+        docs: {
+            description: {
+                component:
+                    'This is the base component for all file-type nodes. Note: The connection handles (defined by `handleOptions`) are only visible when the node is rendered within a full `<ReactFlow>` view. They will not appear in this isolated Storybook view.',
+            },
+        },
+    },
     decorators: [
         (Story) => (
             <ReactFlowProvider>
