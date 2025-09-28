@@ -123,7 +123,7 @@ mod tests {
     #[tokio::test]
     async fn test_build_event_object_histograms() {
         // 1. Build the path to your OCEL JSON
-        let ocel_path = PathBuf::from("./temp/ocel_v2_123.json");
+        let ocel_path = PathBuf::from("../example_data/ocel/ocel_v2_123.json");
 
         // 2. Read the file
         let ocel_data = tokio_fs::read_to_string(&ocel_path)
