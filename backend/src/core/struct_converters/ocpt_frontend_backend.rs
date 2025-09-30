@@ -296,13 +296,13 @@ mod tests {
         use crate::models::ocpt::{OCPT, OcptFE};
         use tokio::fs;
 
-        // Hard-coded file path in ./temp
-        let path = "./temp/ocpt_123.json";
+        // Hard-coded file 
+        let path = "../example_data/ocel/ocel_v2_123.json";
 
         // Read file content
         let content = fs::read_to_string(path)
             .await
-            .expect("❌ failed to read ./temp/ocpt_123.json");
+            .expect("❌ failed to read ../example_data/ocel/ocel_v2_123.json");
 
         // Try to parse as frontend struct first
         if let Ok(fe_struct) = serde_json::from_str::<OcptFE>(&content) {

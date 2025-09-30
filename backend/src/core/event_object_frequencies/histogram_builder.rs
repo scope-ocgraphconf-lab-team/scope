@@ -28,36 +28,48 @@ fn build_object_index(log: &OCEL) -> HashMap<&str, &str> {
         .collect()
 }
 
-/*
-Example JSON output:
-one histogram per (event_type, object_type) pair
-    - histogram x: count
-    - histogram y: frequency
 
-{
-  "histograms": [
-    {
-      "event_type": "Depart",
-      "object_type": "Container",
-      "histogram": [
-        { "count": 2, "frequency": 5 },
-        { "count": 3, "frequency": 2 },
-        { "count": 5, "frequency": 1 }
-      ]
-    },
-    {
-      "event_type": "Arrive",
-      "object_type": "Truck",
-      "histogram": [
-        { "count": 1, "frequency": 7 },
-        { "count": 2, "frequency": 4 }
-      ]
-    }
-  ]
-}
-
-*/
-
+/// Build event-object frequency histograms for an [`OCEL`].
+/// Each histogram corresponds to a unique (event_type, object_type) pair
+/// and shows how many objects of that type are associated with events of that type.
+/// 
+/// # Example JSON output:
+/// one histogram per (event_type, object_type) pair
+///    - histogram x: count
+///    - histogram y: frequency
+/// 
+/// 
+/// ```json
+/// {
+///   "histograms": [
+///     {
+///       "event_type": "Depart",
+///       "object_type": "Container",
+///       "histogram": [
+///         { "count": 2, "frequency": 5 },
+///         { "count": 3, "frequency": 2 },
+///         { "count": 5, "frequency": 1 }
+///       ]
+///     },
+///     {
+///       "event_type": "Arrive",
+///       "object_type": "Truck",
+///       "histogram": [
+///         { "count": 1, "frequency": 7 },
+///         { "count": 2, "frequency": 4 }
+///       ]
+///     }
+///   ]
+/// }
+/// ```
+///     
+///
+/// 
+/// # Arguments
+/// * `log` - A reference to an [`OCEL`] log instance.
+/// 
+/// # Returns
+/// A [`serde_json::Value`] containing the JSON representation of the histograms.
 pub fn build_event_object_histograms(log: &OCEL) -> Value {
     let object_index = build_object_index(log);
     let mut stats: HashMap<(String, String), HashMap<usize, usize>> = HashMap::new();
@@ -123,7 +135,7 @@ mod tests {
     #[tokio::test]
     async fn test_build_event_object_histograms() {
         // 1. Build the path to your OCEL JSON
-        let ocel_path = PathBuf::from("./temp/ocel_v2_123.json");
+        let ocel_path = PathBuf::from("../example_data/ocel/ocel_v2_123.json");
 
         // 2. Read the file
         let ocel_data = tokio_fs::read_to_string(&ocel_path)
