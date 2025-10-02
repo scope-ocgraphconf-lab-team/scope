@@ -5,3 +5,4 @@ pub mod measures;
 pub mod traditional;
 pub mod utils;
 pub mod log_graphs;
+pub mod generic;
