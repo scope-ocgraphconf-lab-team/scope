@@ -1,3 +1,5 @@
+// Handler layer only uses a subset of these helpers; keep the rest available without warnings.
+#![allow(dead_code)]
 use crate::core::case_notion::advanced::advanced_case_notion_for_ot;
 use crate::core::case_notion::connected_component::connected_components_notion;
 use crate::core::case_notion::measures::{

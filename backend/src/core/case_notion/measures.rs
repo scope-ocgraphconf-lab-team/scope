@@ -1,3 +1,5 @@
+// Legacy metrics helpers are still useful ad-hoc, but not all are invoked via the HTTP API.
+#![allow(dead_code)]
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -7,13 +9,13 @@ use std::collections::BTreeSet;
 use std::default::Default;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Measure {
+pub struct Measure {
     name: String,
     value: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Result_Case_Notion {
+struct ResultCaseNotion {
     case_notion: String,
     name_of_event_log: String,
     object_type: String,
@@ -22,16 +24,16 @@ struct Result_Case_Notion {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Runtime_Case_Notion {
+struct RuntimeCaseNotion {
     name_of_event_log: String,
     time: f64,
     method: String,
-    case_notions: Vec<Result_Case_Notion>,
+    case_notions: Vec<ResultCaseNotion>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Results {
-    case_notions: Vec<Runtime_Case_Notion>,
+    case_notions: Vec<RuntimeCaseNotion>,
 }
 
 /*
