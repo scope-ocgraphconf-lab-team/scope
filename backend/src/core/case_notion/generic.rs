@@ -2,7 +2,7 @@ use process_mining::OCEL;
 use process_mining::ocel::ocel_struct::OCELType;
 
 
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 fn generic_notion(
     log: &OCEL,
@@ -13,7 +13,7 @@ fn generic_notion(
     let mut result = vec![];
 
     // used to make lookups faster
-    let start_type_names: HashSet<_> = start_types.iter().map(|t| &t.name).collect();
+    let start_type_names: FxHashSet<_> = start_types.iter().map(|t| &t.name).collect();
 
     let mut start_objects: Vec<_> = log.objects
         .iter()
@@ -26,19 +26,19 @@ fn generic_notion(
 
 
     while !start_objects.is_empty() {
-        let mut events: HashSet<&String> = HashSet::new();
-        let mut objects: HashSet<&String> = HashSet::new();
+        let mut events: FxHashSet<&String> = FxHashSet::default();
+        let mut objects: FxHashSet<&String> = FxHashSet::default();
 
-        let mut events_to_analyse: HashSet<&String> = HashSet::new();
-        let mut objects_to_analyse: HashSet<&String> = HashSet::new();
+        let mut events_to_analyse: FxHashSet<&String> = FxHashSet::default();
+        let mut objects_to_analyse: FxHashSet<&String> = FxHashSet::default();
 
         let o = start_objects.pop().unwrap();
         objects.insert(&o.id);
         objects_to_analyse.insert(&o.id);
 
         loop {
-            let mut new_objects: HashSet<&String> = HashSet::new();
-            let mut new_events: HashSet<&String>  = HashSet::new();
+            let mut new_objects: FxHashSet<&String> = FxHashSet::default();
+            let mut new_events: FxHashSet<&String>  = FxHashSet::default();
 
             // Step 1: from objects → other objects (O2O)
             for obj_id in &objects_to_analyse {
@@ -100,10 +100,10 @@ fn generic_notion(
 pub fn build_o2o_map(
     log: &OCEL,
     o2o_relations: &Vec<(OCELType, OCELType)>,
-) -> HashMap<String, Vec<String>> {
+) -> FxHashMap<String, Vec<String>> {
     // Precompute allowed type-pairs (by name, not struct)
-    let allowed: HashMap<&str, Vec<&str>> = {
-        let mut map: HashMap<&str, Vec<&str>> = HashMap::new();
+    let allowed: FxHashMap<&str, Vec<&str>> = {
+        let mut map: FxHashMap<&str, Vec<&str>> = FxHashMap::default();
         for (src, tgt) in o2o_relations {
             map.entry(&tgt.name)
                 .or_default()
@@ -113,11 +113,11 @@ pub fn build_o2o_map(
     };
 
     // Build a lookup: object_id -> object_type
-    let type_of: HashMap<&str, &str> =
+    let type_of: FxHashMap<&str, &str> =
         log.objects.iter().map(|o| (o.id.as_str(), o.object_type.as_str())).collect();
 
     // Result map: for each o', which o’s are reachable
-    let mut o2o_map: HashMap<String, Vec<String>> = HashMap::new();
+    let mut o2o_map: FxHashMap<String, Vec<String>> = FxHashMap::default();
 
     for o in &log.objects {
         let o_type = o.object_type.as_str();
@@ -146,10 +146,10 @@ pub fn build_o2o_map(
 pub fn build_e2o_map(
     log: &OCEL,
     e2o_relations: &Vec<(OCELType, OCELType)>,
-) -> HashMap<String, Vec<String>> {
+) -> FxHashMap<String, Vec<String>> {
     // Precompute allowed pairs: event_type -> allowed object_types
-    let allowed: HashMap<&str, Vec<&str>> = {
-        let mut map: HashMap<&str, Vec<&str>> = HashMap::new();
+    let allowed: FxHashMap<&str, Vec<&str>> = {
+        let mut map: FxHashMap<&str, Vec<&str>> = FxHashMap::default();
         for (evt, obj) in e2o_relations {
             map.entry(&evt.name)
                 .or_default()
@@ -159,11 +159,11 @@ pub fn build_e2o_map(
     };
 
     // Object lookup: object_id -> object_type
-    let type_of: HashMap<&str, &str> =
+    let type_of: FxHashMap<&str, &str> =
         log.objects.iter().map(|o| (o.id.as_str(), o.object_type.as_str())).collect();
 
     // Result: event_id -> reachable objects
-    let mut e2o_map: HashMap<String, Vec<String>> = HashMap::new();
+    let mut e2o_map: FxHashMap<String, Vec<String>> = FxHashMap::default();
 
     for e in &log.events {
         let evt_type = e.event_type.as_str();
@@ -193,10 +193,10 @@ pub fn build_e2o_map(
 pub fn build_o2e_map(
     log: &OCEL,
     e2o_relations: &Vec<(OCELType, OCELType)>,
-) -> HashMap<String, Vec<String>> {
+) -> FxHashMap<String, Vec<String>> {
     // Precompute allowed pairs: object_type -> allowed event_types
-    let allowed: HashMap<&str, Vec<&str>> = {
-        let mut map: HashMap<&str, Vec<&str>> = HashMap::new();
+    let allowed: FxHashMap<&str, Vec<&str>> = {
+        let mut map: FxHashMap<&str, Vec<&str>> = FxHashMap::default();
         for (evt, obj) in e2o_relations {
             map.entry(&obj.name)
                 .or_default()
@@ -206,11 +206,11 @@ pub fn build_o2e_map(
     };
 
     // Object lookup: object_id -> object_type
-    let type_of: HashMap<&str, &str> =
+    let type_of: FxHashMap<&str, &str> =
         log.objects.iter().map(|o| (o.id.as_str(), o.object_type.as_str())).collect();
 
     // Result: object_id -> reachable events
-    let mut o2e_map: HashMap<String, Vec<String>> = HashMap::new();
+    let mut o2e_map: FxHashMap<String, Vec<String>> = FxHashMap::default();
 
     for e in &log.events {
         let evt_type = e.event_type.as_str();
@@ -235,9 +235,9 @@ pub fn build_o2e_map(
 
 /// HELPER FUNCTION
 /// Build a sub-OCEL containing only the collected events/objects and their types.
-fn build_case(log: &OCEL, events: &HashSet<&String>, objects: &HashSet<&String>) -> OCEL {
+fn build_case(log: &OCEL, events: &FxHashSet<&String>, objects: &FxHashSet<&String>) -> OCEL {
     // Precompute the referenced event types
-    let mut used_event_types: HashSet<&String> = HashSet::new();
+    let mut used_event_types: FxHashSet<&String> = FxHashSet::default();
     let filtered_events: Vec<_> = log.events
         .iter()
         .filter(|e| events.contains(&e.id))
@@ -248,7 +248,7 @@ fn build_case(log: &OCEL, events: &HashSet<&String>, objects: &HashSet<&String>)
         .collect();
 
     // Precompute the referenced object types
-    let mut used_object_types: HashSet<&String> = HashSet::new();
+    let mut used_object_types: FxHashSet<&String> = FxHashSet::default();
     let filtered_objects: Vec<_> = log.objects
         .iter()
         .filter(|o| objects.contains(&o.id))
