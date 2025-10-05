@@ -87,8 +87,17 @@ const OcptVisualizationNode = memo<NodeProps<TVisualizationNode>>((node) => {
                     </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 ml-1">
-                                <ChevronDown className="h-4 w-4" />
+                            <Button variant="ghost" className="h-6 px-2 ml-1 flex items-center gap-1.5" aria-label="Filter object types">
+                                <div className="flex items-center gap-1">
+                                    {viewState.filteredObjectTypes.map((ot) => (
+                                        <div
+                                            key={ot}
+                                            className="h-2.5 w-2.5 rounded-full"
+                                            style={{ backgroundColor: colorScale(ot) }}
+                                        />
+                                    ))}
+                                </div>
+                                <ChevronDown className="h-4 w-4 opacity-50" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
