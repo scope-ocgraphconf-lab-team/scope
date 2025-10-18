@@ -1,5 +1,6 @@
-import { DragEvent, useCallback, useMemo, useEffect } from 'react';
+import { DragEvent, useCallback, useMemo } from 'react';
 import { Background, Controls, ReactFlow, ReactFlowProvider } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import { DnDProvider, useDnD } from '~/components/explore/DndContext';
@@ -13,8 +14,11 @@ import { useExploreEventHandlers } from '~/hooks/useExploreEventHandlers';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 import { Logger } from '~/lib/logger';
+
 import EventGraphVisualizationNode from '~/components/explore/visualization/EventGraphVisualizationNode';
 import OcelMinerNode from '~/components/explore/miner/OcelMinerNode';
+
+
 
 const logger = Logger.getInstance();
 

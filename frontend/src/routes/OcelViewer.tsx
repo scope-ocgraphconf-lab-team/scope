@@ -129,14 +129,14 @@ import AppSidebar from '~/components/AppSidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import OcelVisualization from '~/components/ocel/OcelVisualization';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { useColorScaleStore } from '~/stores/store';
+// import { useColorScaleStore } from '~/stores/store';
 import type { VisualizationExploreNodeData } from '~/types/explore';
 
 const OcelViewer: React.FC = () => {
     const [fileId, setFileId] = useState<string | null>(null);
     const { nodeId } = useParams<{ nodeId: string }>();
     const { getNode } = useExploreFlowStore();
-    const { colorScale } = useColorScaleStore();
+    // const { colorScale } = useColorScaleStore();
 
     // Restore the saved flow from localStorage
     useEffect(() => {
@@ -195,7 +195,7 @@ const OcelViewer: React.FC = () => {
                         </div>
                     )}
                 </div>
-                <AppSidebar coloring={colorScale} objectTypes={[]} />
+                {/* <AppSidebar coloring={colorScale} objectTypes={[]} /> */}
             </div>
         </SidebarProvider>
     );
