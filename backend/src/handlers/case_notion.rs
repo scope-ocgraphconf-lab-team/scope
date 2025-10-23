@@ -1,7 +1,11 @@
+use crate::core::case_notion::log_graphs::build_log_graph_type_level;
 use crate::core::case_notion::main::{
     CaseMeasure, CaseNotionCase, CaseNotionContext, CaseNotionEvaluation,
-    best_advanced_case_notion, best_traditional_case_notion, case_notion_to_cases,
-    case_notion_to_ocels, connected_components_case_notion, sanitize_for_file_name,
+    best_advanced_case_notion, case_notion_to_cases, case_notion_to_ocels,
+    connected_components_case_notion, sanitize_for_file_name,
+};
+use crate::core::case_notion::traditional::{
+    traditional_case_notion, traditional_case_notion_type_level,
 };
 use crate::models::ocel::OCEL;
 use axum::{
@@ -11,7 +15,7 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use serde_json;
+use serde_json::Value;
 use tokio::fs;
 use uuid::Uuid;
 
@@ -44,6 +48,16 @@ struct CaseOcelFile {
     total_score: f64,
     f1_score: Option<f64>,
     cases: Vec<OCEL>,
+}
+
+#[derive(Serialize)]
+struct TraditionalTypeLevelResponse {
+    case_notion: &'static str,
+    object_type: String,
+    measures: Vec<CaseMeasure>,
+    total_score: f64,
+    f1_score: Option<f64>,
+    graph: Value,
 }
 
 enum ObjectTypeSelection {
@@ -159,10 +173,77 @@ pub async fn get_traditional_case_notion(
     Query(query): Query<CaseNotionQuery>,
 ) -> impl IntoResponse {
     let selection = ObjectTypeSelection::from_query_param(query.object_type);
-    match compute_response(CaseKind::Traditional, file_id, selection).await {
-        Ok(payload) => (StatusCode::OK, Json(payload)).into_response(),
-        Err((status, msg)) => (status, msg).into_response(),
+
+    let path = format!("./temp/ocel_v2_{}.json", file_id);
+    let content = match fs::read_to_string(&path).await {
+        Ok(data) => data,
+        Err(err) => {
+            eprintln!("read OCEL log failed: {err}");
+            let response = if err.kind() == std::io::ErrorKind::NotFound {
+                (
+                    StatusCode::NOT_FOUND,
+                    format!("No OCEL v2 file found for fileId: {}", file_id),
+                )
+            } else {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to read stored OCEL log".to_string(),
+                )
+            };
+            return response.into_response();
+        }
+    };
+
+    let ocel: OCEL = match serde_json::from_str(&content) {
+        Ok(log) => log,
+        Err(err) => {
+            eprintln!("parse OCEL log failed: {err}");
+            let response = (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Stored OCEL log is not valid JSON".to_string(),
+            );
+            return response.into_response();
+        }
+    };
+
+    let context = CaseNotionContext::new(&ocel);
+
+    let evaluation = match &selection {
+        ObjectTypeSelection::Specific(requested) => traditional_case_notion(
+            &context,
+            Some(requested.as_str()),
+        ),
+        ObjectTypeSelection::Default => traditional_case_notion(&context, None),
     }
+    .ok_or_else(|| not_found_response(CaseKind::Traditional, &selection));
+
+    let evaluation = match evaluation {
+        Ok(evaluation) => evaluation,
+        Err(response) => return response.into_response(),
+    };
+
+    let object_type = match evaluation.object_type.clone() {
+        Some(object_type) => object_type,
+        None => {
+            let response = not_found_response(CaseKind::Traditional, &selection);
+            return response.into_response();
+        }
+    };
+
+    let graph = build_log_graph_type_level(&ocel);
+    let partitioned_graph =
+        traditional_case_notion_type_level(&graph, object_type.as_str());
+
+    let response = TraditionalTypeLevelResponse {
+        case_notion: CaseKind::Traditional.label(),
+        object_type,
+        measures: evaluation.measures.clone(),
+        total_score: evaluation.total_score,
+        f1_score: evaluation.f1_score,
+        graph: partitioned_graph,
+    };
+
+    (StatusCode::OK, Json(response)).into_response()
 }
 
 async fn compute_response(
@@ -199,9 +280,10 @@ async fn compute_response(
     let evaluation = match kind {
         CaseKind::Advanced => best_advanced_case_notion(&context, selection.as_option())
             .ok_or_else(|| not_found_response(kind, &selection))?,
-        CaseKind::Traditional => best_traditional_case_notion(&context, selection.as_option())
-            .ok_or_else(|| not_found_response(kind, &selection))?,
         CaseKind::ConnectedComponents => connected_components_case_notion(&context),
+        CaseKind::Traditional => unreachable!(
+            "Traditional case notion responses are handled directly in the handler"
+        ),
     };
 
     build_response(kind, file_id, evaluation, &context).await
