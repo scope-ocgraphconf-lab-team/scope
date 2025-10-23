@@ -1,8 +1,9 @@
+use crate::core::case_notion::connected_component::connected_components_notion;
 use crate::core::case_notion::log_graphs::build_log_graph_type_level;
 use crate::core::case_notion::main::{
-    CaseMeasure, CaseNotionCase, CaseNotionContext, CaseNotionEvaluation,
-    best_advanced_case_notion, case_notion_to_cases, case_notion_to_ocels,
-    connected_components_case_notion, sanitize_for_file_name,
+    CaseMeasure, CaseNotionCase, CaseNotionContext, CaseNotionEvaluation, average_score,
+    best_advanced_case_notion, case_notion_to_cases, case_notion_to_ocels, calculate_measures,
+    f1_from_measures, sanitize_for_file_name,
 };
 use crate::core::case_notion::traditional::{
     traditional_case_notion, traditional_case_notion_type_level,
@@ -35,6 +36,8 @@ struct CaseNotionResponse {
     measures: Vec<CaseMeasure>,
     total_score: f64,
     f1_score: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    type_level_graph: Option<Value>,
     saved_as: String,
 }
 
@@ -156,14 +159,78 @@ pub async fn get_advanced_case_notion(
 pub async fn get_connected_components_case_notion(
     Path(file_id): Path<String>,
 ) -> impl IntoResponse {
-    match compute_response(
+    let path = format!("./temp/ocel_v2_{}.json", file_id);
+    let content = match fs::read_to_string(&path).await {
+        Ok(data) => data,
+        Err(err) => {
+            eprintln!("read OCEL log failed: {err}");
+            let response = if err.kind() == std::io::ErrorKind::NotFound {
+                (
+                    StatusCode::NOT_FOUND,
+                    format!("No OCEL v2 file found for fileId: {}", file_id),
+                )
+            } else {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to read stored OCEL log".to_string(),
+                )
+            };
+            return response.into_response();
+        }
+    };
+
+    let ocel: OCEL = match serde_json::from_str(&content) {
+        Ok(log) => log,
+        Err(err) => {
+            eprintln!("parse OCEL log failed: {err}");
+            let response = (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Stored OCEL log is not valid JSON".to_string(),
+            );
+            return response.into_response();
+        }
+    };
+
+    let context = CaseNotionContext::new(&ocel);
+
+    let case_notion = connected_components_notion(
+        context.cleaned_event_identifiers().clone(),
+        context.object_identifiers().clone(),
+    );
+
+    let measures = calculate_measures(
+        &case_notion,
+        context.event_identifiers(),
+        context.object_identifiers(),
+        context.arches(),
+        context.total_number_of_objects(),
+        context.total_number_of_events(),
+    );
+    let total_score = average_score(&measures);
+    let f1_score = f1_from_measures(&measures);
+
+    let evaluation = CaseNotionEvaluation {
+        object_type: None,
+        measures,
+        total_score,
+        f1_score,
+        case_notion,
+    };
+
+    let type_level_graph = build_log_graph_type_level(&ocel);
+
+    match build_response(
         CaseKind::ConnectedComponents,
         file_id,
-        ObjectTypeSelection::Default,
+        evaluation,
+        &context,
     )
     .await
     {
-        Ok(payload) => (StatusCode::OK, Json(payload)).into_response(),
+        Ok(mut payload) => {
+            payload.type_level_graph = Some(type_level_graph);
+            (StatusCode::OK, Json(payload)).into_response()
+        }
         Err((status, msg)) => (status, msg).into_response(),
     }
 }
@@ -280,7 +347,9 @@ async fn compute_response(
     let evaluation = match kind {
         CaseKind::Advanced => best_advanced_case_notion(&context, selection.as_option())
             .ok_or_else(|| not_found_response(kind, &selection))?,
-        CaseKind::ConnectedComponents => connected_components_case_notion(&context),
+        CaseKind::ConnectedComponents => unreachable!(
+            "Connected components handler computes its own response without compute_response"
+        ),
         CaseKind::Traditional => unreachable!(
             "Traditional case notion responses are handled directly in the handler"
         ),
@@ -318,6 +387,7 @@ async fn build_response(
         measures: evaluation.measures.clone(),
         total_score: evaluation.total_score,
         f1_score: evaluation.f1_score,
+        type_level_graph: None,
         saved_as,
     })
 }

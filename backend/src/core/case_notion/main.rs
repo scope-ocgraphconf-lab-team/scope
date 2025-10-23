@@ -367,31 +367,6 @@ fn evaluate_advanced_case_notion_for_object_type(
     })
 }
 
-pub fn connected_components_case_notion(context: &CaseNotionContext) -> CaseNotionEvaluation {
-    let case_notion = connected_components_notion(
-        context.cleaned_event_identifiers().clone(),
-        context.object_identifiers().clone(),
-    );
-
-    let measures = calculate_measures(
-        &case_notion,
-        context.event_identifiers(),
-        context.object_identifiers(),
-        context.arches(),
-        context.total_number_of_objects(),
-        context.total_number_of_events(),
-    );
-    let total_score = average_score(&measures);
-    let f1_score = f1_from_measures(&measures);
-
-    CaseNotionEvaluation {
-        object_type: None,
-        measures,
-        total_score,
-        f1_score,
-        case_notion,
-    }
-}
 #[derive(Clone, Copy)]
 enum CaseMethod {
     AdvancedMt,
