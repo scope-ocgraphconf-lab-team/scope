@@ -266,7 +266,7 @@ fn measure_value(measures: &[CaseMeasure], target: &str) -> Option<f64> {
     measures.iter().find(|m| m.name == target).map(|m| m.value)
 }
 
-fn f1_from_measures(measures: &[CaseMeasure]) -> Option<f64> {
+pub(crate) fn f1_from_measures(measures: &[CaseMeasure]) -> Option<f64> {
     let simplicity = measure_value(measures, "Normal Simplicity")?;
     let correctness = measure_value(measures, "Correctness")?;
     if simplicity + correctness > 0.0 {
@@ -276,7 +276,7 @@ fn f1_from_measures(measures: &[CaseMeasure]) -> Option<f64> {
     }
 }
 
-fn is_better_evaluation(
+pub(crate) fn is_better_evaluation(
     candidate: &CaseNotionEvaluation,
     current: Option<&CaseNotionEvaluation>,
 ) -> bool {
@@ -315,6 +315,7 @@ pub fn best_advanced_case_notion(
             }
             evaluate_advanced_case_notion_for_object_type(context, requested)
         }
+        // no starting object-type, so try every possible object-type
         None => {
             let mut best: Option<CaseNotionEvaluation> = None;
             for object_type in context.sorted_object_types() {
@@ -341,68 +342,6 @@ fn evaluate_advanced_case_notion_for_object_type(
         object_type.to_string(),
         context.divergence_map(),
     );
-
-    if case_notion.is_empty() {
-        return None;
-    }
-
-    let measures = calculate_measures(
-        &case_notion,
-        context.event_identifiers(),
-        context.object_identifiers(),
-        context.arches(),
-        context.total_number_of_objects(),
-        context.total_number_of_events(),
-    );
-    let total_score = average_score(&measures);
-    let f1_score = f1_from_measures(&measures);
-
-    Some(CaseNotionEvaluation {
-        object_type: Some(object_type.to_string()),
-        measures,
-        total_score,
-        f1_score,
-        case_notion,
-    })
-}
-
-pub fn best_traditional_case_notion(
-    context: &CaseNotionContext,
-    object_type: Option<&str>,
-) -> Option<CaseNotionEvaluation> {
-    match object_type {
-        Some(requested) => {
-            if !context
-                .sorted_object_types()
-                .iter()
-                .any(|ot| ot == requested)
-            {
-                return None;
-            }
-            evaluate_traditional_case_notion_for_object_type(context, requested)
-        }
-        None => {
-            let mut best: Option<CaseNotionEvaluation> = None;
-            for object_type in context.sorted_object_types() {
-                if let Some(evaluation) =
-                    evaluate_traditional_case_notion_for_object_type(context, object_type)
-                {
-                    if is_better_evaluation(&evaluation, best.as_ref()) {
-                        best = Some(evaluation);
-                    }
-                }
-            }
-            best
-        }
-    }
-}
-
-fn evaluate_traditional_case_notion_for_object_type(
-    context: &CaseNotionContext,
-    object_type: &str,
-) -> Option<CaseNotionEvaluation> {
-    let case_notion =
-        traditional_case_notion_for_ot(context.object_identifiers(), object_type.to_string());
 
     if case_notion.is_empty() {
         return None;
