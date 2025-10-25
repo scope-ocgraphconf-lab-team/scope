@@ -1,16 +1,19 @@
-import { Plus } from 'lucide-react';
+import { FileX, Plus } from 'lucide-react';
 import { Button } from '~/components/ui/button';
-import { ASSET_TYPE_VISUALS } from '~/lib/assetIconMap';
+import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
 import type { ExtendedFile } from '~/types/fileObject.types';
 
 interface FileShowcaseProps {
     file: ExtendedFile;
-    onFileSelect: (file: ExtendedFile) => void;
+    onFileSelect?: (file: ExtendedFile) => void;
+    onFileRemove?: (file: ExtendedFile) => void;
 }
 
-const FileShowcase: React.FC<FileShowcaseProps> = ({ file, onFileSelect }) => {
+const FileShowcase: React.FC<FileShowcaseProps> = ({ file, onFileSelect, onFileRemove }) => {
     const useFile = () => {
-        onFileSelect(file);
+        if (onFileSelect) {
+            onFileSelect(file);
+        }
     };
 
     const formatBytes = (bytes: number, decimals = 2) => {
@@ -37,7 +40,7 @@ const FileShowcase: React.FC<FileShowcaseProps> = ({ file, onFileSelect }) => {
     const Icon = visual.icon;
 
     return (
-        <div className="flex items-center w-full px-4 py-3">
+        <div className="flex items-center w-full px-4 py-3 border-gray-200 border-y-[1px]">
             <div className="mr-3 h-6 w-6 flex-shrink-0">
                 <Icon className={`h-6 w-6 ${visual.color}`} />
             </div>
@@ -49,11 +52,19 @@ const FileShowcase: React.FC<FileShowcaseProps> = ({ file, onFileSelect }) => {
                     {formatBytes(file.size)} - Modified {formatDate(file.lastModified)}
                 </p>
             </div>
-            <div className="ml-4 flex-shrink-0">
-                <Button onClick={useFile} variant="outline" size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Select
-                </Button>
+            <div className="ml-4 flex-shrink-0 flex space-x-2">
+                {onFileSelect && (
+                    <Button onClick={useFile} variant="outline" size="sm">
+                        <Plus className="h-4 w-4" />
+                        Select
+                    </Button>
+                )}
+                {onFileRemove && (
+                    <Button onClick={() => onFileRemove(file)} variant="destructive" size="sm">
+                        <FileX className="h-4 w-4" />
+                        Remove
+                    </Button>
+                )}
             </div>
         </div>
     );

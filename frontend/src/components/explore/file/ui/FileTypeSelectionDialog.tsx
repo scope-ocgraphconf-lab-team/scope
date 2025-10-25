@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Button } from '~/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '~/components/ui/dialog';
-import { ASSET_TYPE_VISUALS } from '~/lib/assetIconMap';
+import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
 import type { FileType } from '~/types/files.types';
 
 interface FileTypeSelectionDialogProps {
