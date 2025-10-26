@@ -7,9 +7,7 @@ use crate::core::case_notion::main::{
     CaseMeasure, CaseNotionCase, CaseNotionContext, CaseNotionEvaluation,
 };
 use crate::core::case_notion::measures::{average_score, calculate_measures, f1_from_measures};
-use crate::core::case_notion::utils::{
-    case_notion_to_cases, case_notion_to_ocels, sanitize_for_file_name,
-};
+use crate::core::case_notion::utils::{case_notion_to_cases, case_notion_to_ocels};
 use crate::core::case_notion::traditional::{
     traditional_case_notion, traditional_case_notion_type_level,
 };
@@ -23,7 +21,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::fs;
-use uuid::Uuid;
+use rustc_hash::FxHashSet;
 
 
 #[derive(Deserialize)]
@@ -35,7 +33,7 @@ pub(crate) struct CaseNotionQuery {
 struct CaseNotionResponse {
     case_notion: &'static str,
     file_id: String,
-    export_id: String,
+    source_ocel_file: String,
     object_type: Option<String>,
     cases: Vec<CaseNotionCase>,
     measures: Vec<CaseMeasure>,
@@ -43,19 +41,10 @@ struct CaseNotionResponse {
     f1_score: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     type_level_graph: Option<Value>,
-    saved_as: String,
-}
-
-#[derive(Serialize)]
-struct CaseOcelFile {
-    case_notion: &'static str,
-    export_id: String,
-    file_id: String,
-    object_type: Option<String>,
-    measures: Vec<CaseMeasure>,
-    total_score: f64,
-    f1_score: Option<f64>,
-    cases: Vec<OCEL>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    export_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    saved_as: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -99,14 +88,6 @@ enum CaseKind {
 }
 
 impl CaseKind {
-    fn key(self) -> &'static str {
-        match self {
-            CaseKind::Advanced => "acn_mt",
-            CaseKind::ConnectedComponents => "cccn",
-            CaseKind::Traditional => "tdcn",
-        }
-    }
-
     fn label(self) -> &'static str {
         match self {
             CaseKind::Advanced => "Advanced Case Notion",
@@ -209,40 +190,19 @@ pub async fn get_advanced_case_notion(
     );
 
     let cases = case_notion_to_cases(&evaluation.case_notion);
-    let ocels = case_notion_to_ocels(
-        &evaluation.case_notion,
-        context.cleaned_event_identifiers(),
-        context.object_identifiers(),
-        context.event_type_defs(),
-        context.object_type_defs(),
-        context.default_timestamp(),
-        context.event_lookup(),
-        context.object_lookup(),
-    );
-
-    let (export_id, saved_as) = match persist_case_ocels(
-        &file_id,
-        CaseKind::Advanced,
-        &evaluation,
-        ocels,
-    )
-    .await
-    {
-        Ok(pair) => pair,
-        Err((status, msg)) => return (status, msg).into_response(),
-    };
 
     let payload = CaseNotionResponse {
         case_notion: CaseKind::Advanced.label(),
         file_id,
-        export_id,
+        source_ocel_file: path,
+        export_id: None,
         object_type: evaluation.object_type.clone(),
         cases,
         measures: evaluation.measures.clone(),
         total_score: evaluation.total_score,
         f1_score: evaluation.f1_score,
         type_level_graph: Some(type_level_graph),
-        saved_as,
+        saved_as: None,
     };
 
     (StatusCode::OK, Json(payload)).into_response()
@@ -311,20 +271,14 @@ pub async fn get_connected_components_case_notion(
 
     let type_level_graph = build_log_graph_type_level(&ocel);
 
-    match build_response(
+    let mut payload = build_response(
         CaseKind::ConnectedComponents,
         file_id,
+        path,
         evaluation,
-        &context,
-    )
-    .await
-    {
-        Ok(mut payload) => {
-            payload.type_level_graph = Some(type_level_graph);
-            (StatusCode::OK, Json(payload)).into_response()
-        }
-        Err((status, msg)) => (status, msg).into_response(),
-    }
+    );
+    payload.type_level_graph = Some(type_level_graph);
+    (StatusCode::OK, Json(payload)).into_response()
 }
 
 pub async fn get_traditional_case_notion(
@@ -405,15 +359,36 @@ pub async fn get_traditional_case_notion(
     (StatusCode::OK, Json(response)).into_response()
 }
 
-async fn build_response(
+fn build_response(
     kind: CaseKind,
     file_id: String,
+    source_ocel_file: String,
     evaluation: CaseNotionEvaluation,
-    context: &CaseNotionContext,
-) -> Result<CaseNotionResponse, (StatusCode, String)> {
+) -> CaseNotionResponse {
     let cases = case_notion_to_cases(&evaluation.case_notion);
-    let ocels = case_notion_to_ocels(
-        &evaluation.case_notion,
+
+    CaseNotionResponse {
+        case_notion: kind.label(),
+        file_id,
+        source_ocel_file,
+        export_id: None,
+        object_type: evaluation.object_type.clone(),
+        cases,
+        measures: evaluation.measures.clone(),
+        total_score: evaluation.total_score,
+        f1_score: evaluation.f1_score,
+        type_level_graph: None,
+        saved_as: None,
+    }
+}
+
+pub fn get_case_ocel(
+    case_notion: &FxHashSet<(Vec<String>, Vec<String>, Vec<(String, String)>)>,
+    ocel: &OCEL,
+) -> Vec<OCEL> {
+    let context = CaseNotionContext::new(ocel);
+    case_notion_to_ocels(
+        case_notion,
         context.cleaned_event_identifiers(),
         context.object_identifiers(),
         context.event_type_defs(),
@@ -421,76 +396,5 @@ async fn build_response(
         context.default_timestamp(),
         context.event_lookup(),
         context.object_lookup(),
-    );
-
-    let (export_id, saved_as) = persist_case_ocels(&file_id, kind, &evaluation, ocels).await?;
-
-    Ok(CaseNotionResponse {
-        case_notion: kind.label(),
-        file_id,
-        export_id,
-        object_type: evaluation.object_type.clone(),
-        cases,
-        measures: evaluation.measures.clone(),
-        total_score: evaluation.total_score,
-        f1_score: evaluation.f1_score,
-        type_level_graph: None,
-        saved_as,
-    })
-}
-
-async fn persist_case_ocels(
-    file_id: &str,
-    kind: CaseKind,
-    evaluation: &CaseNotionEvaluation,
-    ocels: Vec<OCEL>,
-) -> Result<(String, String), (StatusCode, String)> {
-    ensure_temp_dir().await?;
-
-    let export_id = Uuid::new_v4().to_string();
-    let mut filename = format!("./temp/case_notion_{}_{}", kind.key(), &export_id);
-    if let Some(object_type) = evaluation.object_type.as_deref() {
-        filename.push('_');
-        filename.push_str(&sanitize_for_file_name(object_type));
-    }
-    filename.push_str(".json");
-
-    let payload = CaseOcelFile {
-        case_notion: kind.label(),
-        export_id: export_id.clone(),
-        file_id: file_id.to_string(),
-        object_type: evaluation.object_type.clone(),
-        measures: evaluation.measures.clone(),
-        total_score: evaluation.total_score,
-        f1_score: evaluation.f1_score,
-        cases: ocels,
-    };
-
-    let data = serde_json::to_string_pretty(&payload).map_err(|err| {
-        eprintln!("serialize case notion OCELs failed: {err}");
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to serialize case notion OCELs".to_string(),
-        )
-    })?;
-
-    fs::write(&filename, data).await.map_err(|err| {
-        eprintln!("write case notion OCELs failed: {err}");
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to persist case notion OCELs".to_string(),
-        )
-    })?;
-
-    Ok((export_id, filename))
-}
-
-async fn ensure_temp_dir() -> Result<(), (StatusCode, String)> {
-    fs::create_dir_all("./temp").await.map_err(|err| {
-        eprintln!("prepare temp dir failed: {err}");
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Failed to prepare temp directory".to_string(),
-        )
-    })
+    )
 }
