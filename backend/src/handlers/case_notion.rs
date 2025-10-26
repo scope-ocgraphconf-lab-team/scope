@@ -1,10 +1,14 @@
-use crate::core::case_notion::advanced::best_advanced_case_notion;
+use crate::core::case_notion::advanced::{
+    advanced_case_notion_type_level, best_advanced_case_notion,
+};
 use crate::core::case_notion::connected_component::connected_components_notion;
 use crate::core::case_notion::log_graphs::build_log_graph_type_level;
 use crate::core::case_notion::main::{
-    CaseMeasure, CaseNotionCase, CaseNotionContext, CaseNotionEvaluation, average_score,
-    case_notion_to_cases, case_notion_to_ocels, calculate_measures, f1_from_measures,
-    sanitize_for_file_name,
+    CaseMeasure, CaseNotionCase, CaseNotionContext, CaseNotionEvaluation,
+};
+use crate::core::case_notion::measures::{average_score, calculate_measures, f1_from_measures};
+use crate::core::case_notion::utils::{
+    case_notion_to_cases, case_notion_to_ocels, sanitize_for_file_name,
 };
 use crate::core::case_notion::traditional::{
     traditional_case_notion, traditional_case_notion_type_level,
@@ -84,12 +88,6 @@ impl ObjectTypeSelection {
         }
     }
 
-    fn as_option(&self) -> Option<&str> {
-        match self {
-            ObjectTypeSelection::Default => None,
-            ObjectTypeSelection::Specific(value) => Some(value.as_str()),
-        }
-    }
 }
 
 
@@ -151,10 +149,103 @@ pub async fn get_advanced_case_notion(
     Query(query): Query<CaseNotionQuery>,
 ) -> impl IntoResponse {
     let selection = ObjectTypeSelection::from_query_param(query.object_type);
-    match compute_response(CaseKind::Advanced, file_id, selection).await {
-        Ok(payload) => (StatusCode::OK, Json(payload)).into_response(),
-        Err((status, msg)) => (status, msg).into_response(),
-    }
+
+    let path = format!("./temp/ocel_v2_{}.json", file_id);
+    let content = match fs::read_to_string(&path).await {
+        Ok(data) => data,
+        Err(err) => {
+            eprintln!("read OCEL log failed: {err}");
+            let response = if err.kind() == std::io::ErrorKind::NotFound {
+                (
+                    StatusCode::NOT_FOUND,
+                    format!("No OCEL v2 file found for fileId: {}", file_id),
+                )
+            } else {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to read stored OCEL log".to_string(),
+                )
+            };
+            return response.into_response();
+        }
+    };
+
+    let ocel: OCEL = match serde_json::from_str(&content) {
+        Ok(log) => log,
+        Err(err) => {
+            eprintln!("parse OCEL log failed: {err}");
+            let response = (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Stored OCEL log is not valid JSON".to_string(),
+            );
+            return response.into_response();
+        }
+    };
+
+    let context = CaseNotionContext::new(&ocel);
+
+    let evaluation = match &selection {
+        ObjectTypeSelection::Specific(requested) => {
+            best_advanced_case_notion(&context, Some(requested.as_str()))
+        }
+        ObjectTypeSelection::Default => best_advanced_case_notion(&context, None),
+    };
+
+    let evaluation = match evaluation {
+        Some(evaluation) => evaluation,
+        None => return not_found_response(CaseKind::Advanced, &selection).into_response(),
+    };
+
+    let object_type = match evaluation.object_type.clone() {
+        Some(object_type) => object_type,
+        None => return not_found_response(CaseKind::Advanced, &selection).into_response(),
+    };
+
+    let graph_value = build_log_graph_type_level(&ocel);
+    let type_level_graph = advanced_case_notion_type_level(
+        &graph_value,
+        object_type.as_str(),
+        context.divergence_map(),
+    );
+
+    let cases = case_notion_to_cases(&evaluation.case_notion);
+    let ocels = case_notion_to_ocels(
+        &evaluation.case_notion,
+        context.cleaned_event_identifiers(),
+        context.object_identifiers(),
+        context.event_type_defs(),
+        context.object_type_defs(),
+        context.default_timestamp(),
+        context.event_lookup(),
+        context.object_lookup(),
+    );
+
+    let (export_id, saved_as) = match persist_case_ocels(
+        &file_id,
+        CaseKind::Advanced,
+        &evaluation,
+        ocels,
+    )
+    .await
+    {
+        Ok(pair) => pair,
+        Err((status, msg)) => return (status, msg).into_response(),
+    };
+
+    let payload = CaseNotionResponse {
+        case_notion: CaseKind::Advanced.label(),
+        file_id,
+        export_id,
+        object_type: evaluation.object_type.clone(),
+        cases,
+        measures: evaluation.measures.clone(),
+        total_score: evaluation.total_score,
+        f1_score: evaluation.f1_score,
+        type_level_graph: Some(type_level_graph),
+        saved_as,
+    };
+
+    (StatusCode::OK, Json(payload)).into_response()
 }
 
 pub async fn get_connected_components_case_notion(
@@ -312,51 +403,6 @@ pub async fn get_traditional_case_notion(
     };
 
     (StatusCode::OK, Json(response)).into_response()
-}
-
-async fn compute_response(
-    kind: CaseKind,
-    file_id: String,
-    selection: ObjectTypeSelection,
-) -> Result<CaseNotionResponse, (StatusCode, String)> {
-    let path = format!("./temp/ocel_v2_{}.json", file_id);
-    let content = fs::read_to_string(&path).await.map_err(|err| {
-        eprintln!("read OCEL log failed: {err}");
-        if err.kind() == std::io::ErrorKind::NotFound {
-            (
-                StatusCode::NOT_FOUND,
-                format!("No OCEL v2 file found for fileId: {}", file_id),
-            )
-        } else {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to read stored OCEL log".to_string(),
-            )
-        }
-    })?;
-
-    let ocel: OCEL = serde_json::from_str(&content).map_err(|err| {
-        eprintln!("parse OCEL log failed: {err}");
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Stored OCEL log is not valid JSON".to_string(),
-        )
-    })?;
-
-    let context = CaseNotionContext::new(&ocel);
-
-    let evaluation = match kind {
-        CaseKind::Advanced => best_advanced_case_notion(&context, selection.as_option())
-            .ok_or_else(|| not_found_response(kind, &selection))?,
-        CaseKind::ConnectedComponents => unreachable!(
-            "Connected components handler computes its own response without compute_response"
-        ),
-        CaseKind::Traditional => unreachable!(
-            "Traditional case notion responses are handled directly in the handler"
-        ),
-    };
-
-    build_response(kind, file_id, evaluation, &context).await
 }
 
 async fn build_response(
