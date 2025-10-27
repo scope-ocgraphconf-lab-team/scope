@@ -13,20 +13,39 @@ use std::{
     collections::BTreeSet,
 };
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Debug)]
 pub struct CaseMeasure {
     pub name: String,
     pub value: f64,
 }
 
 #[derive(Serialize)]
-struct ResultCaseNotion {
+pub struct ResultCaseNotion {
     case_notion: String,
     name_of_event_log: String,
     object_type: String,
     measures: Vec<CaseMeasure>,
     total_score: f64,
 }
+
+impl ResultCaseNotion {
+    pub fn new(
+        case_notion: String,
+        name_of_event_log: String,
+        object_type: String,
+        measures: Vec<CaseMeasure>,
+        total_score: f64,
+    ) -> Self {
+        Self {
+            case_notion,
+            name_of_event_log,
+            object_type,
+            measures,
+            total_score,
+        }
+    }
+}
+
 
 #[derive(Serialize)]
 struct RuntimeCaseNotion {
@@ -55,6 +74,21 @@ pub struct CaseNotionGraphOutput {
     name_of_event_log: String,
     object_type: String,
     cases: Vec<CaseNotionCase>,
+}
+impl CaseNotionGraphOutput {
+    pub fn new(
+        case_notion: String,
+        name_of_event_log: String,
+        object_type: String,
+        cases: Vec<CaseNotionCase>,
+    ) -> Self {
+        Self {
+            case_notion,
+            name_of_event_log,
+            object_type,
+            cases,
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -95,6 +129,69 @@ pub struct CaseNotionContext {
     event_type_defs: Vec<OCELType>,
     object_type_defs: Vec<OCELType>,
     default_timestamp: chrono::DateTime<chrono::FixedOffset>,
+}
+
+impl CaseNotionContext {
+    pub fn total_number_of_events_ref(&self) -> &usize {
+        &self.total_number_of_events
+    }
+
+    pub fn total_number_of_objects_ref(&self) -> &usize {
+        &self.total_number_of_objects
+    }
+
+    pub fn event_identifiers_ref(
+        &self,
+    ) -> &FxHashMap<
+        String,
+        (
+            String,
+            BTreeSet<String>,
+            FxHashMap<String, BTreeSet<String>>,
+        ),
+    > {
+        &self.event_identifiers
+    }
+
+    pub fn object_identifiers_ref(&self) -> &FxHashMap<String, (String, Vec<String>)> {
+        &self.object_identifiers
+    }
+
+    pub fn event_lookup_ref(&self) -> &FxHashMap<String, OCELEvent> {
+        &self.event_lookup
+    }
+
+    pub fn object_lookup_ref(&self) -> &FxHashMap<String, OCELObject> {
+        &self.object_lookup
+    }
+
+    pub fn cleaned_event_identifiers_ref(&self) -> &FxHashMap<String, (String, BTreeSet<String>)> {
+        &self.cleaned_event_identifiers
+    }
+
+    pub fn arches_ref(&self) -> &FxHashSet<(String, String)> {
+        &self.arches
+    }
+
+    pub fn sorted_object_types_ref(&self) -> &Vec<String> {
+        &self.sorted_object_types
+    }
+
+    pub fn divergence_map_ref(&self) -> &FxHashMap<String, FxHashSet<String>> {
+        &self.divergence_map
+    }
+
+    pub fn event_type_defs_ref(&self) -> &Vec<OCELType> {
+        &self.event_type_defs
+    }
+
+    pub fn object_type_defs_ref(&self) -> &Vec<OCELType> {
+        &self.object_type_defs
+    }
+
+    pub fn default_timestamp_ref(&self) -> &chrono::DateTime<chrono::FixedOffset> {
+        &self.default_timestamp
+    }
 }
 
 impl CaseNotionContext {

@@ -5,3 +5,4 @@ pub mod main;
 pub mod measures;
 pub mod traditional;
 pub mod utils;
+pub mod generic;

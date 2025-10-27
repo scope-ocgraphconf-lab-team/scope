@@ -11,6 +11,9 @@ use crate::core::case_notion::utils::{case_notion_to_cases, case_notion_to_ocels
 use crate::core::case_notion::traditional::{
     traditional_case_notion, traditional_case_notion_type_level,
 };
+use crate::traits::import_export::ImportableFromPath;
+use crate::core::case_notion::generic::generic_case_notion;
+use crate::models::case_notion::GenericCaseNotion;
 use crate::models::ocel::OCEL;
 use axum::{
     Json,
@@ -358,6 +361,46 @@ pub async fn get_traditional_case_notion(
 
     (StatusCode::OK, Json(response)).into_response()
 }
+
+
+pub async fn post_generic_case_notion(
+    Path(file_id): Path<String>,
+    Json(payload): Json<GenericCaseNotion>,
+) -> Result<impl IntoResponse, (StatusCode, String)> { 
+    log::debug!("Received GenericCaseNotion for file_id: {}", file_id);
+    log::debug!("Payload: {:?}", payload);
+    let ocel = OCEL::import_from_path(&file_id).await?;
+
+    let case_notion = generic_case_notion(&ocel, &payload);
+
+    log::debug!("case_notion: {:?}", case_notion);
+
+    let context = CaseNotionContext::new(&ocel);
+    let measures = calculate_measures(
+        &case_notion,
+        &context.event_identifiers_ref(),
+        &context.object_identifiers_ref(),
+        &context.arches_ref(),
+        *context.total_number_of_objects_ref(),
+        *context.total_number_of_events_ref(),
+    );
+    let total_score = average_score(&measures);
+    let f1_score = f1_from_measures(&measures);
+
+    log::debug!("measures: {:?}", measures);
+
+    let evaluation = CaseNotionEvaluation {
+        object_type: None,
+        measures: measures.clone(),
+        total_score,
+        f1_score,
+        case_notion,
+    };
+    
+    Ok(axum::Json(measures))
+
+}
+
 
 fn build_response(
     kind: CaseKind,
