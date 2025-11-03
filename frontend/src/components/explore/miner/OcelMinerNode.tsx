@@ -1,11 +1,12 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { NodeProps } from '@xyflow/react';
+import { Position } from '@xyflow/react';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useGetOcel } from '~/services/queries';
-import type { BaseExploreNodeAsset, TMinerNode } from '~/types/explore';
-import { Position } from '@xyflow/react';
+import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
+import { MinerNode } from '~/types/explore/nodes';
 
-const OcelMinerNode = memo<NodeProps<TMinerNode>>((node) => {
+const OcelMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const [fileId, setFileId] = useState<null | string>(null);
     const [fileName, setFileName] = useState<string>('');
     const { isLoading, data } = useGetOcel(fileId);
@@ -45,9 +46,7 @@ const OcelMinerNode = memo<NodeProps<TMinerNode>>((node) => {
                 { position: Position.Left, type: 'target' as const },
                 { position: Position.Right, type: 'source' as const },
             ]}
-            dropdownOptions={[
-                { label: 'Change Source', action: 'changeSourceFile' as const },
-            ]}
+            dropdownOptions={[{ label: 'Change Source', action: 'changeSourceFile' as const }]}
             isLoading={isLoading}
         />
     );

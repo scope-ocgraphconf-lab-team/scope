@@ -17,9 +17,9 @@ import BaseVisualizationNode from '~/components/explore/visualization/BaseVisual
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetOcpt } from '~/services/queries';
 import { isFullVisualizationData } from '~/lib/explore/exploreNodes.utils';
-import { TVisualizationNode } from '~/types/explore';
+import { VisualizationNode } from '~/types/explore/nodes';
 
-const OcptVisualizationNode = memo<NodeProps<TVisualizationNode>>((node) => {
+const OcptVisualizationNode = memo<NodeProps<VisualizationNode>>((node) => {
     const [fileId, setFileId] = useState<null | string>(null);
     const { data, isLoading } = useGetOcpt(fileId, true);
     const navigate = useNavigate();

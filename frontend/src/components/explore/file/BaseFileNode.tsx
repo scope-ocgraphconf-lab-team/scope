@@ -2,14 +2,14 @@ import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
 import { useFileDialogStore } from '~/stores/store';
-import type {
+import {
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
     BaseExploreNodeHandleOption,
-    TFileNode,
-} from '~/types/explore';
+} from '~/types/explore/nodeData/baseNodeData';
+import { FileNode } from '~/types/explore/nodes';
 
-interface FileNodeProps extends NodeProps<TFileNode> {
+interface FileNodeProps extends NodeProps<FileNode> {
     title: string;
     iconName: string;
     handleOptions: BaseExploreNodeHandleOption[];

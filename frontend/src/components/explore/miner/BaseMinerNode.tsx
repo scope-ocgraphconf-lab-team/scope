@@ -1,18 +1,18 @@
 import { memo } from 'react';
 import { Pickaxe } from 'lucide-react';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
-import type {
+import {
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
     BaseExploreNodeHandleOption,
-    TMinerNode,
-} from '~/types/explore';
+} from '~/types/explore/nodeData/baseNodeData';
+import { MinerNode } from '~/types/explore/nodes';
 import '~/styles/animations.css';
 
 interface MinerNodeProps {
     id: string;
     selected: boolean;
-    data: TMinerNode['data'];
+    data: MinerNode['data'];
     title: string;
     iconName: string;
     handleOptions: BaseExploreNodeHandleOption[];

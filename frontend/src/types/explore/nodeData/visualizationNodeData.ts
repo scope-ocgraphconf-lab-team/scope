@@ -1,4 +1,4 @@
-import type { BaseExploreNodeData } from '~/types/explore/interfaces/base-node';
+import { BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
 import { JSONSchema } from '~/types/ocpt/ocpt.types';
 
 export interface VisualizationExploreNodeData extends BaseExploreNodeData {

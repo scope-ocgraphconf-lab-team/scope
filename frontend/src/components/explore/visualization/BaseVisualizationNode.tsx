@@ -1,16 +1,16 @@
 import { memo, type ReactNode } from 'react';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
-import type {
+import {
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
     BaseExploreNodeHandleOption,
-    TVisualizationNode,
-} from '~/types/explore';
+} from '~/types/explore/nodeData/baseNodeData';
+import { VisualizationNode } from '~/types/explore/nodes';
 
 interface VisualizationNodeProps {
     id: string;
     selected: boolean;
-    data: TVisualizationNode['data'];
+    data: VisualizationNode['data'];
     title: string;
     iconName: string;
     handleOptions: BaseExploreNodeHandleOption[];

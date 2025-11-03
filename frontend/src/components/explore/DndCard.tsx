@@ -1,6 +1,6 @@
-import type { ElementType, DragEvent } from 'react';
+import type { DragEvent, ElementType } from 'react';
 import { useDnD } from '~/components/explore/DndContext';
-import type { ExploreNodeType } from '~/types/explore';
+import { ExploreNodeType } from '~/types/explore/nodeTypesCategories';
 
 interface DndCardProps {
     title: string;

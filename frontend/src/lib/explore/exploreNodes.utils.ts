@@ -1,27 +1,24 @@
+import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
+import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
+import { ExploreNode, ExploreNodeData, FileNode, MinerNode } from '~/types/explore/nodes';
 import {
-    type ExploreFileNodeType,
-    type ExploreMinerNodeType,
-    type ExploreNodeCategory,
-    type ExploreNodeData,
-    type ExploreNodeType,
-    type ExploreVisualizationNodeType,
-    type FileExploreNodeData,
-    type FileNode,
+    ExploreFileNodeType,
+    ExploreMinerNodeType,
+    ExploreNodeCategory,
+    ExploreNodeType,
+    ExploreVisualizationNodeType,
     fileNodeTypes,
     getNodeCategory,
-    type MinerNode,
     minerNodeTypes,
-    type TExploreNode,
-    type VisualizationExploreNodeData,
     visualizationNodeTypes,
-} from '~/types/explore';
+} from '~/types/explore/nodeTypesCategories';
 import type { VisualizationExploreNode } from '~/model/explore/visualization-node.model';
 
 export const getNodeCategoryByType = (type: ExploreNodeType): ExploreNodeCategory => {
     return getNodeCategory[type];
 };
 
-export function isFileNode(node: TExploreNode): node is FileNode {
+export function isFileNode(node: ExploreNode): node is FileNode {
     return node.data.nodeCategory === 'file';
 }
 
@@ -29,7 +26,7 @@ export function isFileNodeData(data: ExploreNodeData): data is FileExploreNodeDa
     return data.nodeCategory === 'file';
 }
 
-export function isVisualizationNode(node: TExploreNode): node is VisualizationExploreNode {
+export function isVisualizationNode(node: ExploreNode): node is VisualizationExploreNode {
     return node.data.nodeCategory === 'visualization';
 }
 
@@ -45,7 +42,7 @@ export function isExploreVisualizationNodeType(nodeType: ExploreNodeType): nodeT
     return visualizationNodeTypes.includes(nodeType as ExploreVisualizationNodeType);
 }
 
-export function isMinerNode(node: TExploreNode): node is MinerNode {
+export function isMinerNode(node: ExploreNode): node is MinerNode {
     return node.data.nodeCategory === 'miner';
 }
 

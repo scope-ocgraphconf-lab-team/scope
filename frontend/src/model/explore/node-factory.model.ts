@@ -1,11 +1,11 @@
 import type { XYPosition } from '@xyflow/react';
 import {
-    type ExploreFileNodeType,
-    type ExploreMinerNodeType,
-    type ExploreNodeType,
-    type ExploreVisualizationNodeType,
+    ExploreFileNodeType,
+    ExploreMinerNodeType,
+    ExploreNodeType,
+    ExploreVisualizationNodeType,
     getNodeCategory,
-} from '~/types/explore';
+} from '~/types/explore/nodeTypesCategories';
 import { BaseExploreNode } from '~/model/explore/base-node.model';
 import { FileExploreNode } from '~/model/explore/file-node.model';
 import { MinerExploreNode } from '~/model/explore/miner-node.model';

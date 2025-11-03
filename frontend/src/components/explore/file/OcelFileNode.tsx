@@ -1,10 +1,10 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
-import BaseFileNode from '~/components/explore/file/BaseFileNode';
-import type { TFileNode } from '~/types/explore';
 import { Position } from '@xyflow/react';
+import BaseFileNode from '~/components/explore/file/BaseFileNode';
+import { FileNode } from '~/types/explore/nodes';
 
-const OcelFileNode = memo<NodeProps<TFileNode>>((props) => {
+const OcelFileNode = memo<NodeProps<FileNode>>((props) => {
     return (
         <BaseFileNode
             {...props}

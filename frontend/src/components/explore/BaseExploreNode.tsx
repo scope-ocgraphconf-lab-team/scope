@@ -12,11 +12,11 @@ import {
     NodeHeaderTitle,
 } from '~/components/ui/node-header';
 import { getIconComponent } from '~/lib/iconMap';
-import type {
+import {
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
     BaseExploreNodeHandleOption,
-} from '~/types/explore';
+} from '~/types/explore/nodeData/baseNodeData';
 
 interface BaseExploreNodeProps {
     id: string;

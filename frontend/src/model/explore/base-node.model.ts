@@ -1,11 +1,7 @@
 import { type XYPosition } from '@xyflow/react';
 import { getNodeCategoryByType } from '~/lib/explore/exploreNodes.utils';
-import {
-    type ExploreNodeCategory,
-    type ExploreNodeData,
-    type ExploreNodeType,
-    type NodeId,
-} from '~/types/explore';
+import { ExploreNodeData } from '~/types/explore/nodes';
+import { ExploreNodeCategory, ExploreNodeType, NodeId } from '~/types/explore/nodeTypesCategories';
 
 export abstract class BaseExploreNode {
     readonly id: NodeId;

@@ -7,7 +7,7 @@ import { ScaleOrdinal } from 'd3';
 import { RenderTree } from '~/components/ocpt/OcptRendering';
 import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
 import ZoomButtons from '~/components/ocpt/ui/ZoomButtons';
-import { TVisualizationNode } from '~/types/explore';
+import { VisualizationNode } from '~/types/explore/nodes';
 import { type TreeNode } from '~/types/ocpt/ocpt.types';
 
 export type OCPTProps = {
@@ -17,7 +17,7 @@ export type OCPTProps = {
     treeData: TreeNode | null;
     colorScale: ScaleOrdinal<string, string, never>;
     objectTypes: string[];
-    node: TVisualizationNode;
+    node: VisualizationNode;
 };
 
 const defaultMargin = { top: 30, left: 30, right: 30, bottom: 70 };

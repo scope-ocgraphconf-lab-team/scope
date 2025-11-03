@@ -3,8 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import FileShowcase from '~/components/explore/file/ui/FileShowcase';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore, useStoredFiles } from '~/stores/store';
-import type { BaseExploreNodeAsset } from '~/types/explore';
-import type { ExtendedFile } from '~/types/fileObject.types';
+import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
+import { ExtendedFile } from '~/types/files.types';
 
 interface FileSelectionDialogProps {
     isOpen: boolean;

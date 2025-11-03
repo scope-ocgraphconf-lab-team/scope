@@ -1,8 +1,8 @@
 import { type XYPosition } from '@xyflow/react';
-import type { ExploreMinerNodeType } from '~/types/explore';
-import type { MinerExploreNodeData } from '~/types/explore/interfaces/miner-node';
-import { BaseExploreNode } from '~/model/explore/base-node.model';
+import { MinerExploreNodeData } from '~/types/explore/nodeData/minerNodeData';
+import { ExploreMinerNodeType } from '~/types/explore/nodeTypesCategories';
 import { assetTypes } from '~/types/files.types';
+import { BaseExploreNode } from '~/model/explore/base-node.model';
 
 export class MinerExploreNode extends BaseExploreNode {
     declare data: MinerExploreNodeData;
