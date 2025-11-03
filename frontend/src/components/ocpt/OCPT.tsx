@@ -6,7 +6,7 @@ import { Zoom } from '@visx/zoom';
 import { ScaleOrdinal } from 'd3';
 import { RenderTree } from '~/components/ocpt/OcptRendering';
 import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
-import ZoomButtons from '~/components/ZoomButtons';
+import ZoomButtons from '~/components/ocpt/ui/ZoomButtons';
 import { TVisualizationNode } from '~/types/explore';
 import { type TreeNode } from '~/types/ocpt/ocpt.types';
 

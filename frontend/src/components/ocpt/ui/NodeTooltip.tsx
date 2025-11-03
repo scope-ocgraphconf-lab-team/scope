@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { usePopper } from 'react-popper';
 import LegendRect from '~/components/ocpt/ui/LegendRect';
+import '~/components/ocpt/ui/NodeTooltip.css';
 import { Activity } from '~/types/ocpt/ocpt.types';
-import './poppers.css';
 
 const NodeTooltip = ({ hoverPoint, transformMatrix, coloring }: any) => {
     if (!hoverPoint) return null;

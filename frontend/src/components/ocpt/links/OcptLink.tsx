@@ -1,4 +1,4 @@
-import getLinkComponent from '~/components/ocpt/getLinkComponent';
+import getLinkComponent from '~/components/ocpt/links/getLinkComponent';
 import { type HierarchyPointLinkObjectCentric, type TreeNode } from '~/types/ocpt/ocpt.types';
 
 const LinkLine = getLinkComponent({
