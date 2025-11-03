@@ -5,15 +5,13 @@ use crate::core::case_notion::utils::{
     map_object_id_to_type,
 };
 
-use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELType};
 use process_mining::OCEL;
+use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELType};
 use rustc_hash::{FxHashMap, FxHashSet};
-use serde::Serialize;
-use std::{
-    collections::BTreeSet,
-};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct CaseMeasure {
     pub name: String,
     pub value: f64,
@@ -46,7 +44,6 @@ impl ResultCaseNotion {
     }
 }
 
-
 #[derive(Serialize)]
 struct RuntimeCaseNotion {
     name_of_event_log: String,
@@ -55,13 +52,13 @@ struct RuntimeCaseNotion {
     case_notions: Vec<ResultCaseNotion>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CaseNotionArch {
     pub source: String,
     pub target: String,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CaseNotionCase {
     pub events: Vec<String>,
     pub objects: Vec<String>,
