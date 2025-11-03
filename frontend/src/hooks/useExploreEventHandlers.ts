@@ -7,7 +7,10 @@ import { useFileDialogStore } from '~/stores/store';
 import { isFileNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
 import { isTwoFileNodes, isTwoVisualizationNodes } from '~/lib/explore/guardNodeConnections';
 import { Logger } from '~/lib/logger';
-import type { ExploreNodeData, NodeId, VisualizationExploreNodeData } from '~/types/explore';
+import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
+import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
+import { ExploreNodeData } from '~/types/explore/nodes';
+import { NodeId } from '~/types/explore/nodeTypesCategories';
 import { NodeFactory } from '~/model/explore/node-factory.model';
 
 const logger = Logger.getInstance();
@@ -75,7 +78,10 @@ export const useExploreEventHandlers = () => {
                     if (node.id === edge.target) {
                         // Filter out assets that match the source node's assets
                         const filteredAssets = node.data.assets.filter(
-                            (asset) => !sourceNode.data.assets.some((sourceAsset) => sourceAsset.id === asset.id)
+                            (asset: BaseExploreNodeAsset) =>
+                                !sourceNode.data.assets.some(
+                                    (sourceAsset: BaseExploreNodeAsset) => sourceAsset.id === asset.id
+                                )
                         );
                         return {
                             ...node,
@@ -267,8 +273,8 @@ export const useExploreEventHandlers = () => {
                             assets: [
                                 ...(node.data.assets || []),
                                 ...(sourceNode.data.assets || [])
-                                    .filter((asset) => asset.io === 'output')
-                                    .map((asset) => ({
+                                    .filter((asset: BaseExploreNodeAsset) => asset.io === 'output')
+                                    .map((asset: BaseExploreNodeAsset) => ({
                                         ...asset,
                                         io: 'input' as const,
                                     })),
