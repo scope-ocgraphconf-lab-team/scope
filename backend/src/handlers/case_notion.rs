@@ -38,9 +38,6 @@ struct CaseNotionResponse {
     case_notion_file_id: String,
     source_ocel_file: String,
     object_type: Option<String>,
-    cases: Vec<RawCaseNotionEntry>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    case_ocels: Option<Vec<OCEL>>,
     measures: Vec<CaseMeasure>,
     total_score: f64,
     f1_score: Option<f64>,
@@ -392,8 +389,6 @@ pub async fn get_advanced_case_notion(
         case_notion_file_id,
         source_ocel_file: path,
         object_type: evaluation.object_type.clone(),
-        cases,
-        case_ocels: None,
         measures: evaluation.measures.clone(),
         total_score: evaluation.total_score,
         f1_score: evaluation.f1_score,
@@ -487,8 +482,6 @@ pub async fn get_connected_components_case_notion(
         case_notion_file_id,
         source_ocel_file: path,
         object_type: evaluation.object_type.clone(),
-        cases,
-        case_ocels: None,
         measures: evaluation.measures.clone(),
         total_score: evaluation.total_score,
         f1_score: evaluation.f1_score,
@@ -616,15 +609,34 @@ pub async fn post_generic_case_notion(
 
     log::debug!("measures: {:?}", measures);
 
-    let evaluation = CaseNotionEvaluation {
-        object_type: None,
-        measures: measures.clone(),
-        total_score,
-        f1_score,
-        case_notion,
+    let cases: Vec<RawCaseNotionEntry> = case_notion.iter().cloned().collect();
+    let case_notion_file_id = match persist_case_notion(
+        &cases,
+        &file_id,
+        CaseKind::Generic,
+        None,
+    )
+    .await
+    {
+        Ok(file_id) => file_id,
+        Err(response) => return Err(response),
     };
 
-    Ok(axum::Json(measures))
+    let response = CaseNotionResponse {
+        case_notion: CaseKind::Generic.label(),
+        origin_file_id_ocel: file_id.clone(),
+        case_notion_file_id,
+        source_ocel_file: file_id.clone(),
+        object_type: None,
+        measures,
+        total_score,
+        f1_score,
+        type_level_graph: None,
+        export_id: None,
+        saved_as: None,
+    };
+
+    Ok(axum::Json(response))
 }
 
 pub async fn get_case_ocel(Path(case_notion_file_id): Path<String>) -> impl IntoResponse {
