@@ -12,6 +12,7 @@ import {
     minerNodeTypes,
     visualizationNodeTypes,
 } from '~/types/explore/nodeTypesCategories';
+import { AssetType } from '~/types/files.types';
 import type { VisualizationExploreNode } from '~/model/explore/visualization-node.model';
 
 export const getNodeCategoryByType = (type: ExploreNodeType): ExploreNodeCategory => {
@@ -49,3 +50,13 @@ export function isMinerNode(node: ExploreNode): node is MinerNode {
 export function isExploreMinerNodeType(nodeType: ExploreNodeType): nodeType is ExploreMinerNodeType {
     return minerNodeTypes.includes(nodeType as ExploreMinerNodeType);
 }
+
+export const assetTypeToNodeType = (assetType: AssetType): ExploreFileNodeType | null => {
+    if (assetType === 'ocptFile' || assetType === 'ocptAsset') {
+        return 'ocptFileNode';
+    }
+    if (assetType === 'ocelFile' || assetType === 'ocelAsset') {
+        return 'ocelFileNode';
+    }
+    return null;
+};

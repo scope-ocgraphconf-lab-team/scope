@@ -4,13 +4,13 @@ import { isEqual } from 'lodash-es';
 import { useVisualization } from '~/hooks/useVisualization';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
-import { isFileNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
+import { assetTypeToNodeType, isFileNode, isMinerNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
 import { isTwoFileNodes, isTwoVisualizationNodes } from '~/lib/explore/guardNodeConnections';
 import { Logger } from '~/lib/logger';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
 import { ExploreNodeData } from '~/types/explore/nodes';
-import { NodeId } from '~/types/explore/nodeTypesCategories';
+import { ExploreFileNodeType, NodeId } from '~/types/explore/nodeTypesCategories';
 import { NodeFactory } from '~/model/explore/node-factory.model';
 
 const logger = Logger.getInstance();
@@ -40,20 +40,53 @@ export const useExploreEventHandlers = () => {
                 const node = getNode(id);
                 if (!node) throw new Error(`Could not find node for id: ${id}`);
 
-                const currentAssets = node.data.assets;
+                const currentAssets: BaseExploreNodeAsset[] = node.data.assets;
 
                 // Only proceed if assets actually changed
                 if (!isEqual(currentAssets, newData.assets)) {
-                    logger.debug(`Assets have changed for node ${node.id}`, currentAssets, newData.assets);
-                    const neighbors = directedNeighborMap.current.get(id) || [];
+                    logger.debug(`Assets have changed for node ${id}`, currentAssets, newData.assets);
 
                     // Update the original node
                     updateNodeData(id, { assets: [...(newData.assets || [])] });
 
-                    // Update neighbor nodes
-                    neighbors.forEach((neighborId) => {
-                        updateNodeData(neighborId, { assets: [...(newData.assets || [])] });
-                    });
+                    if (isMinerNode(node)) {
+                        const neighbors = directedNeighborMap.current.get(id) || [];
+                        const currentAssetIds = new Set(currentAssets.map((a) => a.id));
+                        const newOutputAssets =
+                            newData.assets?.filter(
+                                (asset) => asset.io === 'output' && !currentAssetIds.has(asset.id)
+                            ) ?? [];
+
+                        newOutputAssets.forEach((asset, index) => {
+                            const nodeType = assetTypeToNodeType(asset.type);
+
+                            if (nodeType) {
+                                const newNodePosition = {
+                                    x: node.position.x + 400,
+                                    y: node.position.y + index * 150,
+                                };
+
+                                const newNode = NodeFactory.createNode(newNodePosition, nodeType);
+                                newNode.data.onDataChange = onNodeDataChange;
+                                newNode.data.assets = [asset]; // Keep original asset
+
+                                addNode(newNode);
+
+                                // Connect the original node to the new one
+                                const connection: Connection = {
+                                    source: id,
+                                    target: newNode.id,
+                                    sourceHandle: null,
+                                    targetHandle: null,
+                                };
+                                onConnect(connection);
+
+                                if (!neighbors.includes(newNode.id)) {
+                                    directedNeighborMap.current.set(id, [...neighbors, newNode.id]);
+                                }
+                            }
+                        });
+                    }
                 } else {
                     // Assets have not changed — just update the node data
                     updateNodeData(id, newData);
@@ -62,7 +95,7 @@ export const useExploreEventHandlers = () => {
                 logger.error(err);
             }
         },
-        [getNode, updateNodeData]
+        [getNode, updateNodeData, addNode, onConnect, openDialog]
     );
 
     const onEdgeDelete = useCallback(
