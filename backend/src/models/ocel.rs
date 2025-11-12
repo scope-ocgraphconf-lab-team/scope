@@ -35,14 +35,6 @@ impl OCELUtils for OCEL {
 
         let event_identifiers = build_event_identifiers(&self.events, &obj_id_to_type, &unique_object_types);
 
-        let mut arcs: FxHashSet<(String, String)> = FxHashSet::default();
-
-        for (event_id, (_, object_ids, _)) in &event_identifiers {
-            for object_id in object_ids {
-                arcs.insert((event_id.clone(), object_id.clone()));
-            }
-        }
-
         let divergence_map = detect_diverging_object_types(
             &event_identifiers,
             &unique_object_types,
@@ -69,22 +61,132 @@ impl OCELUtils for OCEL {
     }
 
     fn get_interaction_patterns(&self) -> (
-        FxHashMap<String, FxHashSet<String>>, //divergence
-        FxHashMap<String, FxHashSet<String>>, //convergence
-        FxHashMap<String, FxHashSet<String>>, //related
-        FxHashMap<String, FxHashSet<String>>, //deficiency
+        FxHashMap<String, FxHashSet<String>>, // divergence
+        FxHashMap<String, FxHashSet<String>>, // convergence
+        FxHashMap<String, FxHashSet<String>>, // related
+        FxHashMap<String, FxHashSet<String>>, // deficiency
     ) {
+        let mut divergence: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+        let mut convergence: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+        let mut related: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
+        let mut deficiency: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
 
-        let divergence = self.detect_diverging_object_types();
+        let obj_id_to_type = map_object_id_to_type(&self.objects);
+        let unique_object_types: FxHashSet<String> =
+            self.object_types.iter().map(|o| o.name.clone()).collect();
 
-        let convergence = FxHashMap::default(); // Placeholder for convergence logic
+        let unique_activities: FxHashSet<String> =
+            self.event_types.iter().map(|e| e.name.clone()).collect();
 
-        let related = FxHashMap::default(); // Placeholder for related logic
+        let event_identifiers = build_event_identifiers(
+            &self.events,
+            &obj_id_to_type,
+            &unique_object_types,
+        );
 
-        let deficiency = FxHashMap::default(); // Placeholder for deficiency logic
+        use rayon::prelude::*;
+
+        // prepare base maps for all activity types
+        for activity in &unique_activities {
+            divergence.insert(activity.clone(), FxHashSet::default());
+            convergence.insert(activity.clone(), FxHashSet::default());
+            related.insert(activity.clone(), FxHashSet::default());
+            deficiency.insert(activity.clone(), FxHashSet::default());
+        }
+
+        // compute all pattern detections in one pass
+        let pattern_results: Vec<(String, String, bool, bool, bool, bool)> = unique_activities
+            .par_iter()
+            .flat_map(|activity_ref| {
+                unique_object_types
+                    .par_iter()
+                    .map(|object_type_ref| {
+                        // --- shared grouping logic ---
+                        let mut groups: BTreeMap<
+                            BTreeSet<String>,
+                            FxHashSet<BTreeSet<String>>,
+                        > = BTreeMap::new();
+
+                        for (
+                            _event_id,
+                            (event_activity, event_all_objects, event_type_specific_map),
+                        ) in &event_identifiers
+                        {
+                            if event_activity == activity_ref {
+                                if let Some(specific_objects) =
+                                    event_type_specific_map.get(object_type_ref)
+                                {
+                                    if !specific_objects.is_empty() {
+                                        groups
+                                            .entry(specific_objects.clone())
+                                            .or_insert_with(FxHashSet::default)
+                                            .insert(event_all_objects.clone());
+                                    }
+                                }
+                            }
+                        }
+
+                        // --- pattern detection ---
+                        // placeholder flags (can extend these later)
+                        let mut diverges = false;
+                        let mut converges = false;
+                        let mut relates = false;
+                        let mut deficient = false;
+
+                        // divergence: same as before
+                        for (_specific_set, overall_sets) in &groups {
+                            if overall_sets.len() > 1 {
+                                diverges = true;
+                                break;
+                            }
+                        }
+
+                        // TODO: add convergence / related / deficiency logic here later
+
+                        (
+                            activity_ref.clone(),
+                            object_type_ref.clone(),
+                            diverges,
+                            converges,
+                            relates,
+                            deficient,
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+
+        // merge into maps
+        for (activity, object_type, diverges, converges, relates, deficient) in pattern_results {
+            if diverges {
+                divergence
+                    .entry(activity.clone())
+                    .or_insert_with(FxHashSet::default)
+                    .insert(object_type.clone());
+            }
+            if converges {
+                convergence
+                    .entry(activity.clone())
+                    .or_insert_with(FxHashSet::default)
+                    .insert(object_type.clone());
+            }
+            if relates {
+                related
+                    .entry(activity.clone())
+                    .or_insert_with(FxHashSet::default)
+                    .insert(object_type.clone());
+            }
+            if deficient {
+                deficiency
+                    .entry(activity.clone())
+                    .or_insert_with(FxHashSet::default)
+                    .insert(object_type.clone());
+            }
+        }
 
         (divergence, convergence, related, deficiency)
     }
+
 }
 
 /*
