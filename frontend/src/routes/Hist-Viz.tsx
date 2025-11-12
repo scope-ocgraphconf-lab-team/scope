@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
@@ -13,15 +13,16 @@ import { SidebarProvider } from '~/components/ui/sidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import { HistogramChart } from '~/components/HistogramChart';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { getHistogram, setFilteredHistogram } from '~/services/api';
-import type { TFileNode } from '~/types/explore';
+import { useSetFilteredHistogramMutation } from '~/services/mutation';
+import { useGetHistogram } from '~/services/queries';
 import '~/styles/hist-viz.css';
-import type { HistogramEntry, HistogramResult } from '~/types';
+import type { HistogramEntry } from '~/types';
 
 export default function HistViz() {
-    const [data, setData] = useState<HistogramResult | null>(null);
     const [sortMode, setSortMode] = useState<'name' | 'bins' | 'random'>('bins');
     const { fileId } = useParams<{ fileId: string }>();
+    const { data } = useGetHistogram(fileId);
+    const { mutate: setFilteredHistogram } = useSetFilteredHistogramMutation();
 
     // --- State for case and object filters ---
     const [allEventTypes, setAllEventTypes] = useState<string[]>([]);
@@ -38,42 +39,33 @@ export default function HistViz() {
     const [isEditing, setIsEditing] = useState(true);
     // -----------------------------
     const { getNode } = useExploreFlowStore();
-    const node = undefined as unknown as TFileNode | undefined;
-    // Fetch histogram data from backend
+
     useEffect(() => {
-        if (!fileId) return;
-        const fid: string = fileId;
-        async function fetchData() {
-            try {
-                const jsonData = await getHistogram(fid);
-                setData(jsonData);
+        try {
+            // Populate filter options from the data received from backend
+            const eventTypes = new Set<string>();
+            const objectTypes = new Set<string>();
 
-                // Populate filter options from the data received from backend
-                const eventTypes = new Set<string>();
-                const objectTypes = new Set<string>();
-
-                for (const entry of jsonData.histograms) {
-                    // --- Populate filters ---
-                    eventTypes.add(entry.event_type);
-                    objectTypes.add(entry.object_type);
-                }
-
-                // --- Set filter data ---
-                const sortedEventTypes = Array.from(eventTypes).sort();
-                const sortedObjectTypes = Array.from(objectTypes).sort();
-
-                setAllEventTypes(sortedEventTypes);
-                setAllObjectTypes(sortedObjectTypes);
-
-                // Negative selection for filters
-                setSelectedEventTypes(new Set(sortedEventTypes));
-                setSelectedObjectTypes(new Set(sortedObjectTypes));
-            } catch (error) {
-                console.error('Failed to fetch histogram data:', error);
+            for (const entry of data.histograms) {
+                // --- Populate filters ---
+                eventTypes.add(entry.event_type);
+                objectTypes.add(entry.object_type);
             }
+
+            // --- Set filter data ---
+            const sortedEventTypes = Array.from(eventTypes).sort();
+            const sortedObjectTypes = Array.from(objectTypes).sort();
+
+            setAllEventTypes(sortedEventTypes);
+            setAllObjectTypes(sortedObjectTypes);
+
+            // Negative selection for filters
+            setSelectedEventTypes(new Set(sortedEventTypes));
+            setSelectedObjectTypes(new Set(sortedObjectTypes));
+        } catch (error) {
+            console.error('Failed to fetch histogram data:', error);
         }
-        fetchData();
-    }, [fileId]);
+    }, [data]);
 
     // When data loads, initialize allSelections to have ALL bins selected by default
     useEffect(() => {
@@ -229,7 +221,7 @@ export default function HistViz() {
             ],
         };
         console.log('Submitting to backend:', JSON.stringify(finalPayload, null, 2));
-        setFilteredHistogram(fileId!, finalPayload);
+        setFilteredHistogram({ fileId: fileId!, payload: finalPayload });
     };
 
     return (
