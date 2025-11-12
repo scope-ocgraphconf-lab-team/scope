@@ -1,7 +1,7 @@
 // Import BTreeSet for ordered sets, usable as FxHashMap keys
 use crate::core::case_notion::log_graphs::LogGraphTypeLevel;
 use crate::core::case_notion::main::{CaseNotionContext, CaseNotionEvaluation};
-use crate::core::case_notion::measures::{average_score, calculate_measures, f1_from_measures};
+use crate::core::case_notion::measures::calculate_measures;
 use crate::core::case_notion::utils::is_better_evaluation;
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde_json::Value;
@@ -173,14 +173,9 @@ fn evaluate_traditional_case_notion_for_object_type(
         context.total_number_of_objects(),
         context.total_number_of_events(),
     );
-    let total_score = average_score(&measures);
-    let f1_score = f1_from_measures(&measures);
-
-    Some(CaseNotionEvaluation {
-        object_type: Some(object_type.to_string()),
+    Some(CaseNotionEvaluation::new(
+        Some(object_type.to_string()),
         measures,
-        total_score,
-        f1_score,
         case_notion,
-    })
+    ))
 }
