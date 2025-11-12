@@ -3,6 +3,8 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  /*used the font as per the entire software for uniformity*/  
+  font-family: 'Inter', sans-serif;
 }
 
 .hv-topbar {
