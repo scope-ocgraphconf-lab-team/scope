@@ -23,6 +23,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tokio::fs;
+use std::time::Instant;
 use uuid::Uuid;
 
 type RawCaseNotionEntry = (Vec<String>, Vec<String>, Vec<(String, String)>);
@@ -30,6 +31,7 @@ type RawCaseNotionEntry = (Vec<String>, Vec<String>, Vec<(String, String)>);
 #[derive(Deserialize)]
 pub(crate) struct CaseNotionQuery {
     object_type: Option<String>,
+    case_notion_file_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -83,8 +85,11 @@ async fn persist_case_notion(
     origin_file_id_ocel: &str,
     case_kind: CaseKind,
     object_type: Option<&str>,
+    case_notion_file_id: Option<&str>,
 ) -> Result<String, (StatusCode, String)> {
-    let case_notion_file_id = Uuid::new_v4().to_string();
+    let case_notion_file_id = case_notion_file_id
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| Uuid::new_v4().to_string());
     let payload = PersistedCaseNotion {
         case_notion: cases.to_vec(),
         origin_file_id_ocel: origin_file_id_ocel.to_string(),
@@ -307,38 +312,13 @@ pub async fn get_advanced_case_notion(
     Path(file_id): Path<String>,
     Query(query): Query<CaseNotionQuery>,
 ) -> impl IntoResponse {
-    let selection = ObjectTypeSelection::from_query_param(query.object_type);
+    let selection = ObjectTypeSelection::from_query_param(query.object_type.clone());
+    let source_ocel_file = format!("./temp/ocel_v2_{}.json", file_id);
+    let requested_case_notion_file_id = query.case_notion_file_id.clone();
 
-    let path = format!("./temp/ocel_v2_{}.json", file_id);
-    let content = match fs::read_to_string(&path).await {
-        Ok(data) => data,
-        Err(err) => {
-            eprintln!("read OCEL log failed: {err}");
-            let response = if err.kind() == std::io::ErrorKind::NotFound {
-                (
-                    StatusCode::NOT_FOUND,
-                    format!("No OCEL v2 file found for fileId: {}", file_id),
-                )
-            } else {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed to read stored OCEL log".to_string(),
-                )
-            };
-            return response.into_response();
-        }
-    };
-
-    let ocel: OCEL = match serde_json::from_str(&content) {
-        Ok(log) => log,
-        Err(err) => {
-            eprintln!("parse OCEL log failed: {err}");
-            let response = (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Stored OCEL log is not valid JSON".to_string(),
-            );
-            return response.into_response();
-        }
+    let ocel = match OCEL::import_from_path(&file_id).await {
+        Ok(ocel) => ocel,
+        Err((status, message)) => return (status, message).into_response(),
     };
 
     let context = CaseNotionContext::new(&ocel);
@@ -373,6 +353,7 @@ pub async fn get_advanced_case_notion(
         &file_id,
         CaseKind::Advanced,
         evaluation.object_type.as_deref(),
+        Some(requested_case_notion_file_id.as_str()),
     )
     .await
     {
@@ -384,7 +365,7 @@ pub async fn get_advanced_case_notion(
         case_notion: CaseKind::Advanced.label(),
         origin_file_id_ocel: file_id,
         case_notion_file_id,
-        source_ocel_file: path,
+        source_ocel_file,
         object_type: evaluation.object_type.clone(),
         measures: evaluation.measures.clone(),
         type_level_graph: Some(type_level_graph),
@@ -397,37 +378,13 @@ pub async fn get_advanced_case_notion(
 
 pub async fn get_connected_components_case_notion(
     Path(file_id): Path<String>,
+    Query(query): Query<CaseNotionQuery>,
 ) -> impl IntoResponse {
-    let path = format!("./temp/ocel_v2_{}.json", file_id);
-    let content = match fs::read_to_string(&path).await {
-        Ok(data) => data,
-        Err(err) => {
-            eprintln!("read OCEL log failed: {err}");
-            let response = if err.kind() == std::io::ErrorKind::NotFound {
-                (
-                    StatusCode::NOT_FOUND,
-                    format!("No OCEL v2 file found for fileId: {}", file_id),
-                )
-            } else {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed to read stored OCEL log".to_string(),
-                )
-            };
-            return response.into_response();
-        }
-    };
-
-    let ocel: OCEL = match serde_json::from_str(&content) {
-        Ok(log) => log,
-        Err(err) => {
-            eprintln!("parse OCEL log failed: {err}");
-            let response = (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Stored OCEL log is not valid JSON".to_string(),
-            );
-            return response.into_response();
-        }
+    let source_ocel_file = format!("./temp/ocel_v2_{}.json", file_id);
+    let requested_case_notion_file_id = query.case_notion_file_id.clone();
+    let ocel = match OCEL::import_from_path(&file_id).await {
+        Ok(ocel) => ocel,
+        Err((status, message)) => return (status, message).into_response(),
     };
 
     let context = CaseNotionContext::new(&ocel);
@@ -455,6 +412,7 @@ pub async fn get_connected_components_case_notion(
         &file_id,
         CaseKind::ConnectedComponents,
         evaluation.object_type.as_deref(),
+        Some(requested_case_notion_file_id.as_str()),
     )
     .await
     {
@@ -466,7 +424,7 @@ pub async fn get_connected_components_case_notion(
         case_notion: CaseKind::ConnectedComponents.label(),
         origin_file_id_ocel: file_id,
         case_notion_file_id,
-        source_ocel_file: path,
+        source_ocel_file,
         object_type: evaluation.object_type.clone(),
         measures: evaluation.measures.clone(),
         type_level_graph: Some(type_level_graph),
@@ -481,38 +439,12 @@ pub async fn get_traditional_case_notion(
     Path(file_id): Path<String>,
     Query(query): Query<CaseNotionQuery>,
 ) -> impl IntoResponse {
-    let selection = ObjectTypeSelection::from_query_param(query.object_type);
-
-    let path = format!("./temp/ocel_v2_{}.json", file_id);
-    let content = match fs::read_to_string(&path).await {
-        Ok(data) => data,
-        Err(err) => {
-            eprintln!("read OCEL log failed: {err}");
-            let response = if err.kind() == std::io::ErrorKind::NotFound {
-                (
-                    StatusCode::NOT_FOUND,
-                    format!("No OCEL v2 file found for fileId: {}", file_id),
-                )
-            } else {
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Failed to read stored OCEL log".to_string(),
-                )
-            };
-            return response.into_response();
-        }
-    };
-
-    let ocel: OCEL = match serde_json::from_str(&content) {
-        Ok(log) => log,
-        Err(err) => {
-            eprintln!("parse OCEL log failed: {err}");
-            let response = (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Stored OCEL log is not valid JSON".to_string(),
-            );
-            return response.into_response();
-        }
+    let selection = ObjectTypeSelection::from_query_param(query.object_type.clone());
+    let requested_case_notion_file_id = query.case_notion_file_id.clone();
+    let timer = Instant::now();
+    let ocel = match OCEL::import_from_path(&file_id).await {
+        Ok(ocel) => ocel,
+        Err((status, message)) => return (status, message).into_response(),
     };
 
     let context = CaseNotionContext::new(&ocel);
@@ -547,6 +479,7 @@ pub async fn get_traditional_case_notion(
         &file_id,
         CaseKind::Traditional,
         Some(object_type.as_str()),
+        Some(requested_case_notion_file_id.as_str()),
     )
     .await
     {
@@ -561,6 +494,13 @@ pub async fn get_traditional_case_notion(
         graph: partitioned_graph,
         case_notion_file_id: Some(case_notion_file_id),
     };
+
+    let elapsed = timer.elapsed();
+    log::info!(
+        "traditional case notion for file {} completed in {:.2} seconds",
+        file_id,
+        elapsed.as_secs_f64()
+    );
 
     (StatusCode::OK, Json(response)).into_response()
 }
@@ -595,6 +535,7 @@ pub async fn post_generic_case_notion(
         &cases,
         &file_id,
         CaseKind::Generic,
+        None,
         None,
     )
     .await
