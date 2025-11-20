@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Pickaxe } from 'lucide-react';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
 import {
@@ -17,12 +17,24 @@ interface MinerNodeProps {
     iconName: string;
     handleOptions: BaseExploreNodeHandleOption[];
     dropdownOptions: BaseExploreNodeDropdownOption[];
-    isLoading: boolean;
+    isLoading?: boolean;
     onDropdownAction?: (action: BaseExploreNodeDropdownActionType) => void;
+    customActions?: ReactNode;
 }
 
 const BaseMinerNode = memo<MinerNodeProps>((props) => {
-    const { id, selected, data, title, iconName, handleOptions, dropdownOptions, isLoading, onDropdownAction } = props;
+    const {
+        id,
+        selected,
+        data,
+        title,
+        iconName,
+        handleOptions,
+        dropdownOptions,
+        isLoading,
+        onDropdownAction,
+        customActions,
+    } = props;
     const { assets } = data;
 
     const renderFileContent = () => {
@@ -87,6 +99,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             dropdownOptions={dropdownOptions}
             onDropdownAction={onDropdownAction}
             customContent={renderFileContent()}
+            customActions={customActions}
         />
     );
 });
