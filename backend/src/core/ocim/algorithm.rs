@@ -1,8 +1,10 @@
 use process_mining::OCEL;
-use crate::models::ocpt::{OCPTNode, OCPT};
+use crate::models::ocpt::{OCPTNode, OCPT, OCPTOperatorType};
 use crate::core::ocim::{
     common_data::{LocalData, GlobalData},
-    basecase::basecase,};
+    basecase::basecase,
+    sequence_cut_detection::find_cut_sequence,
+};
 
 pub fn ocim_init(log: &OCEL) -> OCPT {
     let local_data = LocalData::new(vec![log.clone()], None);
@@ -100,4 +102,21 @@ fn ocim_recursive(local_data: LocalData, global_data: &GlobalData) -> OCPTNode {
         // For now we return a leaf that indicates an operator with child-count.
         return OCPTNode::new_leaf(Some(format!("OPERATOR_PLACEHOLDER_{}", children.len())));
     }
+}
+
+pub fn find_strict_cut(local_data: &LocalData, global_data: &GlobalData) -> Option<(Vec<Vec<String>>, OCPTOperatorType)> {
+
+    for check in [find_cut_sequence,
+        // find_cut_exclusive, 
+        // find_cut_concurrent, 
+        // find_cut_loop,
+        ] 
+    {
+        if let Some((partition, operator)) = check(local_data, global_data) {
+            // global_data.quality_info["cuts"].append((partition, operator))
+            return Some((partition, operator));
+        }
+    }
+
+    None
 }

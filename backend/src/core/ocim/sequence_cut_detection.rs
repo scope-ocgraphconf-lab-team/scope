@@ -7,6 +7,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use crate::core::ocim::auxiliary_methods::{get_divergent_types, get_non_divergent_types};
 use crate::core::ocim::common_data::{GlobalData, LocalData};
 use crate::core::ocim::sequence_cut::is_sequence_cut_valid;
+use crate::models::ocpt::OCPTOperatorType;
 
 /// Check sequence condition 1:
 /// for each non-divergent object type shared by (a,b), the closure must be
@@ -247,7 +248,7 @@ fn topo_order_partitions(
 pub fn find_cut_sequence(
     local_data: &LocalData,
     global_data: &GlobalData,
-) -> Option<Vec<Vec<String>>> {
+) -> Option<(Vec<Vec<String>>, OCPTOperatorType)> {
     // Stage 1: components by check_sequence_1
     let partition = connected_partitions(&local_data.alphabet, |i, j| {
         check_sequence_1(
@@ -316,7 +317,7 @@ pub fn find_cut_sequence(
     }
 
     if is_sequence_cut_valid(local_data, global_data, &partition) {
-        return Some(partition);
+        return Some((partition, OCPTOperatorType::Sequence));
     } else {
         return None;
     }
@@ -347,7 +348,7 @@ mod tests {
         let cut = find_cut_sequence(&local, &global)
             .expect("expected sequence cut for example OCEL (direct call)");
         assert_eq!(
-            cut,
+            cut.0,
             vec![
                 vec!["identify".to_string(), "reject".to_string()],
                 vec!["place".to_string()],
