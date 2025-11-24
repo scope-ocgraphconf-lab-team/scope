@@ -260,7 +260,7 @@ pub fn find_cut_sequence(
     if partition.len() == 1 {
         return None;
     }
-    ///////////////////////////////////////////////////////////////////////////////////////////// tested
+
     // Stage 2: include partition-level reachability condition
     let closure = partition_closure(local_data, global_data, &partition);
     let partition_stage1 = partition.clone();
