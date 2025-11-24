@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Input } from '~/components/ui/input';
@@ -20,6 +20,7 @@ import '~/styles/hist-viz.css';
 import type { HistogramEntry } from '~/types';
 
 export default function HistViz() {
+    const navigate = useNavigate();
     const [sortMode, setSortMode] = useState<'name' | 'bins' | 'random'>('bins');
     const { nodeId } = useParams<{ nodeId: string }>();
     const [fileId, setFileId] = useState<string | undefined>(undefined);
@@ -250,10 +251,11 @@ export default function HistViz() {
                         name: `ocel_${data[0]}`,
                     };
 
-                    if (!node || !nodeId) return;
-
-                    const updatedAssets = [...node.data.assets, newAsset];
-                    node?.data.onDataChange(nodeId, { assets: updatedAssets });
+                    if (node && nodeId) {
+                        const updatedAssets = [...node.data.assets, newAsset];
+                        node.data.onDataChange(nodeId, { assets: updatedAssets });
+                    }
+                    navigate('/data/pipeline/explore');
                 },
             }
         );
