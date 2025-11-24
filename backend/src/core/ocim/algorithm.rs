@@ -47,12 +47,37 @@ fn ocim_recursive(local_data: LocalData, global_data: &GlobalData) -> OCPTNode {
         return basecase(local_data, global_data);
     }
 
-    // Try to find a concurrent (or other) cut
-    let findcut_found: bool = false;
-    // If true, `partitions` should contain the alphabet partitions Σ1..Σn
-    let partitions_stub: Vec<Vec<String>> = Vec::new();
+    // Try to find a strict cut
+    if let Some((partition, operator)) = find_strict_cut(&local_data, global_data) {
+        // A cut was found, now split the log and recurse.
+        // NOTE: split_log is not implemented. A stub is used to allow compilation.
+        
+        // This function should be in `log_splitting.rs` once implemented.
+        fn split_log(
+            _local_data: &LocalData,
+            _partition: Vec<Vec<String>>,
+            _operator: &OCPTOperatorType,
+            _global_data: &GlobalData,
+        ) -> Vec<LocalData> {
+            // STUB: Returns an empty vector because the real log splitting
+            // logic is not yet implemented.
+            vec![]
+        }
 
-    if !findcut_found {
+        let sublogs = split_log(&local_data, partition, &operator, global_data);
+
+        let subtrees: Vec<OCPTNode> = sublogs
+            .into_iter()
+            .map(|sublog| ocim_recursive(sublog, global_data))
+            .collect();
+
+        let mut operator_node = OCPTNode::new_operator(operator);
+        for subtree in subtrees {
+            operator_node.add_child(subtree);
+        }
+        return operator_node;
+
+    } else {
         // If no cut found: try fallthrough (another strategy)
         let fallthrough_found: bool = false;
         let fallthrough_partitions: Vec<Vec<String>> = Vec::new();
@@ -67,45 +92,9 @@ fn ocim_recursive(local_data: LocalData, global_data: &GlobalData) -> OCPTNode {
             return OCPTNode::new_leaf(Some("NO_CUT_FOUND".to_string()));
         }
     }
-
-    // If we reach here, we found a cut with partitions in `partitions_stub`.
-    // For each partition Σi, we would:
-    // 1) split the log: L_i <- SPLITLOG(L, Σ1..Σn)
-    // 2) recursively call OCIM(L_i, O)
-    //
-    // We'll create child nodes placeholders so the tree structure is present.
-    let mut children: Vec<OCPTNode> = Vec::with_capacity(partitions_stub.len());
-    for (idx, _part) in partitions_stub.into_iter().enumerate() {
-        // TODO: create LocalData for the partition (splitlog), then:
-        // let child_local = LocalData::new(split_logs[idx], None);
-        // children.push(ocim_recursive(child_local, global_data.clone_or_ref()));
-        //
-        // For now, push a placeholder leaf for each partition so the tree shape exists.
-        children.push(OCPTNode::new_leaf(Some(format!("CUT_PART_{}", idx))));
-    }
-
-    // Combine children into an operator node. In the real algorithm the operator
-    // depends on the detected cut (Sequence / Concurrency / ExclusiveChoice).
-    //
-    // Here we create a simple sequence operator placeholder via your existing API.
-    // If you have a helper like `OCPTNode::new_operator(op_type, children)` replace accordingly.
-    //
-    // Minimal placeholder: wrap children in an operator node if an operator constructor exists.
-    // If you don't have such constructor, you can adapt this block to your OCPTOperator struct.
-    if children.len() == 1 {
-        // Single child => just return it (no operator needed)
-        return children.into_iter().next().unwrap();
-    } else {
-        // If an operator constructor exists: e.g.
-        // return OCPTNode::new_operator(OCPTOperatorType::Concurrency, children)
-        //
-        // For now we return a leaf that indicates an operator with child-count.
-        return OCPTNode::new_leaf(Some(format!("OPERATOR_PLACEHOLDER_{}", children.len())));
-    }
 }
 
 pub fn find_strict_cut(local_data: &LocalData, global_data: &GlobalData) -> Option<(Vec<Vec<String>>, OCPTOperatorType)> {
-
     for check in [find_cut_sequence,
         // find_cut_exclusive, 
         // find_cut_concurrent, 
@@ -117,6 +106,5 @@ pub fn find_strict_cut(local_data: &LocalData, global_data: &GlobalData) -> Opti
             return Some((partition, operator));
         }
     }
-
     None
 }
