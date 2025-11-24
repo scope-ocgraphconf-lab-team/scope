@@ -141,13 +141,13 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({ fileId }) => {
                         className="block w-full text-left px-3 py-1 hover:bg-gray-100"
                         onClick={() => handleCollapse(contextMenu.node.id)}
                     >
-                        Collapse Connected
+                        Collapse
                     </button>
                     <button
                         className="block w-full text-left px-3 py-1 hover:bg-gray-100"
                         onClick={() => handleExpand(contextMenu.node.id)}
                     >
-                        Expand Connected
+                        Expand
                     </button>
                 </div>
             )}
