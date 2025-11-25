@@ -12,7 +12,6 @@ import HistogramMinerNode from '~/components/explore/miner/HistogramMinerNode';
 import ObjectEventGraphMinerNode from '~/components/explore/miner/ObjectEventGraphMinerNode';
 import OcelMinerNode from '~/components/explore/miner/OcelMinerNode';
 import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
-import EventGraphVisualizationNode from '~/components/explore/visualization/EventGraphVisualizationNode';
 import { useExploreEventHandlers } from '~/hooks/useExploreEventHandlers';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
@@ -21,7 +20,6 @@ const nodeTypes = {
     ocptMinerNode: OcptMinerNode,
     ocelFileNode: OcelFileNode,
     ocptFileNode: OcptFileNode,
-    eventGraphVisualizationNode: EventGraphVisualizationNode,
     ocelMinerNode: OcelMinerNode,
     objectEventGraphMinerNode: ObjectEventGraphMinerNode,
     histogramMinerNode: HistogramMinerNode,
