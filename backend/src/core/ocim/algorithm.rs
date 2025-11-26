@@ -4,6 +4,7 @@ use crate::core::ocim::{
     common_data::{LocalData, GlobalData},
     basecase::basecase,
     sequence_cut_detection::find_cut_sequence,
+    loop_cut_detection::find_cut_loop,
 };
 
 pub fn ocim_init(log: &OCEL) -> OCPT {
@@ -98,7 +99,7 @@ pub fn find_strict_cut(local_data: &LocalData, global_data: &GlobalData) -> Opti
     for check in [find_cut_sequence,
         // find_cut_exclusive, 
         // find_cut_concurrent, 
-        // find_cut_loop,
+        find_cut_loop,
         ] 
     {
         if let Some((partition, operator)) = check(local_data, global_data) {
