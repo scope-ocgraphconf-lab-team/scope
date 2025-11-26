@@ -68,7 +68,7 @@ fn ocim_recursive(local_data: LocalData, global_data: &GlobalData) -> OCPTNode {
     } else {
         // If no cut found: try fallthrough (another strategy)
         let fallthrough_found: bool = false;
-        let fallthrough_partitions: Vec<Vec<String>> = Vec::new();
+        let _fallthrough_partitions: Vec<Vec<String>> = Vec::new();
 
         if fallthrough_found {
             // Replace with real SPLITLOG on fallthrough partitions and recursion

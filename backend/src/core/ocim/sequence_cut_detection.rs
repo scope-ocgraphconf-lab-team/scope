@@ -3,7 +3,6 @@ use std::collections::{HashMap, HashSet};
 use petgraph::algo::toposort;
 use petgraph::graph::DiGraph;
 use petgraph::unionfind::UnionFind;
-use rustc_hash::{FxHashMap, FxHashSet};
 use crate::core::ocim::auxiliary_methods::{get_divergent_types, get_non_divergent_types};
 use crate::core::ocim::common_data::{GlobalData, LocalData};
 use crate::core::ocim::sequence_cut::is_sequence_cut_valid;
@@ -282,7 +281,7 @@ pub fn find_cut_sequence(
     }
 
     // Stage 3: order partitions topologically and re-cluster with sequence_3 condition
-    let mut partition = topo_order_partitions(&partition, local_data, global_data);
+    let partition = topo_order_partitions(&partition, local_data, global_data);
     let closure = partition_closure(local_data, global_data, &partition);
     let partition = connected_partitions(&local_data.alphabet, |i, j| {
         let pi = partition_index(&partition, &local_data.alphabet[i]).unwrap();
@@ -327,7 +326,7 @@ pub fn find_cut_sequence(
 mod tests {
     use super::*;
     use crate::core::ocim::algorithm::ocim_init;
-    use crate::models::ocpt::{OCPTLeafLabel, OCPTOperatorType, OCPTOperator, OCPTNode};
+    use crate::models::ocpt::{OCPTLeafLabel, OCPTOperatorType, OCPTNode};
     use chrono::Utc;
     use process_mining::ocel::ocel_struct::{
         OCEL, OCELEvent, OCELObject, OCELRelationship, OCELType,
