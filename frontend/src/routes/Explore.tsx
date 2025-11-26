@@ -8,6 +8,7 @@ import ExploreSidebar from '~/components/explore/ExploreSidebar';
 import OcelFileNode from '~/components/explore/file/OcelFileNode';
 import OcptFileNode from '~/components/explore/file/OcptFileNode';
 import FileSelectionDialog from '~/components/explore/file/ui/FileSelectionDialog';
+import CaseNotionMinerNode from '~/components/explore/miner/CaseNotionMinerNode';
 import HistogramMinerNode from '~/components/explore/miner/HistogramMinerNode';
 import ObjectEventGraphMinerNode from '~/components/explore/miner/ObjectEventGraphMinerNode';
 import OcelMinerNode from '~/components/explore/miner/OcelMinerNode';
@@ -23,6 +24,7 @@ const nodeTypes = {
     ocelMinerNode: OcelMinerNode,
     objectEventGraphMinerNode: ObjectEventGraphMinerNode,
     histogramMinerNode: HistogramMinerNode,
+    caseNotionMinerNode: CaseNotionMinerNode,
 };
 
 const Explore: React.FC = () => {

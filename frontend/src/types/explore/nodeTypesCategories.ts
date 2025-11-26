@@ -9,7 +9,12 @@ export const visualizationNodeTypes = [
 ] as const;
 export type ExploreVisualizationNodeType = (typeof visualizationNodeTypes)[number];
 
-export const minerNodeTypes = ['ocptMinerNode', 'objectEventGraphMinerNode', 'histogramMinerNode'] as const;
+export const minerNodeTypes = [
+    'ocptMinerNode',
+    'objectEventGraphMinerNode',
+    'histogramMinerNode',
+    'caseNotionMinerNode',
+] as const;
 export type ExploreMinerNodeType = (typeof minerNodeTypes)[number];
 
 export type ExploreNodeType = ExploreFileNodeType | ExploreVisualizationNodeType | ExploreMinerNodeType;

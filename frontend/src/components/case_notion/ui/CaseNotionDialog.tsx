@@ -9,7 +9,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '~/components/ui/dialog';
 import {
     Select,
@@ -22,13 +21,18 @@ import {
 } from '~/components/ui/select';
 import { getAdvancedCN, getConnectedComponentsCN, getTraditionalCN } from '~/services/api';
 import { useGetOcelObjectTypes } from '~/services/queries';
+import { BaseExploreNodeAsset, BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
 
 interface CaseNotionDialogProps {
+    nodeId: string;
     fileId: string | null;
     fileName: string;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    updateNodeData: (nodeId: string, data: Partial<BaseExploreNodeData>) => void;
 }
 
-const CaseNotionDialog = ({ fileId, fileName }: CaseNotionDialogProps) => {
+const CaseNotionDialog = ({ nodeId, fileId, fileName, isOpen, onOpenChange, updateNodeData }: CaseNotionDialogProps) => {
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('');
 
     const { data: ocelObjectTypesData } = useGetOcelObjectTypes(fileId);
@@ -51,8 +55,26 @@ const CaseNotionDialog = ({ fileId, fileName }: CaseNotionDialogProps) => {
         },
         onSuccess: (data) => {
             console.log('Mining successful:', data);
-            // Here you would handle the successful response,
-            // e.g., update state to display the new data.
+            // Assuming the backend returns some form of asset data or file ID
+            // For now, let's just update the node's viewState
+            if (nodeId) {
+                 const newAsset: BaseExploreNodeAsset = {
+                    id: `case_notion_result_${new Date().getTime()}`, // Dummy ID for now
+                    io: 'output',
+                    origin: 'mined',
+                    type: 'ocelFile', // Or a specific case notion type if available
+                    name: `Case Notion Result for ${fileName}`,
+                };
+                
+                // Remove existing mined output assets and add the new one
+                const existingNode = {} as BaseExploreNodeData; // This needs to be fetched from store or passed
+                // For simplicity, directly assuming 'node' here from the context.
+                // In a real scenario, you'd get the node's current assets from useExploreFlowStore.
+                
+                // For now, let's assume we just update a 'viewState' to store the results
+                updateNodeData(nodeId, { viewState: { selectedAlgorithm, measures: data.measures } });
+            }
+            onOpenChange(false); // Close dialog on success
         },
         onError: (error) => {
             console.error('Mining failed:', error);
@@ -72,12 +94,7 @@ const CaseNotionDialog = ({ fileId, fileName }: CaseNotionDialogProps) => {
     };
 
     return (
-        <Dialog>
-            <div className="p-4">
-                <DialogTrigger asChild>
-                    <Button variant="outline">View</Button>
-                </DialogTrigger>
-            </div>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[800px] md:max-w-[1000px] lg:max-w-[1200px] h-[80vh] w-full flex flex-col">
                 <div className="flex flex-row flex-grow">
                     <div className="flex w-2/3">

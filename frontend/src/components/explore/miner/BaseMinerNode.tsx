@@ -20,6 +20,7 @@ interface MinerNodeProps {
     isLoading?: boolean;
     onDropdownAction?: (action: BaseExploreNodeDropdownActionType) => void;
     customActions?: ReactNode;
+    children?: ReactNode;
 }
 
 const BaseMinerNode = memo<MinerNodeProps>((props) => {
@@ -34,6 +35,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
         isLoading,
         onDropdownAction,
         customActions,
+        children,
     } = props;
     const { assets } = data;
 
@@ -100,7 +102,9 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             onDropdownAction={onDropdownAction}
             customContent={renderFileContent()}
             customActions={customActions}
-        />
+        >
+            {children}
+        </BaseExploreNode>
     );
 });
 

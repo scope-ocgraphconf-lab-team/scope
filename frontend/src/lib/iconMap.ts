@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import {
     Activity,
+    ChartBar,
     Database,
     File,
     FileJson,
@@ -9,7 +10,9 @@ import {
     Grip,
     type LucideProps,
     Network,
+    Pickaxe,
     TreePine,
+    Waves,
     Workflow,
 } from 'lucide-react';
 import type { AssetType } from '~/types/files.types';
@@ -25,6 +28,9 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     network: Network,
     grip: Grip,
     file: File,
+    waves: Waves,
+    pickaxe: Pickaxe,
+    chartBar: ChartBar,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {
