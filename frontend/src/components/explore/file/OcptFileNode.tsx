@@ -95,7 +95,7 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
                             onClick={() => visualize(viewState.filteredObjectTypes.join(','))}
                         >
                             <TreePine className="mr-2 h-3.5 w-3.5 text-green-600" />
-                            View Tree
+                            Process Tree
                         </Button>
 
                         <DropdownMenu>

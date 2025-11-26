@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import {
     getAdvancedCN,
+    getCaseNotions,
     getConnectedComponentsCN,
     getHistogram,
     getOcelObjectTypes,
@@ -79,6 +80,15 @@ export const useMineOcpt = (fileId: string | null, algorithm: string, shouldFetc
         queryKey: ['mineOcpt', fileId, algorithm],
         queryFn: () => mineOcpt(fileId!, algorithm),
         enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetCaseNotions = (cnFileId: string) => {
+    return useQuery({
+        queryKey: ['getCaseNotions', cnFileId],
+        queryFn: () => getCaseNotions(cnFileId),
+        enabled: cnFileId.length > 0,
         refetchOnWindowFocus: false,
     });
 };

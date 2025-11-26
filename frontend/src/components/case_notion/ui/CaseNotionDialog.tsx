@@ -21,7 +21,7 @@ import {
     SelectValue,
 } from '~/components/ui/select';
 import { getAdvancedCN, getConnectedComponentsCN, getTraditionalCN } from '~/services/api';
-import { useGetOcelObjectTypes } from '~/services/queries';
+import { useGetCaseNotions, useGetOcelObjectTypes } from '~/services/queries';
 import { BaseExploreNodeAsset, BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
 
 interface CaseNotionDialogProps {
@@ -41,10 +41,12 @@ const CaseNotionDialog = ({
     onOpenChange,
     updateNodeData,
 }: CaseNotionDialogProps) => {
-    const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('');
-    const [selectedObjectType, setSelectedObjectType] = useState<string>('');
+    const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('traditional');
+    const [selectedObjectType, setSelectedObjectType] = useState<string>('default');
+    const [currentCnFileId, setCurrentCnFileId] = useState<string>('');
 
     const { data: ocelObjectTypesData } = useGetOcelObjectTypes(fileId);
+    const cnGet = useGetCaseNotions(currentCnFileId);
 
     const { mutate, isPending, data } = useMutation({
         mutationFn: async (algorithm: string) => {
@@ -52,6 +54,7 @@ const CaseNotionDialog = ({
                 throw new Error('File ID is not available.');
             }
             const newCaseNotionFileId = uuidv4();
+            setCurrentCnFileId(newCaseNotionFileId);
 
             switch (algorithm) {
                 case 'traditional':
@@ -66,25 +69,6 @@ const CaseNotionDialog = ({
         },
         onSuccess: (data) => {
             console.log('Mining successful:', data);
-            // Assuming the backend returns some form of asset data or file ID
-            // For now, let's just update the node's viewState
-            if (nodeId) {
-                const newAsset: BaseExploreNodeAsset = {
-                    id: `case_notion_result_${new Date().getTime()}`, // Dummy ID for now
-                    io: 'output',
-                    origin: 'mined',
-                    type: 'ocelFile', // Or a specific case notion type if available
-                    name: `Case Notion Result for ${fileName}`,
-                };
-
-                // Remove existing mined output assets and add the new one
-                const existingNode = {} as BaseExploreNodeData; // This needs to be fetched from store or passed
-                // For simplicity, directly assuming 'node' here from the context.
-                // In a real scenario, you'd get the node's current assets from useExploreFlowStore.
-
-                // For now, let's assume we just update a 'viewState' to store the results
-                updateNodeData(nodeId, { viewState: { selectedAlgorithm, measures: data.measures } });
-            }
         },
         onError: (error) => {
             console.error('Mining failed:', error);
@@ -101,6 +85,10 @@ const CaseNotionDialog = ({
         } else {
             console.warn('No algorithm selected.');
         }
+    };
+
+    const handleFinalMineClick = () => {
+        console.log(cnGet.data);
     };
 
     return (
@@ -133,13 +121,16 @@ const CaseNotionDialog = ({
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
-                            <Select onValueChange={setSelectedObjectType}>
+                            <Select value={selectedObjectType} onValueChange={setSelectedObjectType}>
                                 <SelectTrigger className="w-[180px] ml-2">
                                     <SelectValue placeholder="Select an object type" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         <SelectLabel>Object Types</SelectLabel>
+                                        <SelectItem key="default" value="default">
+                                            Default (slow)
+                                        </SelectItem>
                                         {ocelObjectTypesData?.object_types.map((objectType) => (
                                             <SelectItem key={objectType.name} value={objectType.name}>
                                                 {objectType.name}
@@ -191,7 +182,9 @@ const CaseNotionDialog = ({
                         )}
                     </div>
                 </div>
-                <DialogFooter className=""></DialogFooter>
+                <DialogFooter className="flex justify-end">
+                    <Button onClick={handleFinalMineClick}>Mine Case Notions</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

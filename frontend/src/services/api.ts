@@ -106,3 +106,8 @@ export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promi
     }
     throw new Error(`Algorithm ${algorithm} not supported`);
 };
+
+export const getCaseNotions = async (cnFileId: string) => {
+    const response = await api.get(`v1/case_notion/case_ocel/${cnFileId}`);
+    return response.data;
+};

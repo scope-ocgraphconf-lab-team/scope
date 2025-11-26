@@ -217,7 +217,7 @@ export default function HistViz() {
                 const ranges = mergeToRanges(selectedCounts);
 
                 // --- Don't submit if ranges are empty ---
-                if (ranges.length === 0) return null;
+                // if (ranges.length === 0) return null;
                 // ---------------------------------------------
 
                 return {
