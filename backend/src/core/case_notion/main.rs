@@ -2,12 +2,8 @@
 #![allow(dead_code)]
 use crate::core::case_notion::{
     measures::{average_score, f1_from_measures, measure_value},
-    utils::{
-        build_event_identifiers, build_object_identifiers, detect_diverging_object_types,
-        map_object_id_to_type,
-    },
 };
-use crate::models::ocel::OCELUtils;
+use crate::models::ocel::{OCELUtils,build_event_identifiers, build_object_identifiers,map_object_id_to_type};
 use process_mining::OCEL;
 use process_mining::ocel::ocel_struct::{OCELEvent, OCELObject, OCELType};
 use rustc_hash::{FxHashMap, FxHashSet};
