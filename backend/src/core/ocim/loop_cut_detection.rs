@@ -169,6 +169,14 @@ pub fn find_cut_loop(
                 .collect();
 
             if is_loop_cut_valid(local_data, global_data, &[body.clone(), redo.clone()]) {
+
+                println!(
+                    "Loop cut found with body {:?} and redo {:?} for object type {}",
+                    body,
+                    redo,
+                    ot
+                );
+
                 return Some((vec![body.clone(), redo], OCPTOperatorType::Loop(None)));
             } else {
                 return None;

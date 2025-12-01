@@ -56,6 +56,14 @@ fn ocim_recursive(local_data: LocalData, global_data: &GlobalData) -> OCPTNode {
         // A cut was found, now split the log and recurse.
 
         let sublogs = split_log(&local_data, partition, &operator, global_data);
+        
+        //DEBUG
+        match operator {
+            OCPTOperatorType::Loop(_) => {
+                println!("Sublogs: {:?}", sublogs);
+            }
+            _ => { /* No special action for other operators */ }
+        }
 
         let subtrees: Vec<OCPTNode> = sublogs
             .into_iter()
