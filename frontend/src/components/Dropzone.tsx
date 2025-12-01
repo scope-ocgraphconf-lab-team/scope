@@ -4,8 +4,7 @@ import { DropEvent, FileRejection, useDropzone } from 'react-dropzone';
 import { v4 as uuidv4 } from 'uuid';
 import { useStoredFiles } from '~/stores/store';
 import { useUploadFileMutation } from '~/services/mutation';
-import type { ExtendedFile } from '~/types/fileObject.types';
-import type { FileType } from '~/types/files.types';
+import type { ExtendedFile, FileType } from '~/types/files.types';
 import FileTypeSelectionDialog from './explore/file/ui/FileTypeSelectionDialog';
 
 const Dropzone: React.FC = () => {

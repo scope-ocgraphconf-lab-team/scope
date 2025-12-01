@@ -8,28 +8,23 @@ import ExploreSidebar from '~/components/explore/ExploreSidebar';
 import OcelFileNode from '~/components/explore/file/OcelFileNode';
 import OcptFileNode from '~/components/explore/file/OcptFileNode';
 import FileSelectionDialog from '~/components/explore/file/ui/FileSelectionDialog';
+import CaseNotionMinerNode from '~/components/explore/miner/CaseNotionMinerNode';
+import HistogramMinerNode from '~/components/explore/miner/HistogramMinerNode';
+import ObjectEventGraphMinerNode from '~/components/explore/miner/ObjectEventGraphMinerNode';
 import OcelMinerNode from '~/components/explore/miner/OcelMinerNode';
 import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
-import EventGraphVisualizationNode from '~/components/explore/visualization/EventGraphVisualizationNode';
-import HistVisualizationNode from '~/components/explore/visualization/HistVisualizationNode';
-import OcptVisualizationNode from '~/components/explore/visualization/OcptVisualizationNode';
 import { useExploreEventHandlers } from '~/hooks/useExploreEventHandlers';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
-import { Logger } from '~/lib/logger';
-
-const logger = Logger.getInstance();
 
 const nodeTypes = {
-    // file: FileExploreNode,
-    // visualization: VisualizationExploreNode,
     ocptMinerNode: OcptMinerNode,
-    ocptVisualizationNode: OcptVisualizationNode,
     ocelFileNode: OcelFileNode,
     ocptFileNode: OcptFileNode,
-    eventGraphVisualizationNode: EventGraphVisualizationNode,
     ocelMinerNode: OcelMinerNode,
-    histVisualizationNode: HistVisualizationNode,
+    objectEventGraphMinerNode: ObjectEventGraphMinerNode,
+    histogramMinerNode: HistogramMinerNode,
+    caseNotionMinerNode: CaseNotionMinerNode,
 };
 
 const Explore: React.FC = () => {
@@ -41,7 +36,8 @@ const Explore: React.FC = () => {
     const handleDrop = useCallback((event: DragEvent<HTMLElement>) => onDrop(event, type), [onDrop, type]);
 
     useMemo(() => {
-        logger.log(nodes);
+        console.log(nodes);
+        console.log(nodes);
     }, [nodes]);
 
     return (

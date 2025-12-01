@@ -1,6 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { getAdvancedCN, getConnectedComponentsCN, getHistogram, getOcpt, getTraditionalCN } from '~/services/api';
+import {
+    getAdvancedCN,
+    getCaseNotions,
+    getConnectedComponentsCN,
+    getHistogram,
+    getLogGraphs,
+    getOcelObjectTypes,
+    getOcpt,
+    getTraditionalCN,
+    mineOcpt,
+} from '~/services/api';
 import { getOcel } from '~/services/api';
+import { CaseNotionApiResponse } from '~/types/case_notion.types';
 
 export const useGetOcpt = (fileId: string | null, shouldFetch: boolean) => {
     return useQuery({
@@ -47,11 +58,47 @@ export const useGetAdvancedCN = (fileId: string | null) => {
     });
 };
 
+export const useGetOcelObjectTypes = (fileId: string | null) => {
+    return useQuery<CaseNotionApiResponse>({
+        queryKey: ['getOcelObjectTypes', fileId],
+        queryFn: () => getOcelObjectTypes(fileId!),
+        enabled: Boolean(fileId),
+        refetchOnWindowFocus: false,
+    });
+};
+
 export const useGetHistogram = (fileId: string | undefined) => {
     return useQuery({
         queryKey: ['getHistogram', fileId],
         queryFn: () => getHistogram(fileId!),
         enabled: Boolean(fileId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useMineOcpt = (fileId: string | null, algorithm: string, shouldFetch: boolean) => {
+    return useQuery({
+        queryKey: ['mineOcpt', fileId, algorithm],
+        queryFn: () => mineOcpt(fileId!, algorithm),
+        enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetCaseNotions = (cnFileId: string) => {
+    return useQuery({
+        queryKey: ['getCaseNotions', cnFileId],
+        queryFn: () => getCaseNotions(cnFileId),
+        enabled: cnFileId.length > 0,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetLogGraphs = (ocelFileId: string) => {
+    return useQuery({
+        queryKey: ['getLogGraphs', ocelFileId],
+        queryFn: () => getLogGraphs(ocelFileId),
+        enabled: ocelFileId.length > 0,
         refetchOnWindowFocus: false,
     });
 };

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Input } from '~/components/ui/input';
@@ -15,11 +15,12 @@ import { HistogramChart } from '~/components/HistogramChart';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useSetFilteredHistogramMutation } from '~/services/mutation';
 import { useGetHistogram } from '~/services/queries';
-import { BaseExploreNodeAsset } from '~/types/explore';
+import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import '~/styles/hist-viz.css';
 import type { HistogramEntry } from '~/types';
 
 export default function HistViz() {
+    const navigate = useNavigate();
     const [sortMode, setSortMode] = useState<'name' | 'bins' | 'random'>('bins');
     const { nodeId } = useParams<{ nodeId: string }>();
     const [fileId, setFileId] = useState<string | undefined>(undefined);
@@ -216,7 +217,7 @@ export default function HistViz() {
                 const ranges = mergeToRanges(selectedCounts);
 
                 // --- Don't submit if ranges are empty ---
-                if (ranges.length === 0) return null;
+                // if (ranges.length === 0) return null;
                 // ---------------------------------------------
 
                 return {
@@ -250,10 +251,11 @@ export default function HistViz() {
                         name: `ocel_${data[0]}`,
                     };
 
-                    if (!node || !nodeId) return;
-
-                    const updatedAssets = [...node.data.assets, newAsset];
-                    node?.data.onDataChange(nodeId, { assets: updatedAssets });
+                    if (node && nodeId) {
+                        const updatedAssets = [...node.data.assets, newAsset];
+                        node.data.onDataChange(nodeId, { assets: updatedAssets });
+                    }
+                    navigate('/data/pipeline/explore');
                 },
             }
         );

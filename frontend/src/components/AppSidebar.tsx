@@ -21,7 +21,7 @@ import {
 } from '~/components/ui/sidebar';
 import { Switch } from '~/components/ui/switch';
 import CsvEventLogShowcase from '~/components/CsvEventLogShowcase';
-import ObjectTypeLegend from '~/components/ocpt/ObjectTypeLegend';
+import ObjectTypeLegend from '~/components/ocpt/ui/ObjectTypeLegend';
 import { useIsOcptMode, useStoredFiles } from '~/stores/store';
 
 interface AppSidebarProps {

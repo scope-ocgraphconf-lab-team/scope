@@ -5,8 +5,7 @@ import { Button } from '~/components/ui/button';
 import FileShowcase from '~/components/explore/file/ui/FileShowcase';
 import { useStoredFiles } from '~/stores/store';
 import { useUploadFileMutation } from '~/services/mutation';
-import type { ExtendedFile } from '~/types/fileObject.types';
-import type { FileType } from '~/types/files.types';
+import type { ExtendedFile, FileType } from '~/types/files.types';
 
 const FileList: React.FC = () => {
     const { files, addFile, removeFile } = useStoredFiles();

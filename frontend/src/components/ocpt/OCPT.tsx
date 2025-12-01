@@ -4,11 +4,10 @@ import { hierarchy } from '@visx/hierarchy';
 import { HierarchyNode, HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import { Zoom } from '@visx/zoom';
 import { ScaleOrdinal } from 'd3';
-import HoverPointTooltip from '~/components/ocpt/HoverPointTooltip';
 import { RenderTree } from '~/components/ocpt/OcptRendering';
-import ZoomButtons from '~/components/ZoomButtons';
-import { useExploreFlowStore } from '~/stores/exploreStore';
-import { NodeId, TVisualizationNode } from '~/types/explore';
+import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
+import ZoomButtons from '~/components/ocpt/ui/ZoomButtons';
+import { VisualizationNode } from '~/types/explore/nodes';
 import { type TreeNode } from '~/types/ocpt/ocpt.types';
 
 export type OCPTProps = {
@@ -18,7 +17,7 @@ export type OCPTProps = {
     treeData: TreeNode | null;
     colorScale: ScaleOrdinal<string, string, never>;
     objectTypes: string[];
-    node: TVisualizationNode;
+    node: VisualizationNode;
 };
 
 const defaultMargin = { top: 30, left: 30, right: 30, bottom: 70 };
@@ -107,7 +106,7 @@ const OCPT: React.FC<OCPTProps> = ({
                                 </g>
                             </svg>
                             <ZoomButtons zoom={zoom} />
-                            <HoverPointTooltip
+                            <NodeTooltip
                                 hoverPoint={
                                     hoveredNode && {
                                         x: hoveredNode.x,

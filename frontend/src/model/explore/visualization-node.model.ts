@@ -1,5 +1,6 @@
 import { type XYPosition } from '@xyflow/react';
-import { type ExploreVisualizationNodeType, type VisualizationExploreNodeData } from '~/types/explore';
+import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
+import { ExploreVisualizationNodeType } from '~/types/explore/nodeTypesCategories';
 import { assetTypes } from '~/types/files.types';
 import { BaseExploreNode } from '~/model/explore/base-node.model';
 

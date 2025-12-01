@@ -1,16 +1,21 @@
 import type { ComponentType } from 'react';
 import {
     Activity,
+    ChartBar,
     Database,
+    File,
     FileJson,
     FileSpreadsheet,
     FileText,
+    Grip,
     type LucideProps,
     Network,
+    Pickaxe,
     TreePine,
+    Waves,
     Workflow,
 } from 'lucide-react';
-import type { FileType } from '~/types/files.types';
+import type { AssetType } from '~/types/files.types';
 
 export const iconMap: Record<string, ComponentType<LucideProps>> = {
     database: Database,
@@ -21,6 +26,11 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     fileJson: FileJson,
     treePine: TreePine,
     network: Network,
+    grip: Grip,
+    file: File,
+    waves: Waves,
+    pickaxe: Pickaxe,
+    chartBar: ChartBar,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {
@@ -32,7 +42,7 @@ interface AssetTypeVisual {
     color: string;
 }
 
-export const ASSET_TYPE_VISUALS: Record<FileType, AssetTypeVisual> = {
+export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
     ocelFile: {
         icon: Database,
         color: 'text-blue-500',
@@ -40,5 +50,17 @@ export const ASSET_TYPE_VISUALS: Record<FileType, AssetTypeVisual> = {
     ocptFile: {
         icon: FileText,
         color: 'text-green-500',
+    },
+    ocptAsset: {
+        icon: FileText,
+        color: 'text-green-500',
+    },
+    ocelAsset: {
+        icon: Database,
+        color: 'text-blue-500',
+    },
+    objectEventGraph: {
+        icon: Workflow,
+        color: 'text-purple-500',
     },
 };

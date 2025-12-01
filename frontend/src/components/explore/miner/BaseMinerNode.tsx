@@ -1,28 +1,42 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Pickaxe } from 'lucide-react';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
-import type {
+import {
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
     BaseExploreNodeHandleOption,
-    TMinerNode,
-} from '~/types/explore';
+} from '~/types/explore/nodeData/baseNodeData';
+import { MinerNode } from '~/types/explore/nodes';
 import '~/styles/animations.css';
 
 interface MinerNodeProps {
     id: string;
     selected: boolean;
-    data: TMinerNode['data'];
+    data: MinerNode['data'];
     title: string;
     iconName: string;
     handleOptions: BaseExploreNodeHandleOption[];
     dropdownOptions: BaseExploreNodeDropdownOption[];
-    isLoading: boolean;
+    isLoading?: boolean;
     onDropdownAction?: (action: BaseExploreNodeDropdownActionType) => void;
+    customActions?: ReactNode;
+    children?: ReactNode;
 }
 
 const BaseMinerNode = memo<MinerNodeProps>((props) => {
-    const { id, selected, data, title, iconName, handleOptions, dropdownOptions, isLoading, onDropdownAction } = props;
+    const {
+        id,
+        selected,
+        data,
+        title,
+        iconName,
+        handleOptions,
+        dropdownOptions,
+        isLoading,
+        onDropdownAction,
+        customActions,
+        children,
+    } = props;
     const { assets } = data;
 
     const renderFileContent = () => {
@@ -50,7 +64,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
                 <div>
                     <p>Input Files</p>
                     {assets.map((asset, index) => {
-                        if (asset.origin != 'mined') {
+                        if (asset.io === 'input') {
                             return (
                                 <div key={index} className="text-sm text-gray-600">
                                     {'📄'}
@@ -63,7 +77,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
                 <div>
                     <p>Output Files</p>
                     {assets.map((asset, index) => {
-                        if (asset.origin === 'mined') {
+                        if (asset.io === 'output') {
                             return (
                                 <div key={index} className="text-sm text-gray-600">
                                     {'⛏️'}
@@ -87,7 +101,10 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             dropdownOptions={dropdownOptions}
             onDropdownAction={onDropdownAction}
             customContent={renderFileContent()}
-        />
+            customActions={customActions}
+        >
+            {children}
+        </BaseExploreNode>
     );
 });
 

@@ -1,15 +1,15 @@
 import { HierarchyPointNode } from '@visx/hierarchy/lib/types';
 import { ScaleOrdinal } from 'd3';
-import { TreeNode } from '~/types/ocpt/ocpt.types';
-import ProcessTreeOperatorNode from '~/components/ocpt/ProcessTreeOperatorNode';
-import TextNode from '~/components/ocpt/TextNode';
+import ProcessTreeOperatorNode from '~/components/ocpt/nodes/ProcessTreeOperatorNode';
+import TextNode from '~/components/ocpt/nodes/TextNode';
 import {
     isActivity,
     isExtendedProcessTreeOperatorNode,
     isProcessTreeOperator,
     isSilentActivity,
     isTrueSilentActivity,
-} from '~/lib/ocptGuards';
+} from '~/lib/ocpt/ocptGuards';
+import { TreeNode } from '~/types/ocpt/ocpt.types';
 
 const parentIsArbitraryOrSkip = (parent: HierarchyPointNode<TreeNode> | null) => {
     if (!parent) return false;

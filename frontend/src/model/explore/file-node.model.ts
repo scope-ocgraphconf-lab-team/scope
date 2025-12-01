@@ -1,10 +1,8 @@
 import { type XYPosition } from '@xyflow/react';
-import {
-    type ExploreFileNodeType,
-    type FileExploreNodeData,
-} from '~/types/explore';
-import { BaseExploreNode } from './base-node.model';
+import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
+import { ExploreFileNodeType } from '~/types/explore/nodeTypesCategories';
 import { AssetType } from '~/types/files.types';
+import { BaseExploreNode } from './base-node.model';
 
 export class FileExploreNode extends BaseExploreNode {
     declare data: FileExploreNodeData;
