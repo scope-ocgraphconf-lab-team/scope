@@ -10,9 +10,9 @@ use crate::core::ocim::{
     concurrent_cut_detection::find_cut_concurrent,
 };
 
-pub fn ocim_init(log: &OCEL) -> OCPT {
-    let local_data = LocalData::new(vec![log.clone()], None);
-    let global_data = GlobalData::new(vec![log.clone()]);
+pub fn ocim_init(logs: &Vec<OCEL>) -> OCPT {
+    let local_data = LocalData::new(logs.clone(), None);
+    let global_data = GlobalData::new(logs.clone());
     
     let root_node: OCPTNode = ocim_recursive(local_data, &global_data);
     OCPT::new(root_node)

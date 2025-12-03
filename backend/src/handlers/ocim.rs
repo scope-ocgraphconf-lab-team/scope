@@ -13,7 +13,7 @@ use serde_json::json;
 pub async fn apply_ocim(Path(file_id): Path<String>) -> Result<impl IntoResponse, (StatusCode, String)> {
     let ocel = OCEL::import_from_path(&file_id).await?;
 
-    let ocpt = ocim_init(&ocel);
+    let ocpt = ocim_init(&vec![ocel]);
     //let ocpt_frontend = backend_to_frontend(&ocpt); //needed to add this step since frontend has a different ocpt format, than we use in the backend
 
     let id = ocpt.export_to_path().await.map_err(|e| {
