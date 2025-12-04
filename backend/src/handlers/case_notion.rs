@@ -221,7 +221,7 @@ struct TraditionalTypeLevelResponse {
     case_notion: &'static str,
     object_type: String,
     measures: Vec<CaseMeasure>,
-    graph: Value,
+    type_level_graph: Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     case_notion_file_id: Option<String>,
 }
@@ -489,7 +489,7 @@ pub async fn get_traditional_case_notion(
         case_notion: CaseKind::Traditional.label(),
         object_type,
         measures: evaluation.measures.clone(),
-        graph: partitioned_graph,
+        type_level_graph: partitioned_graph,
         case_notion_file_id: Some(case_notion_file_id),
     };
 
