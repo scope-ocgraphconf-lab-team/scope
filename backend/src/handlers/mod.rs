@@ -1,4 +1,5 @@
 pub mod case_notion;
+pub mod collection_ocels;
 pub mod conformance;
 pub mod df2;
 pub mod event_object_frequencies;
