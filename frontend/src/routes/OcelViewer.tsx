@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SidebarProvider } from '~/components/ui/sidebar';
-import AppSidebar from '~/components/AppSidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 // import OcelVisualization from '~/components/ocel/OcelVisualization';
 import OcelVisualization from '~/components/graph_visualization/OcelVisualization';

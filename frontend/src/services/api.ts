@@ -1,4 +1,5 @@
 import axios, { type AxiosResponse } from 'axios';
+import { GetCaseNotionsResponse } from '~/services/response.types';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
 import { JSONSchema } from '~/types/ocpt/ocpt.types';
@@ -42,6 +43,12 @@ export const getOcpt = async (fileId: string): Promise<getOcptResult> => {
 
 export const getOcel = async (fileId: string) => {
     const response = await api.get(`/v1/objects/ocel/${fileId}`);
+    console.log(response.data);
+    return response.data;
+};
+
+export const getOcelCollection = async (fileId: string) => {
+    const response = await api.get(`/v1/objects/ocel_collection/${fileId}`);
     console.log(response.data);
     return response.data;
 };
@@ -108,7 +115,7 @@ export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promi
 };
 
 export const getCaseNotions = async (cnFileId: string) => {
-    const response = await api.get(`v1/case_notion/case_ocel/${cnFileId}`);
+    const response = await api.get<GetCaseNotionsResponse>(`v1/case_notion/case_ocel/${cnFileId}`);
     return response.data;
 };
 

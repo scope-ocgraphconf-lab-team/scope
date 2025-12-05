@@ -22,6 +22,15 @@ export const useGetOcpt = (fileId: string | null, shouldFetch: boolean) => {
     });
 };
 
+export const useGetOcelCollection = (fileId: string | null) => {
+    return useQuery({
+        queryKey: ['getOcelCollection', fileId],
+        queryFn: () => getOcelCollection(fileId!),
+        refetchOnWindowFocus: false,
+        enabled: Boolean(fileId),
+    });
+};
+
 export const useGetOcel = (fileId: string | null) => {
     return useQuery({
         queryKey: ['getOcel', fileId],
@@ -85,11 +94,11 @@ export const useMineOcpt = (fileId: string | null, algorithm: string, shouldFetc
     });
 };
 
-export const useGetCaseNotions = (cnFileId: string) => {
+export const useGetCaseNotions = (cnFileId: string, shouldFetch: boolean) => {
     return useQuery({
         queryKey: ['getCaseNotions', cnFileId],
         queryFn: () => getCaseNotions(cnFileId),
-        enabled: cnFileId.length > 0,
+        enabled: cnFileId.length > 0 && shouldFetch,
         refetchOnWindowFocus: false,
     });
 };

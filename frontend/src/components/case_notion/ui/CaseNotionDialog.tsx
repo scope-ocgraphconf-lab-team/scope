@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { NodeProps } from '@xyflow/react';
 import { Pickaxe } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '~/components/ui/button';
@@ -20,14 +21,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '~/components/ui/select';
-import { getAdvancedCN, getConnectedComponentsCN, getTraditionalCN } from '~/services/api';
-import { useGetCaseNotions, useGetOcelObjectTypes, useGetLogGraphs } from '~/services/queries';
-import { BaseExploreNodeAsset, BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
-import OcelVisualization from '~/components/graph_visualization/OcelVisualization';
 import GraphPage from '~/components/graph_visualization/GraphPage';
+import { getAdvancedCN, getConnectedComponentsCN, getTraditionalCN } from '~/services/api';
+import { useGetCaseNotions, useGetLogGraphs, useGetOcelObjectTypes } from '~/services/queries';
+import { BaseExploreNodeAsset, BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
+import { MinerNode } from '~/types/explore/nodes';
 
 interface CaseNotionDialogProps {
-    nodeId: string;
+    node: NodeProps<MinerNode>;
     fileId: string | null;
     fileName: string;
     isOpen: boolean;
@@ -35,24 +36,15 @@ interface CaseNotionDialogProps {
     updateNodeData: (nodeId: string, data: Partial<BaseExploreNodeData>) => void;
 }
 
-const CaseNotionDialog = ({
-    nodeId,
-    fileId,
-    fileName,
-    isOpen,
-    onOpenChange,
-    updateNodeData,
-}: CaseNotionDialogProps) => {
+const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, updateNodeData }: CaseNotionDialogProps) => {
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('traditional');
     const [selectedObjectType, setSelectedObjectType] = useState<string>('default');
     const [currentCnFileId, setCurrentCnFileId] = useState<string>('');
+    const [makeFinalFetch, setMakeFinalFetch] = useState<boolean>(false);
 
     const { data: ocelObjectTypesData } = useGetOcelObjectTypes(fileId);
-    const cnGet = useGetCaseNotions(currentCnFileId);
+    const cnGet = useGetCaseNotions(currentCnFileId, makeFinalFetch);
     const logGraph = useGetLogGraphs(fileId ?? '');
-    console.log('log graph');
-    console.log(logGraph);
-
 
     const { mutate, isPending, data } = useMutation({
         mutationFn: async (algorithm: string) => {
@@ -87,6 +79,7 @@ const CaseNotionDialog = ({
         }
 
         if (selectedAlgorithm) {
+            setMakeFinalFetch(false);
             mutate(selectedAlgorithm);
         } else {
             console.warn('No algorithm selected.');
@@ -94,33 +87,48 @@ const CaseNotionDialog = ({
     };
 
     const handleFinalMineClick = () => {
-        console.log(cnGet.data);
+        setMakeFinalFetch(true);
     };
+
+    useEffect(() => {
+        const outputAssets = node.data.assets.filter((asset) => asset.io === 'output');
+        if (!cnGet.data || !fileName || outputAssets.length > 0) return;
+
+        const asset: BaseExploreNodeAsset = {
+            id: cnGet.data.case_ocels_file_id,
+            io: 'output',
+            origin: 'mined',
+            type: 'ocelCollectionFile',
+            name: `cn_${cnGet.data.case_ocels_file_id}`,
+        };
+
+        const updatedAssets = [...node.data.assets, asset];
+        node.data.onDataChange(node.id, { assets: updatedAssets });
+        onOpenChange(false);
+    }, [cnGet.data]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[800px] md:max-w-[1000px] lg:max-w-[1200px] h-[80vh] w-full flex flex-col">
                 <div className="flex flex-row flex-grow min-h-0">
-                    
                     <div className="flex flex-col w-2/3 min-h-0">
                         <DialogHeader>
                             <DialogTitle>Case Notions</DialogTitle>
                             <DialogDescription>Choose a case notion mining algorithm</DialogDescription>
                         </DialogHeader>
-                   
-                    <div className="flex flex-1 w-full h-full overflow-hidden">
-    <div className="flex flex-col w-full h-full overflow-hidden">
-        {fileId ? (
-            <GraphPage fileId={fileId} caseNotionGraph={data?.type_level_graph} />
-        ) : (
-            <div className="flex flex-1 items-center justify-center">
-                <p className="text-gray-500">No OCEL file connected.</p>
-            </div>
-        )}
-    </div>
-</div>
 
-                </div>
+                        <div className="flex flex-1 w-full h-full overflow-hidden">
+                            <div className="flex flex-col w-full h-full overflow-hidden">
+                                {fileId ? (
+                                    <GraphPage fileId={fileId} caseNotionGraph={data?.type_level_graph} />
+                                ) : (
+                                    <div className="flex flex-1 items-center justify-center">
+                                        <p className="text-gray-500">No OCEL file connected.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                     <div className="w-px bg-border h-full mx-4"></div>
                     <div className="flex flex-col w-1/3">
                         <p className="font-bold">Settings</p>
