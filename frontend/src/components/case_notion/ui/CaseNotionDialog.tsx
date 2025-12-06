@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { NodeProps } from '@xyflow/react';
-import { Pickaxe } from 'lucide-react';
+import { Loader2, Pickaxe } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '~/components/ui/button';
 import {
@@ -173,12 +173,12 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                                 disabled={!selectedAlgorithm || isPending}
                                 className="h-10 w-10 ml-2"
                             >
-                                {isPending ? 'd' : <Pickaxe />}
+                                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pickaxe />}
                             </Button>
                         </div>
                         <p className="font-bold mt-6">Measures</p>
                         {data && data.measures && data.measures.length > 0 && (
-                            <div className="mt-2 overflow-auto max-h-[400px]">
+                            <div className="mt-2 overflow-auto">
                                 <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                         <tr>
@@ -211,7 +211,16 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                     </div>
                 </div>
                 <DialogFooter className="flex justify-end">
-                    <Button onClick={handleFinalMineClick}>Mine Case Notions</Button>
+                    <Button onClick={handleFinalMineClick} disabled={makeFinalFetch && cnGet.isFetching}>
+                        {makeFinalFetch && cnGet.isFetching ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Mining...
+                            </>
+                        ) : (
+                            'Mine Case Notions'
+                        )}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
