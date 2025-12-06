@@ -1,4 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+
+
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { useGetLogGraphs } from '~/services/queries';
 
@@ -11,43 +13,43 @@ interface CaseGraphData {
 interface GraphPageProps {
     fileId: string;
     caseNotionGraph?: CaseGraphData | null;
+    editable?: boolean; 
 }
 
-const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph }) => {
+const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable = false }) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const svgRef = useRef<SVGSVGElement | null>(null);
 
     const { data, isLoading, error } = useGetLogGraphs(fileId);
 
-    const graph = React.useMemo(() => {
-        if (!data) return null;
+    
+    const [localGraph, setLocalGraph] = useState<any | null>(null);
 
-        const nodes: { id: string; group: 'event' | 'object'; deselected?: boolean }[] = [];
-        const links: {
-            source: string;
-            target: string;
-            deselected?: boolean;
-        }[] = [];
+   
+    React.useEffect(() => {
+        if (!data) return;
 
-        // Base event nodes
+        const nodes: any[] = [];
+        const links: any[] = [];
+
         data.event_types.forEach((et: string) => {
             nodes.push({
                 id: et,
                 group: 'event',
                 deselected: caseNotionGraph?.deselected_event_types?.includes(et) ?? false,
+                originalGroup: 'event',
             });
         });
 
-        // Base object nodes
         data.object_types.forEach((ot: string) => {
             nodes.push({
                 id: ot,
                 group: 'object',
                 deselected: caseNotionGraph?.deselected_object_types?.includes(ot) ?? false,
+                originalGroup: 'object',
             });
         });
 
-        // Base arcs
         data.arcs.forEach((a: any) => {
             const isDeselected =
                 caseNotionGraph?.deselected_arcs?.some(
@@ -61,11 +63,12 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph }) => {
             });
         });
 
-        return { nodes, links };
+        setLocalGraph({ nodes, links });
     }, [data, caseNotionGraph]);
 
+    
     useEffect(() => {
-        if (!graph || !svgRef.current || !containerRef.current) return;
+        if (!localGraph || !svgRef.current || !containerRef.current) return;
 
         const svg = d3.select(svgRef.current);
         svg.selectAll('*').remove();
@@ -75,53 +78,71 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph }) => {
 
         const g = svg.attr('viewBox', `0 0 ${width} ${height}`).append('g');
 
-        // Zoom
+       
         svg.call(
             d3.zoom<SVGSVGElement, unknown>().on('zoom', (event) => {
                 g.attr('transform', event.transform);
             })
         );
 
-        // Force simulation
+        
         const simulation = d3
-            .forceSimulation(graph.nodes as any)
+            .forceSimulation(localGraph.nodes as any)
             .force(
                 'link',
                 d3
-                    .forceLink(graph.links as any)
+                    .forceLink(localGraph.links as any)
                     .id((d: any) => d.id)
-                    .distance(90)
+                    .distance(160)
             )
-            .force('charge', d3.forceManyBody().strength(-220))
-            .force('center', d3.forceCenter(width / 2, height / 2));
+            .force('charge', d3.forceManyBody().strength(-350))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collision', d3.forceCollide().radius(45));
 
-        // Draw links
+      
         const link = g
             .append('g')
             .selectAll('line')
-            .data(graph.links)
+            .data(localGraph.links)
             .enter()
             .append('line')
-            .attr('stroke-width', 2)
+            .attr('stroke-width', 3)
             .attr('stroke', (d: any) => (d.deselected ? '#C0C0C0' : 'black'))
-            .attr('stroke-opacity', (d: any) => (d.deselected ? 0.4 : 0.8));
+            .attr('stroke-opacity', (d: any) => (d.deselected ? 0.35 : 0.85))
+            .on('click', function (_, d: any) {
+                if (!editable) return;
 
-        // Node colors
-        const getColor = (d: any) => {
-            if (d.deselected) return '#C0C0C0'; // grey
+                d.deselected = !d.deselected;
+                d3.select(this)
+                    .attr('stroke', d.deselected ? '#C0C0C0' : 'black')
+                    .attr('stroke-opacity', d.deselected ? 0.35 : 0.85);
+            });
+
+        const nodeColor = (d: any) => {
+            if (d.deselected) return '#C0C0C0';
             return d.group === 'event' ? '#007BFF' : '#FF5F15';
         };
 
+       
         const node = g
             .append('g')
             .selectAll('circle')
-            .data(graph.nodes)
+            .data(localGraph.nodes)
             .enter()
             .append('circle')
-            .attr('r', 10)
-            .attr('fill', getColor)
-            .attr('stroke', '#333')
-            .attr('stroke-width', 1)
+            .attr('r', 18)
+            .attr('fill', nodeColor)
+            .attr('stroke', '#222')
+            .attr('stroke-width', 1.5)
+            .on('click', function (_, d: any) {
+                if (!editable) return;
+
+                d.deselected = !d.deselected;
+
+                d3.select(this)
+                    .attr('fill', nodeColor(d))
+                    .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+            })
             .call(
                 d3
                     .drag<SVGCircleElement, any>()
@@ -141,18 +162,19 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph }) => {
                     })
             );
 
-        // Labels
+       
         const label = g
             .append('g')
             .selectAll('text')
-            .data(graph.nodes)
+            .data(localGraph.nodes)
             .enter()
             .append('text')
             .text((d: any) => d.id)
-            .attr('font-size', 10)
+            .attr('font-size', 11)
             .attr('text-anchor', 'middle')
-            .attr('dy', -14);
+            .attr('dy', -22);
 
+        
         simulation.on('tick', () => {
             link.attr('x1', (d: any) => d.source.x)
                 .attr('y1', (d: any) => d.source.y)
@@ -160,15 +182,12 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph }) => {
                 .attr('y2', (d: any) => d.target.y);
 
             node.attr('cx', (d: any) => d.x).attr('cy', (d: any) => d.y);
-
             label.attr('x', (d: any) => d.x).attr('y', (d: any) => d.y);
         });
-    }, [graph]);
+    }, [localGraph, editable]);
 
-    if (isLoading) return <div className="flex w-full h-full justify-center items-center">Loading graph...</div>;
-
-    if (error)
-        return <div className="flex w-full h-full justify-center items-center text-red-500">Failed to load graph</div>;
+    if (isLoading) return <div className="flex w-full h-full justify-center items-center">Loading...</div>;
+    if (error) return <div className="flex w-full h-full justify-center items-center text-red-500">Failed to load graph</div>;
 
     return (
         <div ref={containerRef} className="w-full h-full">

@@ -111,7 +111,9 @@ const CaseNotionDialog = ({
                     <div className="flex flex-1 w-full h-full overflow-hidden">
     <div className="flex flex-col w-full h-full overflow-hidden">
         {fileId ? (
-            <GraphPage fileId={fileId} caseNotionGraph={data?.type_level_graph} />
+            <GraphPage  fileId={fileId}
+    caseNotionGraph={data?.type_level_graph}
+    editable={selectedAlgorithm === "generic"} />
         ) : (
             <div className="flex flex-1 items-center justify-center">
                 <p className="text-gray-500">No OCEL file connected.</p>
@@ -133,8 +135,8 @@ const CaseNotionDialog = ({
                                     <SelectGroup>
                                         <SelectLabel>Algorithms</SelectLabel>
                                         <SelectItem value="traditional">Traditional</SelectItem>
-                                        <SelectItem value="generic" disabled>
-                                            Generic (Not Implemented)
+                                        <SelectItem value="generic">
+                                            Generic
                                         </SelectItem>
                                         <SelectItem value="advanced">Advanced</SelectItem>
                                         <SelectItem value="connected-component">Connected Component</SelectItem>
