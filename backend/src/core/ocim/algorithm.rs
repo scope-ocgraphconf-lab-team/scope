@@ -9,7 +9,9 @@ use crate::core::ocim::{
     exclusive_cut_detection::find_cut_exclusive,
     concurrent_cut_detection::find_cut_concurrent,
     fallthrough_detection::detect_fallthrough_fitness_polynomial,
+    tau_cases::detect_tau_cases,
 };
+use uuid::Uuid;
 
 pub fn ocim_init(logs: &Vec<OCEL>) -> OCPT {
     let local_data = LocalData::new(logs.clone(), None);
@@ -20,32 +22,32 @@ pub fn ocim_init(logs: &Vec<OCEL>) -> OCPT {
 }
 
 fn ocim_recursive(local_data: LocalData, global_data: &GlobalData) -> OCPTNode {
-    // --- Helper stubs you will replace with real implementations ---
-    //
-    // These are intentionally simple placeholders so this function compiles
-    // and expresses the OCIM structure. Replace each `*_stub` with the
-    // real helper when you implement them.
-    //
-    // Example replacements:
-    // - let (tau_found, tau_objects) = taucase(&local_data, &global_data);
-    // - let (split_logs, object_info) = splitlog_taucase(...);
-    // - let base = basecase(&local_data);
-    // - let (found_cut, parts) = findcut(&local_data);
-    // - let (found_fallthrough, parts) = fallthrough(&local_data);
+    let mut local_data = local_data;
 
-    // Stub: does TAU case apply to this local_data?
-    let tau_case_found: bool = false;
-    // If TAU case needs to return additional data (e.g., O'), return it here.
-    // let tau_case_data = None;
+    if let Some((partition, operator)) = detect_tau_cases(&mut local_data, global_data) {
+        let sublogs = split_log(&local_data, partition, &operator, global_data);
+        let mut subtrees: Vec<OCPTNode> = Vec::new();
+        if let Some(first) = sublogs.get(0) {
+            subtrees.push(ocim_recursive(first.clone(), global_data));
+        }
+        // Second branch corresponds to tau (empty behavior) but carry all object-type sets.
+        let all_types: std::collections::HashSet<String> =
+            local_data.object_types.iter().cloned().collect();
+        let tau_leaf = OCPTNode::Leaf(crate::models::ocpt::OCPTLeaf {
+            activity_label: crate::models::ocpt::OCPTLeafLabel::Tau,
+            related_ob_types: all_types.clone(),
+            divergent_ob_types: all_types.clone(),
+            convergent_ob_types: all_types.clone(),
+            deficient_ob_types: all_types.clone(),
+            uuid: Uuid::new_v4(),
+        });
+        subtrees.push(tau_leaf);
 
-    if tau_case_found {
-        // TODO: Replace with real SPLITLOG(TAUCASE) and recursive call.
-        // Example:
-        // let (l_prime, _) = splitlog_taucase(local_data, tau_case_data, ...);
-        // return ocim_recursive(l_prime, global_data_for_taucase);
-        //
-        // For now we return a small marker leaf that indicates TAU branch.
-        return OCPTNode::new_leaf(Some("TAU_CASE_PLACEHOLDER".to_string()));
+        let mut operator_node = OCPTNode::new_operator(operator);
+        for subtree in subtrees {
+            operator_node.add_child(subtree);
+        }
+        return operator_node;
     }
 
     if local_data.alphabet.len() == 1 {
