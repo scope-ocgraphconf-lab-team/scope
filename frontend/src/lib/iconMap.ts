@@ -6,6 +6,7 @@ import {
     File,
     FileJson,
     FileSpreadsheet,
+    FileStack,
     FileText,
     Grip,
     type LucideProps,
@@ -31,6 +32,7 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     waves: Waves,
     pickaxe: Pickaxe,
     chartBar: ChartBar,
+    fileStack: FileStack,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {
@@ -59,8 +61,8 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
         icon: Database,
         color: 'text-blue-500',
     },
-    objectEventGraph: {
-        icon: Workflow,
-        color: 'text-purple-500',
+    ocelCollectionFile: {
+        icon: FileStack,
+        color: 'text-green-500',
     },
 };

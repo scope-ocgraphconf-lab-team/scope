@@ -61,7 +61,7 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
             customActions={renderActions()}
         >
             <CaseNotionDialog
-                nodeId={id}
+                node={node}
                 fileId={fileId}
                 fileName={fileName}
                 isOpen={isDialogOpen}

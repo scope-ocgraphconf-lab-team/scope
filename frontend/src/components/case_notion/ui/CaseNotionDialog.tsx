@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Pickaxe } from 'lucide-react';
+import { NodeProps } from '@xyflow/react';
+import { Loader2, Pickaxe } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Button } from '~/components/ui/button';
 import {
@@ -20,14 +21,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '~/components/ui/select';
-import { getAdvancedCN, getConnectedComponentsCN, getTraditionalCN } from '~/services/api';
-import { useGetCaseNotions, useGetOcelObjectTypes, useGetLogGraphs } from '~/services/queries';
-import { BaseExploreNodeAsset, BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
-import OcelVisualization from '~/components/graph_visualization/OcelVisualization';
 import GraphPage from '~/components/graph_visualization/GraphPage';
+import { getAdvancedCN, getConnectedComponentsCN, getTraditionalCN } from '~/services/api';
+import { useGetCaseNotions, useGetLogGraphs, useGetOcelObjectTypes } from '~/services/queries';
+import { BaseExploreNodeAsset, BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
+import { MinerNode } from '~/types/explore/nodes';
 
 interface CaseNotionDialogProps {
-    nodeId: string;
+    node: NodeProps<MinerNode>;
     fileId: string | null;
     fileName: string;
     isOpen: boolean;
@@ -35,24 +36,15 @@ interface CaseNotionDialogProps {
     updateNodeData: (nodeId: string, data: Partial<BaseExploreNodeData>) => void;
 }
 
-const CaseNotionDialog = ({
-    nodeId,
-    fileId,
-    fileName,
-    isOpen,
-    onOpenChange,
-    updateNodeData,
-}: CaseNotionDialogProps) => {
+const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, updateNodeData }: CaseNotionDialogProps) => {
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('traditional');
     const [selectedObjectType, setSelectedObjectType] = useState<string>('default');
     const [currentCnFileId, setCurrentCnFileId] = useState<string>('');
+    const [makeFinalFetch, setMakeFinalFetch] = useState<boolean>(false);
 
     const { data: ocelObjectTypesData } = useGetOcelObjectTypes(fileId);
-    const cnGet = useGetCaseNotions(currentCnFileId);
+    const cnGet = useGetCaseNotions(currentCnFileId, makeFinalFetch);
     const logGraph = useGetLogGraphs(fileId ?? '');
-    console.log('log graph');
-    console.log(logGraph);
-
 
     const { mutate, isPending, data } = useMutation({
         mutationFn: async (algorithm: string) => {
@@ -87,6 +79,7 @@ const CaseNotionDialog = ({
         }
 
         if (selectedAlgorithm) {
+            setMakeFinalFetch(false);
             mutate(selectedAlgorithm);
         } else {
             console.warn('No algorithm selected.');
@@ -94,39 +87,56 @@ const CaseNotionDialog = ({
     };
 
     const handleFinalMineClick = () => {
-        console.log(cnGet.data);
+        setMakeFinalFetch(true);
     };
+
+    useEffect(() => {
+        const outputAssets = node.data.assets.filter((asset) => asset.io === 'output');
+        if (!cnGet.data || !fileName || outputAssets.length > 0) return;
+
+        const asset: BaseExploreNodeAsset = {
+            id: cnGet.data.case_ocels_file_id,
+            io: 'output',
+            origin: 'mined',
+            type: 'ocelCollectionFile',
+            name: `cn_${cnGet.data.case_ocels_file_id}`,
+        };
+
+        const updatedAssets = [...node.data.assets, asset];
+        node.data.onDataChange(node.id, { assets: updatedAssets });
+        onOpenChange(false);
+    }, [cnGet.data]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[800px] md:max-w-[1000px] lg:max-w-[1200px] h-[80vh] w-full flex flex-col">
                 <div className="flex flex-row flex-grow min-h-0">
-                    
                     <div className="flex flex-col w-2/3 min-h-0">
                         <DialogHeader>
                             <DialogTitle>Case Notions</DialogTitle>
                             <DialogDescription>Choose a case notion mining algorithm</DialogDescription>
                         </DialogHeader>
-                   
-                    <div className="flex flex-1 w-full h-full overflow-hidden">
-    <div className="flex flex-col w-full h-full overflow-hidden">
-        {fileId ? (
-            <GraphPage fileId={fileId} caseNotionGraph={data?.type_level_graph} />
-        ) : (
-            <div className="flex flex-1 items-center justify-center">
-                <p className="text-gray-500">No OCEL file connected.</p>
-            </div>
-        )}
-    </div>
-</div>
 
-                </div>
+                        <div className="flex flex-1 w-full h-full overflow-hidden">
+                            <div className="flex flex-col w-full h-full overflow-hidden">
+                                {fileId ? (
+                                    <GraphPage fileId={fileId} caseNotionGraph={data?.type_level_graph} />
+                                ) : (
+                                    <div className="flex flex-1 items-center justify-center">
+                                        <p className="text-gray-500">No OCEL file connected.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                     <div className="w-px bg-border h-full mx-4"></div>
                     <div className="flex flex-col w-1/3">
                         <p className="font-bold">Settings</p>
                         <div className="flex mt-2 ">
                             <Select onValueChange={setSelectedAlgorithm} value={selectedAlgorithm}>
-                                <SelectTrigger className="w-[180px]">
+                                <SelectTrigger
+                                    className={selectedAlgorithm === 'connected-component' ? 'w-full' : 'w-[180px]'}
+                                >
                                     <SelectValue placeholder="Select an algorithm" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -141,36 +151,42 @@ const CaseNotionDialog = ({
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
-                            <Select value={selectedObjectType} onValueChange={setSelectedObjectType}>
-                                <SelectTrigger className="w-[180px] ml-2">
-                                    <SelectValue placeholder="Select an object type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectLabel>Object Types</SelectLabel>
-                                        <SelectItem key="default" value="default">
-                                            Default (slow)
-                                        </SelectItem>
-                                        {ocelObjectTypesData?.object_types.map((objectType) => (
-                                            <SelectItem key={objectType.name} value={objectType.name}>
-                                                {objectType.name}
+                            {selectedAlgorithm !== 'connected-component' && (
+                                <Select
+                                    value={selectedObjectType}
+                                    onValueChange={setSelectedObjectType}
+                                    disabled={selectedAlgorithm === 'connected-component'}
+                                >
+                                    <SelectTrigger className="w-[180px] ml-2">
+                                        <SelectValue placeholder="Select an object type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel>Object Types</SelectLabel>
+                                            <SelectItem key="default" value="default">
+                                                Default (slow)
                                             </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
+                                            {ocelObjectTypesData?.object_types.map((objectType) => (
+                                                <SelectItem key={objectType.name} value={objectType.name}>
+                                                    {objectType.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            )}
                             <Button
                                 variant={'outline'}
                                 onClick={handleMineClick}
                                 disabled={!selectedAlgorithm || isPending}
                                 className="h-10 w-10 ml-2"
                             >
-                                {isPending ? 'd' : <Pickaxe />}
+                                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pickaxe />}
                             </Button>
                         </div>
                         <p className="font-bold mt-6">Measures</p>
                         {data && data.measures && data.measures.length > 0 && (
-                            <div className="mt-2 overflow-auto max-h-[400px]">
+                            <div className="mt-2 overflow-auto">
                                 <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                         <tr>
@@ -203,7 +219,16 @@ const CaseNotionDialog = ({
                     </div>
                 </div>
                 <DialogFooter className="flex justify-end">
-                    <Button onClick={handleFinalMineClick}>Mine Case Notions</Button>
+                    <Button onClick={handleFinalMineClick} disabled={makeFinalFetch && cnGet.isFetching}>
+                        {makeFinalFetch && cnGet.isFetching ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Mining...
+                            </>
+                        ) : (
+                            'Mine Case Notions'
+                        )}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
