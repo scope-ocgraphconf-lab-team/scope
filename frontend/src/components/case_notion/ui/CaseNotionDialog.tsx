@@ -134,9 +134,7 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                         <p className="font-bold">Settings</p>
                         <div className="flex mt-2 ">
                             <Select onValueChange={setSelectedAlgorithm} value={selectedAlgorithm}>
-                                <SelectTrigger
-                                    className={selectedAlgorithm === 'connected-component' ? 'w-full' : 'w-[180px]'}
-                                >
+                                <SelectTrigger className={selectedAlgorithm === 'connected-component' ? 'w-full' : ''}>
                                     <SelectValue placeholder="Select an algorithm" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -157,7 +155,7 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                                     onValueChange={setSelectedObjectType}
                                     disabled={selectedAlgorithm === 'connected-component'}
                                 >
-                                    <SelectTrigger className="w-[180px] ml-2">
+                                    <SelectTrigger className="ml-2">
                                         <SelectValue placeholder="Select an object type" />
                                     </SelectTrigger>
                                     <SelectContent>
