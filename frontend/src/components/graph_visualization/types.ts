@@ -1,3 +1,4 @@
+import { ExploreFileNodeType } from '~/types/explore/nodeTypesCategories';
 
 export type NodeDatum = {
     id: string;
@@ -20,6 +21,8 @@ export type EdgeDatum = {
 
 export interface OcelVisualizationD3Props {
     fileId: string;
+    sourceType?: Extract<ExploreFileNodeType, 'ocelFileNode' | 'ocelCollectionNode'>;
+    isFullScreen?: boolean;
 }
 
 
