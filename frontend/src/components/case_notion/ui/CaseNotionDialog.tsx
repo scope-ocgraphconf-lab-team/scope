@@ -134,7 +134,9 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                         <p className="font-bold">Settings</p>
                         <div className="flex mt-2 ">
                             <Select onValueChange={setSelectedAlgorithm} value={selectedAlgorithm}>
-                                <SelectTrigger className="w-[180px]">
+                                <SelectTrigger
+                                    className={selectedAlgorithm === 'connected-component' ? 'w-full' : 'w-[180px]'}
+                                >
                                     <SelectValue placeholder="Select an algorithm" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -149,24 +151,30 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
-                            <Select value={selectedObjectType} onValueChange={setSelectedObjectType}>
-                                <SelectTrigger className="w-[180px] ml-2">
-                                    <SelectValue placeholder="Select an object type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectLabel>Object Types</SelectLabel>
-                                        <SelectItem key="default" value="default">
-                                            Default (slow)
-                                        </SelectItem>
-                                        {ocelObjectTypesData?.object_types.map((objectType) => (
-                                            <SelectItem key={objectType.name} value={objectType.name}>
-                                                {objectType.name}
+                            {selectedAlgorithm !== 'connected-component' && (
+                                <Select
+                                    value={selectedObjectType}
+                                    onValueChange={setSelectedObjectType}
+                                    disabled={selectedAlgorithm === 'connected-component'}
+                                >
+                                    <SelectTrigger className="w-[180px] ml-2">
+                                        <SelectValue placeholder="Select an object type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel>Object Types</SelectLabel>
+                                            <SelectItem key="default" value="default">
+                                                Default (slow)
                                             </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
+                                            {ocelObjectTypesData?.object_types.map((objectType) => (
+                                                <SelectItem key={objectType.name} value={objectType.name}>
+                                                    {objectType.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            )}
                             <Button
                                 variant={'outline'}
                                 onClick={handleMineClick}
