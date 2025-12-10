@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { useGetLogGraphs } from '~/services/queries';
@@ -13,20 +11,69 @@ interface CaseGraphData {
 interface GraphPageProps {
     fileId: string;
     caseNotionGraph?: CaseGraphData | null;
-    editable?: boolean; 
+    editable?: boolean;
+    onGenericPayloadChange?: (payload: any) => void;
 }
 
-const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable = false }) => {
+const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable = false, onGenericPayloadChange }) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const svgRef = useRef<SVGSVGElement | null>(null);
 
     const { data, isLoading, error } = useGetLogGraphs(fileId);
 
-    
     const [localGraph, setLocalGraph] = useState<any | null>(null);
+    const [startingObjects, setStartingObjects] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (!editable || !localGraph) return;
+
+        const start_types = startingObjects.map((id) => ({
+            name: id,
+            attributes: [],
+        }));
+
+        const e2o_relations: any[] = [];
+        const o2o_relations: any[] = [];
+        console.log('local graph');
+        console.log(localGraph);
+
+        localGraph.links.forEach((l: any) => {
+           
+            if (!l.deselected) return;
+
+            const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+            const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+
+            const source = localGraph.nodes.find((n: any) => n.id === sourceId);
+            const target = localGraph.nodes.find((n: any) => n.id === targetId);
+
+            if (!source || !target) return;
+
+            const sourceType = { name: source.id, attributes: [] };
+            const targetType = { name: target.id, attributes: [] };
+
+            if (source.group === 'event' && target.group === 'object') {
+                e2o_relations.push([sourceType, targetType]);
+            }
+
+            if (source.group === 'object' && target.group === 'event') {
+                e2o_relations.push([targetType, sourceType]);
+            }
+
+            if (source.group === 'object' && target.group === 'object') {
+                o2o_relations.push([sourceType, targetType]);
+            }
+        });
+
+        console.log('e20');
+        console.log(e2o_relations);
+        const payload = { start_types, e2o_relations, o2o_relations };
+
+        onGenericPayloadChange?.(payload);
+    }, [localGraph, startingObjects, editable]);
 
    
-    React.useEffect(() => {
+    useEffect(() => {
         if (!data) return;
 
         const nodes: any[] = [];
@@ -37,7 +84,6 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
                 id: et,
                 group: 'event',
                 deselected: caseNotionGraph?.deselected_event_types?.includes(et) ?? false,
-                originalGroup: 'event',
             });
         });
 
@@ -46,7 +92,6 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
                 id: ot,
                 group: 'object',
                 deselected: caseNotionGraph?.deselected_object_types?.includes(ot) ?? false,
-                originalGroup: 'object',
             });
         });
 
@@ -60,13 +105,14 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
                 source: a.source_type,
                 target: a.target_type,
                 deselected: isDeselected,
+                originalDeselected: isDeselected,
             });
         });
 
         setLocalGraph({ nodes, links });
     }, [data, caseNotionGraph]);
 
-    
+   
     useEffect(() => {
         if (!localGraph || !svgRef.current || !containerRef.current) return;
 
@@ -78,20 +124,19 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
 
         const g = svg.attr('viewBox', `0 0 ${width} ${height}`).append('g');
 
-       
         svg.call(
-            d3.zoom<SVGSVGElement, unknown>().on('zoom', (event) => {
+            d3.zoom().on('zoom', (event) => {
                 g.attr('transform', event.transform);
             })
         );
 
-        
+       
         const simulation = d3
-            .forceSimulation(localGraph.nodes as any)
+            .forceSimulation(localGraph.nodes)
             .force(
                 'link',
                 d3
-                    .forceLink(localGraph.links as any)
+                    .forceLink(localGraph.links)
                     .id((d: any) => d.id)
                     .distance(160)
             )
@@ -100,6 +145,27 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .force('collision', d3.forceCollide().radius(45));
 
       
+        const updateLinkStyles = () => {
+            link.attr('stroke', (d: any) => (d.deselected ? '#C0C0C0' : 'black')).attr('stroke-opacity', (d: any) =>
+                d.deselected ? 0.35 : 0.85
+            );
+        };
+
+        const updateConnectedLinks = (node: any) => {
+            localGraph.links.forEach((l: any) => {
+                const connected = l.source.id === node.id || l.target.id === node.id;
+
+                if (node.deselected && connected) {
+                    l.deselected = true;
+                } else if (!node.deselected && connected) {
+                    l.deselected = l.originalDeselected;
+                }
+            });
+
+            updateLinkStyles();
+        };
+
+       
         const link = g
             .append('g')
             .selectAll('line')
@@ -111,17 +177,13 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .attr('stroke-opacity', (d: any) => (d.deselected ? 0.35 : 0.85))
             .on('click', function (_, d: any) {
                 if (!editable) return;
-
                 d.deselected = !d.deselected;
-                d3.select(this)
-                    .attr('stroke', d.deselected ? '#C0C0C0' : 'black')
-                    .attr('stroke-opacity', d.deselected ? 0.35 : 0.85);
+               
+                updateLinkStyles();
             });
 
-        const nodeColor = (d: any) => {
-            if (d.deselected) return '#C0C0C0';
-            return d.group === 'event' ? '#007BFF' : '#FF5F15';
-        };
+       
+        const nodeColor = (d: any) => (d.deselected ? '#C0C0C0' : d.group === 'event' ? '#007BFF' : '#FF5F15');
 
        
         const node = g
@@ -130,18 +192,42 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .data(localGraph.nodes)
             .enter()
             .append('circle')
-            .attr('r', 18)
+            .attr('r', 26)
             .attr('fill', nodeColor)
-            .attr('stroke', '#222')
-            .attr('stroke-width', 1.5)
-            .on('click', function (_, d: any) {
+            .attr('stroke-width', 3)
+            .attr('stroke', (d: any) => (startingObjects.includes(d.id) ? 'green' : '#222'))
+            .on('click', function (event, d: any) {
                 if (!editable) return;
 
+               
+                if (d.group === 'object') {
+                   
+                    if (event.shiftKey) {
+                        d.deselected = !d.deselected;
+                        updateConnectedLinks(d);
+                    } else {
+                       
+                        setStartingObjects((prev) =>
+                            prev.includes(d.id) ? prev.filter((x) => x !== d.id) : [...prev, d.id]
+                        );
+                    }
+
+                    d3.select(this)
+                        .attr('fill', nodeColor(d))
+                        .attr('stroke', startingObjects.includes(d.id) ? 'green' : '#222')
+                        .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+
+                    return;
+                }
+
+               
                 d.deselected = !d.deselected;
 
                 d3.select(this)
                     .attr('fill', nodeColor(d))
                     .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+
+                updateConnectedLinks(d);
             })
             .call(
                 d3
@@ -170,11 +256,12 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .enter()
             .append('text')
             .text((d: any) => d.id)
-            .attr('font-size', 11)
+            .attr('font-size', 12)
             .attr('text-anchor', 'middle')
-            .attr('dy', -22);
+            .attr('dy', 4)
+            .attr('pointer-events', 'none');
 
-        
+       
         simulation.on('tick', () => {
             link.attr('x1', (d: any) => d.source.x)
                 .attr('y1', (d: any) => d.source.y)
@@ -184,14 +271,22 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             node.attr('cx', (d: any) => d.x).attr('cy', (d: any) => d.y);
             label.attr('x', (d: any) => d.x).attr('y', (d: any) => d.y);
         });
-    }, [localGraph, editable]);
+    }, [localGraph, editable, startingObjects]);
 
+   
     if (isLoading) return <div className="flex w-full h-full justify-center items-center">Loading...</div>;
-    if (error) return <div className="flex w-full h-full justify-center items-center text-red-500">Failed to load graph</div>;
+    if (error)
+        return <div className="flex w-full h-full justify-center items-center text-red-500">Failed to load graph</div>;
 
     return (
-        <div ref={containerRef} className="w-full h-full">
-            <svg ref={svgRef} className="w-full h-full" />
+        <div className="w-full h-full">
+            <div className="p-2 text-sm text-gray-600">
+                Starting object types: {startingObjects.length ? startingObjects.join(', ') : 'None'}
+            </div>
+
+            <div ref={containerRef} className="w-full h-full">
+                <svg ref={svgRef} className="w-full h-full" />
+            </div>
         </div>
     );
 };

@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SidebarProvider } from '~/components/ui/sidebar';
-import AppSidebar from '~/components/AppSidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
-// import OcelVisualization from '~/components/ocel/OcelVisualization';
 import OcelVisualization from '~/components/graph_visualization/OcelVisualization';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-// import { useColorScaleStore } from '~/stores/store';
-import type { VisualizationExploreNodeData } from '~/types/explore';
+import { assetTypeToNodeType } from '~/lib/explore/exploreNodes.utils';
+import { VisualizationExploreNodeData } from '~/types/explore/nodeData/visualizationNodeData';
+import { ExploreFileNodeType } from '~/types/explore/nodeTypesCategories';
 
 const OcelViewer: React.FC = () => {
     const [fileId, setFileId] = useState<string | null>(null);
+    const [sourceType, setSourceType] =
+        useState<Extract<ExploreFileNodeType, 'ocelFileNode' | 'ocelCollectionNode'>>('ocelFileNode');
     const { nodeId } = useParams<{ nodeId: string }>();
     const { getNode } = useExploreFlowStore();
-    // const { colorScale } = useColorScaleStore();
 
     // Restore the saved flow from localStorage
     useEffect(() => {
@@ -35,24 +35,21 @@ const OcelViewer: React.FC = () => {
         }
 
         const nodeData = node.data as VisualizationExploreNodeData;
-        const processedData: any = nodeData?.processedData;
 
         console.dir(node, { depth: null });
         console.log('Node found:', node);
-        console.log('Processed data:', processedData);
-
-        if (processedData?.fileId) {
-            console.log('File ID from processedData:', processedData.fileId);
-            setFileId(processedData.fileId);
-            return;
-        }
 
         if (nodeData?.assets?.length > 0) {
             const firstAsset = nodeData.assets[0];
-            console.log(' Extracted file ID from assets:', firstAsset.id);
+            console.log('Extracted file ID from assets:', firstAsset.id);
             setFileId(firstAsset.id);
+
+            const nodeType = assetTypeToNodeType(firstAsset.type);
+            if (nodeType === 'ocelCollectionNode' || nodeType === 'ocelFileNode') {
+                setSourceType(nodeType);
+            }
         } else {
-            console.warn(' No assets found in node data.');
+            console.warn('No assets found in node data.');
         }
     }, [nodeId, getNode]);
 
@@ -62,14 +59,13 @@ const OcelViewer: React.FC = () => {
                 <BreadcrumbNav />
                 <div className="flex flex-1 h-full w-full">
                     {fileId ? (
-                        <OcelVisualization fileId={fileId} />
+                        <OcelVisualization fileId={fileId} sourceType={sourceType} />
                     ) : (
                         <div className="flex flex-1 items-center justify-center">
                             <p className="text-gray-500">No OCEL file connected.</p>
                         </div>
                     )}
                 </div>
-                {/* <AppSidebar coloring={colorScale} objectTypes={[]} /> */}
             </div>
         </SidebarProvider>
     );
