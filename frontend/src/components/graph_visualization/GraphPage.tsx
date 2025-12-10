@@ -187,7 +187,8 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .attr('r', 26)
             .attr('fill', nodeColor)
             .attr('stroke-width', 3)
-            .attr('stroke', (d: any) => (startingObjects.includes(d.id) ? 'green' : '#222'))
+            .attr('stroke', (d: any) => (startingObjects.includes(d.id) ? 'black' : '#222'))
+            .attr('stroke-width', (d: any) => (startingObjects.includes(d.id) ? 6 : 3))
             .on('click', function (event, d: any) {
                 if (!editable) return;
 

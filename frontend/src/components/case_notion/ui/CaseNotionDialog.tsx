@@ -105,7 +105,7 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
             });
 
             if (!res.ok) throw new Error('Generic case notion failed');
-            console.log(res.body);
+            console.log(res);
             
         },
         onSuccess: (data) => {
