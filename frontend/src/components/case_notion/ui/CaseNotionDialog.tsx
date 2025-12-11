@@ -67,7 +67,6 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                 case 'advanced':
                     return getAdvancedCN(fileId, selectedObjectType, newCaseNotionFileId);
                 case 'generic':
-                    if (!genericPayload) throw new Error('Generic payload is missing');
                     return getGenericCN(fileId, genericPayload, newCaseNotionFileId);
                 default:
                     throw new Error(`Unknown or unsupported algorithm: ${algorithm}`);
@@ -98,27 +97,6 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
     const handleFinalMineClick = () => {
         setMakeFinalFetch(true);
     };
-
-    // const genericMutation = useMutation({
-    //     mutationFn: async () => {
-    //         if (!fileId) throw new Error('Missing file id');
-    //         console.log('generic payload');
-    //         console.log(genericPayload);
-
-    //         const res = await fetch(`http://localhost:3000/v1/case_notion/generic_case_notion/${fileId}`, {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify(genericPayload),
-    //         });
-
-    //         if (!res.ok) throw new Error('Generic case notion failed');
-    //         console.log(res);
-
-    //     },
-    //     onSuccess: (data) => {
-    //         console.log('Generic Case Notion saved:', data);
-    //     },
-    // });
 
     useEffect(() => {
         const outputAssets = node.data.assets.filter((asset) => asset.io === 'output');
@@ -215,25 +193,10 @@ const CaseNotionDialog = ({ node, fileId, fileName, isOpen, onOpenChange, update
                                     </SelectContent>
                                 </Select>
                             )}
-                            {/* <Button
-                                variant={'outline'}
-                                onClick={() => {
-                                    if (selectedAlgorithm === 'generic') {
-                                        genericMutation.mutate();
-                                    } else {
-                                        handleMineClick();
-                                    }
-                                }}
-                                disabled={!selectedAlgorithm || isPending}
-                                className="h-10 w-10 ml-2"
-                            >
-                                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pickaxe />}
-                            </Button> */}
                             <Button
                                 variant="outline"
                                 onClick={() => {
-                                    if (!selectedAlgorithm) return;
-                                    mutate(selectedAlgorithm); // Pass the selected algorithm, including 'generic'
+                                    handleMineClick();
                                 }}
                                 disabled={!selectedAlgorithm || isPending}
                                 className="h-10 w-10 ml-2"

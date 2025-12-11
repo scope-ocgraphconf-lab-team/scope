@@ -1,9 +1,11 @@
 import axios, { type AxiosResponse } from 'axios';
 import { GetCaseNotionsResponse } from '~/services/response.types';
+import { CaseOcelResponse } from '~/types/api/ocel_collection.api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
 import { JSONSchema } from '~/types/ocpt/ocpt.types';
-import { CaseOcelResponse } from '~/types/api/ocel_collection.api'; // Import the new type
+
+// Import the new type
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_BASE_URL,
@@ -72,7 +74,6 @@ export const getGenericCN = async (fileId: string, payload: any, newFileId: stri
     );
     return response.data;
 };
-
 
 export const getConnectedComponentsCN = async (fileId: string, objectType: string, newFileId: string) => {
     const response = await api.get(

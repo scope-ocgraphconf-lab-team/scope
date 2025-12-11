@@ -175,6 +175,7 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             .on('click', function (_, d: any) {
                 if (!editable) return;
                 d.deselected = !d.deselected;
+                updateLinkStyles();
             });
         // --- NODE STYLING ---
         const getFill = (d: any) => {
