@@ -4,14 +4,12 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { getDanglingNeighbors, getImmediateNeighbors } from './graphUtils';
 import { ContextMenuState, EdgeDatum, NodeDatum } from './types';
 
-// --- IMPORT ADDED
-
 const MAX_CHUNK = 5;
 const NODE_RADIUS = 20;
 const NODE_GAP = 40;
 
 export const useGraphInteractions = (
-    fileId: string, // --- ARGUMENT ADDED
+    fileId: string,
     data: any,
     selectedType: string,
     setSelectedType: React.Dispatch<React.SetStateAction<string>>,
@@ -19,7 +17,6 @@ export const useGraphInteractions = (
     setChunk: React.Dispatch<React.SetStateAction<number>>,
     svgRef: React.RefObject<SVGSVGElement | null>
 ) => {
-    // --- Access Global Color Store ---
     const { getColorForObject } = useExploreFlowStore();
 
     const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
@@ -341,12 +338,13 @@ export const useGraphInteractions = (
 
                 if (hasHiddenNeighbors) return 'lightgray';
 
-                // --- UPDATED COLOR LOGIC ---
-                // d.label contains the Type name (e.g., 'Arrive' or 'Truck')
+                // --- Logic Reverted: Objects are colored, Events are White ---
+                if (d.type === 'event') return 'white';
                 return getColorForObject(fileId, d.label);
             })
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 1.5)
+            // --- Logic Reverted: Events get Black border, Objects get White ---
+            .attr('stroke', (d) => (d.type === 'event' ? 'black' : '#fff'))
+            .attr('stroke-width', (d) => (d.type === 'event' ? 2.5 : 1.5))
             .style('cursor', 'pointer')
             .on('click', (event, d) => {
                 event.stopPropagation();
@@ -377,7 +375,8 @@ export const useGraphInteractions = (
                 .attr('alignment-baseline', 'middle')
                 .attr('font-size', 8)
                 .attr('font-weight', '600')
-                .attr('fill', 'white')
+                // --- Logic Reverted: Events get Black text, Objects get White text ---
+                .attr('fill', d.type === 'event' ? 'black' : 'white')
                 .attr('pointer-events', 'none');
 
             const offset = (finalLines.length - 1) * -lineHeight * 0.5;
@@ -389,7 +388,7 @@ export const useGraphInteractions = (
                 .attr('y', (_, i) => offset + i * lineHeight)
                 .text((t) => t);
         });
-    }, [data, chunk, selectedType, collapsedNodes, updateFlag, fileId, getColorForObject]); // --- Added dependencies
+    }, [data, chunk, selectedType, collapsedNodes, updateFlag, fileId, getColorForObject]);
 
     return {
         collapsedNodes,
