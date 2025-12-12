@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
+import { MousePointer } from 'lucide-react';
+import LegendRect from '~/components/ocpt/ui/LegendRect';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useGetLogGraphs } from '~/services/queries';
+import { getDeterministicColor } from '~/lib/colors';
 
 interface CaseGraphData {
     deselected_object_types?: string[];
@@ -229,24 +232,27 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
                 const self = d3.select(this);
 
                 if (d.group === 'object') {
-                    if (event.shiftKey) { // Shift + Click on Object Node: Toggle as Start Node
+                    if (event.shiftKey) {
+                        // Shift + Click on Object Node: Toggle as Start Node
                         const isCurrentlyStarting = startingObjects.includes(d.id);
                         setStartingObjects((prev) =>
                             isCurrentlyStarting ? prev.filter((x) => x !== d.id) : [...prev, d.id]
                         );
                         // Update visual feedback immediately
-                        self.attr('stroke', isCurrentlyStarting ? getStroke(d) : 'black')
-                            .attr('stroke-width', isCurrentlyStarting ? getStrokeWidth(d) : 6);
-                    } else { // Regular Click on Object Node: Toggle Deselection
+                        self.attr('stroke', isCurrentlyStarting ? getStroke(d) : 'black').attr(
+                            'stroke-width',
+                            isCurrentlyStarting ? getStrokeWidth(d) : 6
+                        );
+                    } else {
+                        // Regular Click on Object Node: Toggle Deselection
                         d.deselected = !d.deselected;
-                        self.attr('fill', getFill(d))
-                            .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+                        self.attr('fill', getFill(d)).attr('stroke-opacity', d.deselected ? 0.35 : 1);
                         updateConnectedLinks(d);
                     }
-                } else { // Event Node (d.group !== 'object'): Regular Click toggles deselection
+                } else {
+                    // Event Node (d.group !== 'object'): Regular Click toggles deselection
                     d.deselected = !d.deselected;
-                    self.attr('fill', getFill(d))
-                        .attr('stroke-opacity', d.deselected ? 0.35 : 1);
+                    self.attr('fill', getFill(d)).attr('stroke-opacity', d.deselected ? 0.35 : 1);
                     updateConnectedLinks(d);
                 }
             });
@@ -282,10 +288,49 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
         return <div className="flex w-full h-full justify-center items-center text-red-500">Failed to load graph</div>;
 
     return (
-        <div className="w-full h-full">
-            <div className="p-2 text-sm text-gray-600">
-                Starting object types: {startingObjects.length ? startingObjects.join(', ') : 'None'}
-            </div>
+        <div className="w-full h-full p-2">
+            {editable && (
+                <div className="mt-2 flex flex-col gap-2">
+                    {/* Section 1: Active State with Badges */}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground/90">Starting Object Types:</span>
+                        {startingObjects.length > 0 ? (
+                            <div className="flex gap-1">
+                                {startingObjects.map((obj) => (
+                                    <span
+                                        key={obj}
+                                        className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs text-foreground"
+                                    >
+                                        <LegendRect size={8} fill={getDeterministicColor(obj)} />
+                                        {obj}
+                                    </span>
+                                ))}
+                            </div>
+                        ) : (
+                            <span className="italic text-muted-foreground/50">None selected</span>
+                        )}
+                    </div>
+
+                    {/* Section 2: Horizontal Control Legend */}
+                    <div className="flex items-center gap-4 border-t border-border/50 pt-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                            <MousePointer className="h-3 w-3" />
+                            <span>Select/Deselect</span>
+                        </div>
+                        <div className="h-3 w-[1px] bg-border" />
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-1">
+                                <kbd className="pointer-events-none inline-flex h-5 select-none items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                                    Shift
+                                </kbd>
+                                +
+                                <MousePointer className="h-3 w-3" />
+                            </span>
+                            <span>Mark as start object</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div ref={containerRef} className="w-full h-full">
                 <svg ref={svgRef} className="w-full h-full" />
