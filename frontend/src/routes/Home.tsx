@@ -9,8 +9,8 @@ const Home: React.FC = () => {
         <div className="w-screen h-screen flex flex-col">
             <BreadcrumbNav />
             <div className="flex flex-col flex-grow items-center justify-center">
-                <img className="w-1/3" src="/scope_logo.jpeg"></img>
-                <p className="text-lg font-light text-center w-1/2">
+                <img className="w-1/3" src="/scope_logo.svg"></img>
+                <p className="text-lg text-center w-1/2">
                     SCOPE is a collection of object-centric visualizations and algorithms. The goal of SCOPE is to help
                     users understand the structure and relationships of their object-centric process data better.
                 </p>
