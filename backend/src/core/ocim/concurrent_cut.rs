@@ -1,4 +1,4 @@
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashSet;
 
 use crate::core::ocim::auxiliary_methods::{get_projected_end, get_projected_start};
 use crate::core::ocim::common_data::{GlobalData, LocalData};
@@ -121,6 +121,7 @@ fn partitions_cover_alphabet(partitions: &[Vec<String>], alphabet: &[String]) ->
 mod tests {
     use super::*;
     use crate::models::ocel::OCEL;
+    use rustc_hash::{FxHashMap, FxHashSet};
 
     fn empty_ocel() -> OCEL {
         OCEL {
