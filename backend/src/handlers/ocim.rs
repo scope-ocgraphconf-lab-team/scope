@@ -1,5 +1,7 @@
 use crate::core::ocim::algorithm::ocim_init;
+use crate::core::identity_relations::get_extended_ocpt;
 use crate::core::struct_converters::ocpt_frontend_backend::backend_to_frontend;
+use crate::core::utils::relations::build_relations_from_ocels;
 use crate::models::ocel::OCEL;
 use crate::models::ocel_collection::OCELCollection;
 use crate::traits::import_export::{ExportableToPath, ImportableFromPath};
@@ -28,7 +30,11 @@ pub async fn apply_ocim(
         )
     })?;
 
-    let ocpt_frontend = backend_to_frontend(&ocpt);
+    let mut ocpt_frontend = backend_to_frontend(&ocpt);
+
+    let relations = build_relations_from_ocels(&ocels);
+
+    ocpt_frontend.hierarchy = get_extended_ocpt(&ocpt_frontend.hierarchy, &relations, None);
 
     let payload = json!({
         "file_id": id,
