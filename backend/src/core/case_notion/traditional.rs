@@ -1,5 +1,5 @@
 // Import BTreeSet for ordered sets, usable as FxHashMap keys
-use crate::core::case_notion::log_graphs::LogGraphTypeLevel;
+use crate::core::case_notion::log_graphs::{ArcEntry, LogGraphTypeLevel};
 use crate::core::case_notion::main::{CaseNotionContext, CaseNotionEvaluation};
 use crate::core::case_notion::measures::calculate_measures;
 use crate::core::case_notion::utils::is_better_evaluation;
