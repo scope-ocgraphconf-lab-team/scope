@@ -28,7 +28,7 @@ export const useDragDrop = (onNodeDataChange: (id: string, newData: Partial<Expl
      * Assigns the category dependent attributes to each node.
      */
     const onDrop = useCallback(
-        (event: DragEvent<HTMLElement>, type: ExploreNodeType) => {
+        (event: DragEvent<HTMLElement>, type: ExploreNodeType | null) => {
             event.preventDefault();
 
             if (!type) {

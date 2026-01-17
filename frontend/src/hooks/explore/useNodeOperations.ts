@@ -1,74 +1,34 @@
-import { useCallback, MutableRefObject } from 'react';
+import { useCallback } from 'react';
 import { type Connection, type NodeChange } from '@xyflow/react';
 import { isEqual } from 'lodash-es';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { assetTypeToNodeType, isFileNode, isMinerNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
+import { assetTypeToNodeType, isMinerNode } from '~/lib/explore/exploreNodes.utils';
 import { Logger } from '~/lib/logger';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { ExploreNodeData } from '~/types/explore/nodes';
-import { NodeId } from '~/types/explore/nodeTypesCategories';
 import { NodeFactory } from '~/model/explore/node-factory.model';
 
 const logger = Logger.getInstance();
 
-export const useNodeOperations = (
-    directedNeighborMap: MutableRefObject<Map<NodeId, NodeId[]>>
-) => {
+export const useNodeOperations = () => {
     const {
-        nodes,
         edges,
-        onConnect,
         onNodesChange: storeOnNodesChange,
-        setNodes,
         updateNodeData,
         addNode,
-        removeNode: removeStoreNode,
+        removeNode,
         getNode,
+        onConnect,
     } = useExploreFlowStore();
 
+    /**
+     * Handles node deletion
+     */
     const onNodeDelete = useCallback(
         (nodeId: string) => {
-            const nodeToDelete = getNode(nodeId);
-            if (!nodeToDelete) return;
-
-            // If it's a file node, remove its assets from connected visualization nodes
-            if (isFileNode(nodeToDelete)) {
-                // Find all edges where this node is the source
-                const outgoingEdges = edges.filter((edge) => edge.source === nodeId);
-
-                // Update connected visualization nodes
-                outgoingEdges.forEach((edge) => {
-                    const targetNode = getNode(edge.target);
-                    if (targetNode && isVisualizationNode(targetNode)) {
-                        // Filter out assets that came from the deleted file node
-                        const filteredAssets = targetNode.data.assets.filter(
-                            (asset) => !nodeToDelete.data.assets.some((sourceAsset) => sourceAsset.id === asset.id)
-                        );
-
-                        updateNodeData(edge.target, { assets: filteredAssets });
-                    }
-                });
-
-                // Remove from neighbor map
-                directedNeighborMap.current.delete(nodeId);
-
-                // Remove this node from other nodes' neighbor maps
-                for (const [sourceId, neighbors] of directedNeighborMap.current.entries()) {
-                    if (neighbors.includes(nodeId)) {
-                        const updatedNeighbors = neighbors.filter((id) => id !== nodeId);
-                        if (updatedNeighbors.length > 0) {
-                            directedNeighborMap.current.set(sourceId, updatedNeighbors);
-                        } else {
-                            directedNeighborMap.current.delete(sourceId);
-                        }
-                    }
-                }
-            }
-
-            // Remove the node (this also removes connected edges)
-            removeStoreNode(nodeId);
+            removeNode(nodeId);
         },
-        [getNode, edges, updateNodeData, removeStoreNode, directedNeighborMap]
+        [removeNode]
     );
 
     const onNodeDataChange = useCallback(
@@ -87,8 +47,6 @@ export const useNodeOperations = (
                     updateNodeData(id, newData);
 
                     if (isMinerNode(node)) {
-                        const neighbors = directedNeighborMap.current.get(id) || [];
-
                         // Handle removed assets
                         const removedAssets = currentAssets.filter(
                             (oldAsset) => !newData.assets?.some((newAsset) => isEqual(newAsset, oldAsset))
@@ -96,18 +54,21 @@ export const useNodeOperations = (
 
                         removedAssets.forEach((removedAsset) => {
                             if (removedAsset.io === 'output') {
-                                // Find neighbors that were created from this asset
-                                const neighborsToDelete = neighbors.filter((neighborId) => {
-                                    const neighborNode = getNode(neighborId);
-                                    return neighborNode?.data.assets.some(
-                                        (asset: BaseExploreNodeAsset) =>
-                                            asset.id === removedAsset.id && asset.io === 'output'
-                                    );
-                                });
+                                // Find neighbors that were created from this asset using Edges
+                                const outgoingEdges = edges.filter((e) => e.source === id);
+
+                                const neighborsToDelete = outgoingEdges
+                                    .map((e) => getNode(e.target))
+                                    .filter((neighbor) => {
+                                        return neighbor?.data.assets.some(
+                                            (asset: BaseExploreNodeAsset) =>
+                                                asset.id === removedAsset.id && asset.io === 'input' // Note: It became input in the neighbor
+                                        );
+                                    });
 
                                 // Delete identified neighbors
-                                neighborsToDelete.forEach((neighborId) => {
-                                    onNodeDelete(neighborId);
+                                neighborsToDelete.forEach((neighbor) => {
+                                    if (neighbor) onNodeDelete(neighbor.id);
                                 });
                             }
                         });
@@ -143,12 +104,6 @@ export const useNodeOperations = (
                                     targetHandle: null,
                                 };
                                 onConnect(connection);
-
-                                // Refresh neighbors list as it might have changed due to deletions
-                                const currentNeighbors = directedNeighborMap.current.get(id) || [];
-                                if (!currentNeighbors.includes(newNode.id)) {
-                                    directedNeighborMap.current.set(id, [...currentNeighbors, newNode.id]);
-                                }
                             }
                         });
                     }
@@ -160,23 +115,26 @@ export const useNodeOperations = (
                 logger.error(err);
             }
         },
-        [getNode, updateNodeData, addNode, onConnect, directedNeighborMap, onNodeDelete]
+        [getNode, updateNodeData, addNode, onConnect, edges, onNodeDelete]
     );
 
-    // Custom onNodesChange that handles node deletion with asset cleanup
+    /**
+     * Intercepts all node changes from React Flow. Node changes can include
+     * - Position changes
+     * - Node Deletion, Creation, Changing
+     * - See the NodeChange type in the params for more
+     */
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => {
-            // Check for remove changes and handle them specially
             const removeChanges = changes.filter((change) => change.type === 'remove');
-
-            // Handle node deletions with asset cleanup
             removeChanges.forEach((change) => {
                 if (change.type === 'remove') {
                     onNodeDelete(change.id);
                 }
             });
 
-            // Apply all other changes normally
+            // Other changes include for example position changes.
+            // Thus we also update the nodes in the store with this information such that the pipeline state is persistent.
             const otherChanges = changes.filter((change) => change.type !== 'remove');
             if (otherChanges.length > 0) {
                 storeOnNodesChange(otherChanges);

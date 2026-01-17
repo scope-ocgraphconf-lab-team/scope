@@ -14,7 +14,7 @@ const FileSelectionDialog: React.FC<FileSelectionDialogProps> = ({ isOpen }) => 
     const [filteredFiles, setFilteredFiles] = useState<ExtendedFile[]>([]);
     const { dialogNodeId, closeDialog } = useFileDialogStore();
     const { files } = useStoredFiles();
-    const { getNode } = useExploreFlowStore();
+    const { getNode, updateNodeData } = useExploreFlowStore();
 
     useMemo(() => {
         if (!dialogNodeId) return;
@@ -29,22 +29,20 @@ const FileSelectionDialog: React.FC<FileSelectionDialogProps> = ({ isOpen }) => 
     const handleFileSelect = useCallback(
         (file: ExtendedFile) => {
             if (dialogNodeId) {
-                const node = getNode(dialogNodeId);
-                if (node) {
-                    const newAsset: BaseExploreNodeAsset = {
-                        id: file.id,
-                        name: file.name,
-                        type: file.fileType,
-                        origin: 'preprocessed',
-                        io: 'output',
-                    };
-                    const updatedAssets = [...node.data.assets, newAsset];
-                    node.data.onDataChange(dialogNodeId, { assets: updatedAssets });
-                }
+                const newAsset: BaseExploreNodeAsset = {
+                    id: file.id,
+                    name: file.name,
+                    type: file.fileType,
+                    origin: 'preprocessed',
+                    io: 'output',
+                };
+                updateNodeData(dialogNodeId, (prevData) => ({
+                    assets: [...prevData.assets, newAsset],
+                }));
             }
             closeDialog();
         },
-        [dialogNodeId, getNode, closeDialog]
+        [dialogNodeId, updateNodeData, closeDialog]
     );
 
     return (
