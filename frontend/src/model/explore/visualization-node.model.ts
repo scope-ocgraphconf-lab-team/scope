@@ -18,7 +18,6 @@ export class VisualizationExploreNode extends BaseExploreNode<VisualizationExplo
             nodeType,
             nodeCategory: 'visualization',
             assets: [],
-            onDataChange: () => {},
             allowedAssetTypes: assetTypes,
             processedData: undefined,
         };

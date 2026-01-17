@@ -37,7 +37,7 @@ export default function HistViz() {
     const [isEditing, setIsEditing] = useState(true);
 
     // Get color store
-    const { getNode, histogramStates, setHistogramState, getColorForObject } = useExploreFlowStore();
+    const { getNode, histogramStates, setHistogramState, getColorForObject, updateNodeData } = useExploreFlowStore();
     const node = nodeId ? getNode(nodeId) : undefined;
 
     useMemo(() => {
@@ -223,10 +223,11 @@ export default function HistViz() {
                         type: 'ocelFile',
                         name: `ocel_${data[0]}`,
                     };
-                    if (node && nodeId) {
-                        const otherAssets = node.data.assets.filter((asset) => asset.io !== 'output');
-                        const updatedAssets = [...otherAssets, newAsset];
-                        node.data.onDataChange(nodeId, { assets: updatedAssets });
+                    if (nodeId) {
+                        updateNodeData(nodeId, (prev) => {
+                            const otherAssets = prev.assets.filter((asset) => asset.io !== 'output');
+                            return { assets: [...otherAssets, newAsset] };
+                        });
                     }
                     navigate('/data/pipeline/explore');
                 },

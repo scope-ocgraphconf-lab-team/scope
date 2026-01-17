@@ -67,7 +67,6 @@ export const createPipelineSlice: StateCreator<ExploreFlowStore, [], [], Pipelin
                 ...node,
                 data: {
                     ...node.data,
-                    onDataChange: () => {},
                     ...(node.data.visualize !== undefined && { visualize: () => {} }),
                 },
             }));

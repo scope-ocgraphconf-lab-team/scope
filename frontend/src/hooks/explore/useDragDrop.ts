@@ -43,7 +43,6 @@ export const useDragDrop = (onNodeDataChange: (id: string, newData: Partial<Expl
             // Constructs a new node using a factory where the logic is handled
             // on determining whether it is a 'file', 'visualization', ... node
             const newNode = NodeFactory.createNode(position, type);
-            newNode.data.onDataChange = onNodeDataChange;
 
             // Connect the .visualize functionality to visualization nodes.
             if (isVisualizationNode(newNode)) {

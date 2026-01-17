@@ -49,5 +49,4 @@ export interface BaseExploreNodeData extends Record<string, unknown> {
     nodeType: ExploreNodeType;
     nodeCategory: ExploreNodeCategory;
     allowedAssetTypes: readonly AssetType[];
-    onDataChange: (id: string, newData: Partial<BaseExploreNodeData>) => void;
 }

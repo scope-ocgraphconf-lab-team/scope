@@ -18,7 +18,6 @@ export class MinerExploreNode extends BaseExploreNode<MinerExploreNodeData> impl
             nodeType,
             nodeCategory: 'miner',
             assets: [],
-            onDataChange: () => {},
             allowedAssetTypes: assetTypes,
         };
     }

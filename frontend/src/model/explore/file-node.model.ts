@@ -22,7 +22,6 @@ export class FileExploreNode extends BaseExploreNode<FileExploreNodeData> implem
             nodeCategory: 'file',
             assets: [],
             allowedAssetTypes: this.getAllowedAssetTypes(nodeType),
-            onDataChange: () => {},
         };
     }
 
