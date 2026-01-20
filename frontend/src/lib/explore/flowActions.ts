@@ -61,7 +61,7 @@ export const spawnDownstreamNode = (sourceNodeId: string, nodeType: ExploreNodeT
         y: sourceNode.position.y,
     };
 
-    const newNode = NodeFactory.createNode(newNodePosition, nodeType);
+    const newNode = NodeFactory.createNode(newNodePosition, nodeType, true);
     addNode(newNode);
 
     const connection: Connection = {

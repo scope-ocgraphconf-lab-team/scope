@@ -10,8 +10,10 @@ export class FileExploreNode extends BaseExploreNode<FileExploreNodeData> implem
     // Explicitly declare the narrower type for data to satisfy FileNode interface
     declare data: FileExploreNodeData & { nodeType: ExploreFileNodeType; nodeCategory: 'file' };
 
-    constructor(position: XYPosition, nodeType: ExploreFileNodeType) {
+    constructor(position: XYPosition, nodeType: ExploreFileNodeType, isDownstream: boolean = false) {
         super(position, nodeType);
+        // We set the downstream status after super() because initializeData is called during super()
+        this.data.isDownstream = isDownstream;
     }
 
     protected initializeData(
@@ -22,6 +24,7 @@ export class FileExploreNode extends BaseExploreNode<FileExploreNodeData> implem
             nodeCategory: 'file',
             assets: [],
             allowedAssetTypes: this.getAllowedAssetTypes(nodeType),
+            isDownstream: false, // Defaulted, will be overridden in constructor if necessary
         };
     }
 
@@ -31,8 +34,10 @@ export class FileExploreNode extends BaseExploreNode<FileExploreNodeData> implem
                 return ['ocelFile'] as const;
             case 'ocptFileNode':
                 return ['ocptFile'] as const;
-            case 'ocelCollectionNode': // Handle potential missing case if it exists in the type
+            case 'ocelCollectionNode':
                 return ['ocelCollectionFile'] as const;
+            default:
+                return [] as const;
         }
     }
 }

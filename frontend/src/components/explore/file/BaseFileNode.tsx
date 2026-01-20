@@ -23,16 +23,14 @@ interface FileNodeProps extends NodeProps<FileNode> {
 
 const BaseFileNode = memo<FileNodeProps>((props) => {
     const { id, data, selected, title, iconName, handleOptions, dropdownOptions, customActions, children } = props;
-    const { assets } = data;
+    const { assets, isDownstream } = data;
     const { openDialog } = useFileDialogStore();
     const navigate = useNavigate();
 
     const finalHandleOptions = useMemo(() => {
         const options: BaseExploreNodeHandleOption[] = [...handleOptions];
 
-        const isMined = assets.some((asset) => asset.origin === 'mined');
-
-        if (isMined) {
+        if (isDownstream) {
             const hasLeftTarget = options.some((o) => o.position === Position.Left && o.type === 'target');
             if (!hasLeftTarget) {
                 options.push({ position: Position.Left, type: 'target' as const });
@@ -40,7 +38,7 @@ const BaseFileNode = memo<FileNodeProps>((props) => {
         }
 
         return options;
-    }, [assets, handleOptions]);
+    }, [isDownstream, handleOptions]);
 
     const handleDropdownAction = (action: BaseExploreNodeDropdownActionType) => {
         switch (action) {

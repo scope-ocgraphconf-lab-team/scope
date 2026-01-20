@@ -18,8 +18,6 @@ export const uploadFile = async (file: ExtendedFile) => {
     formData.append('file_id', file.id);
     // formData.append('file_type', file.fileType);
 
-    console.log('FormData entries:', Array.from(formData.entries()));
-
     let response;
     switch (file.fileType) {
         case 'ocelFile':
@@ -40,13 +38,11 @@ type getOcptResult = {
 
 export const getOcpt = async (fileId: string): Promise<getOcptResult> => {
     const response = await api.get(`/v1/objects/ocpt/${fileId}`);
-    console.log(response);
     return response.data;
 };
 
 export const getOcel = async (fileId: string) => {
     const response = await api.get(`/v1/objects/ocel/${fileId}`);
-    console.log(response.data);
     return response.data;
 };
 
@@ -76,23 +72,17 @@ export const mineCaseNotion = async (
     });
 
     if (algorithm === 'generic') {
-        const response = await api.post(
-            `/v1/case_notion/${endpoint}/${fileId}?${params.toString()}`,
-            payload
-        );
+        const response = await api.post(`/v1/case_notion/${endpoint}/${fileId}?${params.toString()}`, payload);
         return response.data;
     } else {
         params.append('object_type', objectType);
-        const response = await api.get(
-            `/v1/case_notion/${endpoint}/${fileId}?${params.toString()}`
-        );
+        const response = await api.get(`/v1/case_notion/${endpoint}/${fileId}?${params.toString()}`);
         return response.data;
     }
 };
 
 export const saveFilteredOcel = async (payload: { fileId: string; nodes: any[]; edges: any[] }) => {
     const response = await api.post(`/v1/upload/ocel`, payload);
-    console.log(response.data);
     return response.data;
 };
 
@@ -103,7 +93,6 @@ export const deleteOcel = async (fileId: string) => {
 
 export const getConformance = async (fileId1: string, fileId2: string) => {
     const response = await api.get(`/v1/conformance/${fileId1}/${fileId2}`);
-    console.log(response);
     return response.data;
 };
 
@@ -130,13 +119,10 @@ export const getCaseNotions = async (cnFileId: string) => {
 
 export const getLogGraphs = async (ocelFileId: string) => {
     const response = await api.get(`v1/log_graphs/ocel/${ocelFileId}`);
-    console.log('get log graphs');
-    console.log(response.data);
     return response.data;
 };
 
 export const getOcelCollection = async (ocelCollectionFileId: string): Promise<CaseOcelResponse> => {
     const response = await api.get(`v1/objects/ocel_collection/${ocelCollectionFileId}`);
-    console.log(response.data);
     return response.data;
 };
