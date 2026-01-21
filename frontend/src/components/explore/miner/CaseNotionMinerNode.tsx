@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
@@ -70,7 +70,7 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
     }, [makeFinalFetch, exportData, node.id, fileName]);
 
     // Handles the reset whenever the miner node has the isStale state
-    const handleReset = () => {
+    const handleReset = useCallback(() => {
         // 1. Cancel any ongoing related requests
         queryClient.cancelQueries({ queryKey: ['getOcelObjectTypes', fileId] });
         if (currentCnFileId) {
@@ -96,7 +96,7 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
         setCurrentCnFileId('');
         setMakeFinalFetch(false);
         resetCaseNotionMutation();
-    };
+    }, [queryClient, fileId, currentCnFileId, resetCaseNotionMutation]);
 
     const handleMine = () => {
         if (!fileId) return;

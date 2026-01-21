@@ -3,22 +3,24 @@ import { useReactFlow } from '@xyflow/react';
 import { LocateFixed } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { isMinerNode } from '~/lib/explore/exploreNodes.utils';
 
 export const RefocusProgressPanel = () => {
     const { nodes } = useExploreFlowStore();
-    const { setCenter, zoomTo } = useReactFlow();
+    const { setCenter } = useReactFlow();
 
     const staleState = useMemo(() => {
-        const staleNodes = nodes.filter((n) => n.data.isStale);
-        if (staleNodes.length === 0) return null;
+        const pendingNodes = nodes.filter((n) => {
+            if (n.data.isStale && n.data.nodeCategory === 'miner') return true;
 
-        // Find the "Active Head" - the first stale node that has input assets
-        // This is the node the user needs to interact with next.
-        const activeNode = staleNodes.find((n) => n.data.assets.some((a) => a.io === 'input'));
+            return false;
+        });
+
+        if (pendingNodes.length === 0) return null;
+
+        const activeNode = pendingNodes[0];
 
         return {
-            count: staleNodes.length,
+            count: pendingNodes.length,
             activeNode,
         };
     }, [nodes]);
@@ -52,7 +54,7 @@ export const RefocusProgressPanel = () => {
             {staleState.activeNode ? (
                 <div className="space-y-2">
                     <div className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded">
-                        Next: {staleState.activeNode.data.label || staleState.activeNode.type}
+                        Next: {staleState.activeNode.type}
                     </div>
                     <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-2" onClick={handleFocus}>
                         <LocateFixed className="h-3 w-3" />

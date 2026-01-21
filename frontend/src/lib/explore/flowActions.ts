@@ -115,10 +115,10 @@ export const handleMinerOutput = ({
 
     // 2. Check for existing downstream connection
     const existingEdge = edges.find((edge) => edge.source === nodeId);
-    
+
     if (existingEdge) {
         const targetNode = nodes.find((n) => n.id === existingEdge.target);
-        
+
         // If the connected node is of the correct type, update it instead of spawning a new one
         if (targetNode && targetNode.type === outputNodeType) {
             updateNodeData(targetNode.id, (prev) => {
@@ -129,7 +129,7 @@ export const handleMinerOutput = ({
                     assets: [...otherAssets, { ...newAsset, io: 'output' }],
                 };
             });
-            return; 
+            return;
         }
     }
 
@@ -144,20 +144,20 @@ export const handleMinerOutput = ({
 export const pullUpstreamData = (targetNodeId: string) => {
     const { edges, getNode, updateNodeData } = useExploreFlowStore.getState();
     const targetNode = getNode(targetNodeId);
-    
+
     if (!targetNode) return;
 
     // Find incoming edges
-    const incomingEdges = edges.filter(edge => edge.target === targetNodeId);
-    
+    const incomingEdges = edges.filter((edge) => edge.target === targetNodeId);
+
     if (incomingEdges.length === 0) return;
 
     const newAssets: BaseExploreNodeAsset[] = [];
 
-    incomingEdges.forEach(edge => {
+    incomingEdges.forEach((edge) => {
         const sourceNode = getNode(edge.source);
         if (sourceNode) {
-             const propagatedAssets = (sourceNode.data.assets || [])
+            const propagatedAssets = (sourceNode.data.assets || [])
                 .filter((asset) => asset.io === 'output')
                 .map((asset) => {
                     // If the target is a File Node, it acts as a pass-through.
@@ -167,22 +167,23 @@ export const pullUpstreamData = (targetNodeId: string) => {
                     // For other nodes, it comes in as input
                     return { ...asset, io: 'input' } as BaseExploreNodeAsset;
                 });
+            console.log(propagatedAssets);
             newAssets.push(...propagatedAssets);
         }
     });
 
     if (newAssets.length > 0) {
-         updateNodeData(targetNodeId, (prev) => {
+        updateNodeData(targetNodeId, (prev) => {
             // Keep existing non-input assets (e.g. outputs)
             // But usually we want to REPLACE inputs if we are pulling fresh data.
             // If we have multiple inputs, this might need refinement, but for now assuming replacement of inputs is desired behavior for a "Refresh".
-            const otherAssets = (prev.assets || []).filter(a => a.io !== 'input');
-            
+            const otherAssets = (prev.assets || []).filter((a) => a.io !== 'input');
+
             // Deduplicate new assets
-             const uniqueNewAssets = newAssets.filter(
-                (newAsset, index, self) =>
-                    index === self.findIndex((t) => t.id === newAsset.id && t.io === newAsset.io)
+            const uniqueNewAssets = newAssets.filter(
+                (newAsset, index, self) => index === self.findIndex((t) => t.id === newAsset.id && t.io === newAsset.io)
             );
+            console.log(uniqueNewAssets);
 
             return { assets: [...otherAssets, ...uniqueNewAssets] };
         });

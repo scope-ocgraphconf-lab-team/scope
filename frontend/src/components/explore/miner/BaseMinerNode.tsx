@@ -1,4 +1,4 @@
-import { memo, type ReactNode, useEffect } from 'react';
+import { memo, type ReactNode, useEffect, useRef } from 'react';
 import { useNodeConnections } from '@xyflow/react';
 import { Pickaxe, RefreshCw } from 'lucide-react';
 import { Button } from '~/components/ui/button';
@@ -44,34 +44,45 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
         children,
     } = props;
     const { assets, isStale } = data;
-    const { updateNodeData, getNode } = useExploreFlowStore();
+    const updateNodeData = useExploreFlowStore((state) => state.updateNodeData);
+    const getNode = useExploreFlowStore((state) => state.getNode);
 
-    // Check for incoming connections (assuming miners usually have one target handle)
-    // We filter for 'target' connections to see if we are connected upstream.
-    const connections = useNodeConnections({ handleType: 'target' });
-    const sourceNode = connections[0] ? getNode(connections[0].source) : undefined;
-    const sourceHasOutputAsset = sourceNode?.data.assets.some((asset) => asset.io === 'output');
+    const hasResetStale = useRef(false);
+
+    const inConnections = useNodeConnections({ handleType: 'target' });
+    const inSourceNode = inConnections[0] ? getNode(inConnections[0].source) : undefined;
+    const inSourceHasOutputAsset = inSourceNode?.data.assets.some((asset) => asset.io === 'output');
 
     const hasInputAsset = assets.some((asset) => asset.io === 'input');
-    const isWaitingForInput = sourceHasOutputAsset && !hasInputAsset;
-    const isPendingUpdate = !sourceHasOutputAsset && !hasInputAsset;
+    const isWaitingForInput = inSourceHasOutputAsset && !hasInputAsset && isStale;
+    const isPendingUpdate = !inSourceHasOutputAsset && !hasInputAsset && isStale;
 
     useEffect(() => {
-        if (isStale) {
+        if (!isStale) {
+            hasResetStale.current = false;
+            return;
+        }
+
+        if (isStale && !hasResetStale.current) {
             // 1. Trigger specific miner cleanup
             if (onReset) {
                 onReset();
             }
 
-            // 2. Perform generic miner cleanup (remove outputs, unset flag)
-            // Note: We also remove INPUT assets here to force the "Waiting for Input" state
-            // if the user wants to re-pull fresh data.
+            // 2. Perform generic miner cleanup (remove outputs, inputs if not done already)
             updateNodeData(id, (prev) => ({
                 assets: prev.assets.filter((asset) => asset.io !== 'output' && asset.io !== 'input'),
-                isStale: false,
             }));
+
+            hasResetStale.current = true;
+        } else if (isStale && hasResetStale.current && assets.some((asset) => asset.io === 'output')) {
+            updateNodeData(id, () => {
+                return {
+                    isStale: false,
+                };
+            });
         }
-    }, [isStale, id, onReset, updateNodeData]);
+    }, [isStale, id, onReset, updateNodeData, assets]);
 
     const renderFileContent = () => {
         if (isWaitingForInput) {
