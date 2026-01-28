@@ -11,4 +11,10 @@ export const createHistogramSlice: StateCreator<ExploreFlowStore, [], [], Histog
             },
         }));
     },
+    clearHistogramState: (nodeId) => {
+        set((prev) => {
+            const { [nodeId]: _, ...rest } = prev.histogramStates;
+            return { histogramStates: rest };
+        });
+    },
 });

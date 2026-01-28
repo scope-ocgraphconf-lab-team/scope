@@ -59,6 +59,7 @@ export interface ColorSlice {
 export interface HistogramSlice {
     histogramStates: Record<string, HistogramState>;
     setHistogramState: (nodeId: string, state: HistogramState) => void;
+    clearHistogramState: (nodeId: string) => void;
 }
 
 export type ExploreFlowStore = GraphSlice & PipelineSlice & ColorSlice & HistogramSlice;

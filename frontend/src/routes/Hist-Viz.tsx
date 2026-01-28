@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { SidebarProvider } from '~/components/ui/sidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import { HistogramChart } from '~/components/HistogramChart';
-import { useHandleMinerOutput } from '~/hooks/explore/useHandleMinerOutput';
+import { handleMinerOutput } from '~/lib/explore/flowActions';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useSetFilteredHistogramMutation } from '~/services/mutation';
 import { useGetHistogram } from '~/services/queries';
@@ -54,13 +54,17 @@ export default function HistViz() {
         }
     }, [node]);
 
-    useHandleMinerOutput({
-        nodeId: nodeId!,
-        outputAssetId: outputFileId,
-        outputAssetType: 'ocelFile',
-        outputNodeType: 'ocelFileNode',
-        inputFileName: fileName,
-    });
+    useEffect(() => {
+        if (!outputFileId || !fileName) return;
+
+        handleMinerOutput({
+            nodeId: nodeId!,
+            outputAssetId: outputFileId,
+            outputAssetType: 'ocelFile',
+            outputNodeType: 'ocelFileNode',
+            inputFileName: fileName,
+        });
+    }, [outputFileId, fileName, nodeId]);
 
     useEffect(() => {
         if (outputFileId && node) {
