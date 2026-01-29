@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
-use super::{format_object_type_set, Relation};
+use crate::models::ocpt::IdentityRelationKind;
+use super::Relation;
 
 fn build_event_object_sets(relations: &[Relation]) -> HashMap<String, Vec<String>> {
     let mut event_to_objects: HashMap<String, Vec<String>> = HashMap::new();
@@ -47,7 +48,7 @@ pub fn check_relation(
     ot1: &HashSet<String>,
     ot2: &HashSet<String>,
     relations: &[Relation],
-) -> Option<String> {
+) -> Option<IdentityRelationKind> {
     let event_hashes = build_event_object_sets(relations);
 
     let mut object_hashes: HashMap<String, HashSet<Vec<String>>> = HashMap::new();
@@ -66,11 +67,7 @@ pub fn check_relation(
         .max()
         .unwrap_or(0);
     if max_hash_count == 1 {
-        return Some(format!(
-            "Sync {} With {}",
-            format_object_type_set(ot1),
-            format_object_type_set(ot2)
-        ));
+        return Some(IdentityRelationKind::Sync);
     }
 
     let mut ot1_object_hashes: HashMap<String, HashSet<Vec<String>>> = HashMap::new();
@@ -144,18 +141,10 @@ pub fn check_relation(
                 if frame_1.0 > frame_2.1 && frame_1.1 > frame_2.1 {
                     continue;
                 }
-                return Some(format!(
-                    "Imp {} With {} (Concurrent)",
-                    format_object_type_set(ot1),
-                    format_object_type_set(ot2)
-                ));
+                return Some(IdentityRelationKind::ImpConcurrent);
             }
         }
     }
 
-    Some(format!(
-        "Imp {} With {} (Ordered)",
-        format_object_type_set(ot1),
-        format_object_type_set(ot2)
-    ))
+    Some(IdentityRelationKind::ImpOrdered)
 }

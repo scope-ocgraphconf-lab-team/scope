@@ -33,12 +33,22 @@ pub async fn apply_df2(Path(file_id): Path<String>) -> Result<impl IntoResponse,
     })?;
 
     // Convert to backend format and validate.
-    let ocpt_backend: OCPT = frontend_to_backend(ocpt_fe).map_err(|e| {
+    let mut ocpt_backend: OCPT = frontend_to_backend(ocpt_fe).map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Convert frontend OCPT -> backend failed: {e}"))
     })?;
     if !ocpt_backend.is_valid() {
         return Err((StatusCode::INTERNAL_SERVER_ERROR, "Generated OCPT is invalid".to_string()));
     }
+
+    // Extend backend OCPT with identity relations.
+    let ocel = OCEL::import_from_path(&file_id).await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to load OCEL for identity relations: {:?}", e),
+        )
+    })?;
+    let relations = build_relations_from_ocels(&[ocel]);
+    ocpt_backend.root = get_extended_ocpt(ocpt_backend.root, &relations, None);
 
     // Persist backend-normalized OCPT (overwrite the generated file).
     let pretty_backend = serde_json::to_string_pretty(&ocpt_backend).map_err(|e| {
@@ -49,19 +59,7 @@ pub async fn apply_df2(Path(file_id): Path<String>) -> Result<impl IntoResponse,
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("Write backend OCPT failed: {e}")))?;
 
     // Respond with frontend shape and new file_id.
-    let mut ocpt_frontend = backend_to_frontend(&ocpt_backend);
-    let ocel = OCEL::import_from_path(&file_id).await.map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to load OCEL for identity relations: {:?}", e),
-        )
-    })?;
-    let relations = build_relations_from_ocels(&[ocel]);
-    ocpt_frontend.hierarchy = get_extended_ocpt(&ocpt_frontend.hierarchy, &relations, None);
-    println!(
-        "DF2 OCPT (with identity relations):\n{:#?}",
-        ocpt_frontend.hierarchy
-    );
+    let ocpt_frontend = backend_to_frontend(&ocpt_backend);
     let payload = json!({
         "file_id": generated_id,
         "ocpt": ocpt_frontend
