@@ -3,7 +3,8 @@ import { StateCreator } from 'zustand';
 import { isFileNode, isVisualizationNode } from '~/lib/explore/exploreNodes.utils';
 import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import { ExploreNode } from '~/types/explore/nodes';
-import { ExploreFlowStore, GraphSlice } from '~/types/store/exploreStore.types';
+import { ExploreFlowStore } from '~/stores/exploreStore';
+import { GraphSlice } from './graphSlice.types';
 
 export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice> = (set, get) => ({
     nodes: [],
@@ -114,5 +115,8 @@ export const createGraphSlice: StateCreator<ExploreFlowStore, [], [], GraphSlice
     getNode: (nodeId) => {
         return get().nodes.find((node) => node.id === nodeId);
     },
-    clearFlow: () => set({ nodes: [], edges: [], currentPipeline: { id: null, name: null }, histogramStates: {} }),
+    clearFlow: () =>
+        set({ nodes: [], edges: [], currentPipeline: { id: null, name: null }, histogramStates: {}, refocusQueue: [] }),
+    refocusQueue: [],
+    setRefocusQueue: (queue) => set({ refocusQueue: queue }),
 });

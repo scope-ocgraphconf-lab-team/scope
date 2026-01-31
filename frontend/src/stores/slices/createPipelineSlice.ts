@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { ExploreNode } from '~/types/explore/nodes';
-import { ExploreFlowStore, PipelineSlice, SavedPipeline } from '~/types/store/exploreStore.types';
+import { ExploreFlowStore } from '~/stores/exploreStore';
+import { PipelineSlice, SavedPipeline } from './pipelineSlice.types';
 
 export const createPipelineSlice: StateCreator<ExploreFlowStore, [], [], PipelineSlice> = (set, get) => ({
     currentPipeline: { id: null, name: null },

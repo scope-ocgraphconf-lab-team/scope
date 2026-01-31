@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { getDeterministicColor, getSequentialColor } from '~/lib/colors';
-import { ColorSlice, ExploreFlowStore } from '~/types/store/exploreStore.types';
+import { ExploreFlowStore } from '~/stores/exploreStore';
+import { ColorSlice } from './colorSlice.types';
 
 export const createColorSlice: StateCreator<ExploreFlowStore, [], [], ColorSlice> = (set, get) => ({
     colorMaps: {},

@@ -1,5 +1,6 @@
 import { StateCreator } from 'zustand';
-import { ExploreFlowStore, HistogramSlice } from '~/types/store/exploreStore.types';
+import { ExploreFlowStore } from '~/stores/exploreStore';
+import { HistogramSlice } from './histogramSlice.types';
 
 export const createHistogramSlice: StateCreator<ExploreFlowStore, [], [], HistogramSlice> = (set) => ({
     histogramStates: {},
