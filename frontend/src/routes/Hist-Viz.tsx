@@ -11,10 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { SidebarProvider } from '~/components/ui/sidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import { HistogramChart } from '~/components/HistogramChart';
-import { handleMinerOutput } from '~/lib/explore/flowActions';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useSetFilteredHistogramMutation } from '~/services/mutation';
 import { useGetHistogram } from '~/services/queries';
+import { handleMinerOutput } from '~/lib/explore/flowActions';
 import '~/styles/hist-viz.css';
 import type { HistogramEntry } from '~/types';
 
@@ -43,11 +43,15 @@ export default function HistViz() {
     const { getNode, histogramStates, setHistogramState, getColorForObject } = useExploreFlowStore();
     const node = nodeId ? getNode(nodeId) : undefined;
 
-    useMemo(() => {
+    useEffect(() => {
         if (node) {
             const inputFile = node.data.assets.find((asset) => asset.io === 'input');
-            setFileId(inputFile?.id);
-            setFileName(inputFile?.name || '');
+            if (inputFile) {
+                setFileId(inputFile.id);
+                setFileName(inputFile.name || '');
+            }
+            // Don't clear fileId/fileName if input is temporarily missing (e.g., during stale state)
+            // This allows the submit flow to complete even if assets are cleared mid-operation
         } else {
             setFileId(undefined);
             setFileName('');
