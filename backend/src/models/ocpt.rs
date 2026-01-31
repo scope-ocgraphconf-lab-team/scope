@@ -9,9 +9,11 @@ use tokio::fs;
 use uuid::Uuid;
 
 pub use process_mining::core::process_models::object_centric::ocpt::{
-    EventType, IdentityRelation, IdentityRelationKind, OCPT, OCPTLeaf, OCPTLeafLabel, OCPTNode,
-    OCPTOperator, OCPTOperatorType, ObjectType,
+    IdentityRelation, IdentityRelationKind, OCPT, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator,
+    OCPTOperatorType,
 };
+#[allow(unused_imports)] // Re-exported for downstream API consumers; not referenced in this module yet.
+pub use process_mining::core::process_models::object_centric::ocpt::{EventType, ObjectType};
 
 pub trait OCPTPretty {
     fn pretty(&self) -> String;

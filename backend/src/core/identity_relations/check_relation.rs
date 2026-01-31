@@ -46,7 +46,7 @@ fn build_event_object_sets_for_types(
 
 pub fn check_relation(
     ot1: &HashSet<String>,
-    ot2: &HashSet<String>,
+    _ot2: &HashSet<String>,
     relations: &[Relation],
 ) -> Option<IdentityRelationKind> {
     let event_hashes = build_event_object_sets(relations);
