@@ -74,7 +74,6 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
         if (editable && localGraph) return;
         console.log('API data1:', data.arcs);
         const nodes: any[] = [];
-        // const links: any[] = [];
         data.event_types.forEach((et: string) =>
             nodes.push({
                 id: et,
@@ -93,29 +92,57 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
 
         const deselectedLinks: any[] = [];
         const selectedLinks: any[] = [];
+        const hasCaseNotionData =
+            caseNotionGraph &&
+            Array.isArray(caseNotionGraph.deselected_arcs) &&
+            caseNotionGraph.deselected_arcs.length > 0;
 
-        data.arcs.forEach((a: any) => {
-            const isDeselected =
-                caseNotionGraph?.deselected_arcs?.some(
-                    (da) => da.source_type === a.source_type && da.target_type === a.target_type
-                ) ?? false;
+        if (hasCaseNotionData) {
+            data.arcs.forEach((a: any) => {
+                const isDeselected =
+                    caseNotionGraph?.deselected_arcs?.some(
+                        (da) => da.source_type === a.source_type && da.target_type === a.target_type
+                    ) ?? false;
 
-            const edgeMode: EdgeMode = isDeselected ? 'none' : editable ? 'both' : 'forward';
+                const edgeMode: EdgeMode = isDeselected ? 'none' : editable ? 'both' : 'forward';
+                const link = {
+                    source: a.source_type,
+                    target: a.target_type,
+                    edgeMode,
+                    originalEdgeMode: edgeMode,
+                    deselected: isDeselected,
+                };
 
-            const link = {
-                source: a.source_type,
-                target: a.target_type,
-                edgeMode,
-                originalEdgeMode: edgeMode,
-                deselected: isDeselected,
-            };
+                if (isDeselected) {
+                    deselectedLinks.push(link);
+                } else {
+                    selectedLinks.push(link);
+                }
+            });
+        } else {
+            data.arcs.forEach((a: any) => {
+                const isDeselected =
+                    caseNotionGraph?.deselected_arcs?.some(
+                        (da) => da.source_type === a.source_type && da.target_type === a.target_type
+                    ) ?? false;
 
-            if (isDeselected) {
-                deselectedLinks.push(link);
-            } else {
-                selectedLinks.push(link);
-            }
-        });
+                const edgeMode: EdgeMode = isDeselected ? 'none' : 'both';
+
+                const link = {
+                    source: a.source_type,
+                    target: a.target_type,
+                    edgeMode,
+                    originalEdgeMode: edgeMode,
+                    deselected: isDeselected,
+                };
+
+                if (isDeselected) {
+                    deselectedLinks.push(link);
+                } else {
+                    selectedLinks.push(link);
+                }
+            });
+        }
         const links = [...deselectedLinks, ...selectedLinks];
         setLocalGraph({ nodes, links });
     }, [data, caseNotionGraph, editable]);
@@ -163,23 +190,15 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
                 console.log(localGraph.links);
                 d.edgeMode = nextEdgeMode(d.edgeMode);
                 d.deselected = d.edgeMode === 'none';
-                console.log('di');
-                console.log(d);
+
                 updatedLinkStyles();
             });
 
         const updatedLinkStyles = () => {
-            console.log('debug link');
-            console.log(link);
-
             link.attr('stroke', (d: any) => (d.edgeMode === 'none' ? '#C0C0C0' : 'black'))
                 .attr('stroke-opacity', (d: any) => (d.edgeMode === 'none' ? 0.35 : 0.85))
-                .attr('marker-end', (d: any) =>
-                    d.edgeMode === 'forward' || d.edgeMode === 'both' ? 'url(#arrow)' : null
-                )
-                .attr('marker-start', (d: any) =>
-                    d.edgeMode === 'backward' || d.edgeMode === 'both' ? 'url(#arrow)' : null
-                );
+                .attr('marker-end', (d: any) => (d.edgeMode === 'forward' ? 'url(#arrow)' : null))
+                .attr('marker-start', (d: any) => (d.edgeMode === 'backward' ? 'url(#arrow)' : null));
         };
 
         updatedLinkStyles();
