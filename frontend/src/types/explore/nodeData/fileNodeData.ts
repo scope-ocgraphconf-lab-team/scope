@@ -1,3 +1,4 @@
+import { HistogramState } from '~/stores/slices/histogramSlice.types';
 import type { BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
 
 export interface FileNodeViewState {
@@ -13,4 +14,7 @@ export interface FileExploreNodeData extends BaseExploreNodeData {
     processedData?: any;
     viewState?: FileNodeViewState;
     isDownstream: boolean;
+    colorMap?: Record<string, string>;
+    colorIndex?: number;
+    histogramState?: HistogramState;
 }

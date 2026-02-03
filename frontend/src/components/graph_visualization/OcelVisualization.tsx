@@ -10,10 +10,11 @@ const MAX_CHUNK = 5;
 
 const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
     fileId,
+    nodeId, // <--- 1. Destructure nodeId
     isFullScreen = false,
     sourceType = 'ocelFileNode',
 }) => {
-    const { getColorForObject } = useExploreFlowStore();
+    const { getColorForNode } = useExploreFlowStore();
 
     const isCollection = sourceType === 'ocelCollectionNode';
     const isOcel = sourceType === 'ocelFileNode';
@@ -50,7 +51,7 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
     const [selectedType, setSelectedType] = useState<string>('__ALL__');
 
     const { contextMenu, handleCollapse, handleExpand, handleTypeChange } = useGraphInteractions(
-        fileId,
+        nodeId,
         data,
         selectedType,
         setSelectedType,
@@ -62,7 +63,6 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
     useEffect(() => {
         if (!data) return;
 
-        // Tooltip setup
         const tooltip = d3
             .select('body')
             .append('div')
@@ -76,7 +76,6 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
             .style('pointer-events', 'none')
             .style('opacity', 0);
 
-        // Helper to draw histograms
         const createHistogram = (ref: SVGSVGElement, dataArr: [string, number][], colorFn: (key: string) => string) => {
             const svg = d3.select(ref);
             svg.selectAll('*').remove();
@@ -114,7 +113,6 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
                 )
                 .on('mouseout', () => tooltip.style('opacity', 0));
 
-            // X Axis with rotation
             svg.append('g')
                 .attr('transform', `translate(0,${height - margin.bottom})`)
                 .call(d3.axisBottom(x))
@@ -123,7 +121,6 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
                 .style('text-anchor', 'end')
                 .attr('font-size', 9);
 
-            // Y Axis
             svg.append('g').attr('transform', `translate(${margin.left},0)`).call(d3.axisLeft(y));
         };
 
@@ -138,23 +135,21 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
             (d: any) => d.type || 'Unknown'
         );
 
-        // Only render histograms if not in full screen and not a collection
         if (!isFullScreen && !isCollection) {
-            // Events per activity graph: Dark Grey (from V1)
             if (eventsChartRef.current) {
                 createHistogram(eventsChartRef.current, activityCounts, () => '#b6b8bcff');
             }
 
-            // Objects per type: Colored via Store (from V1)
             if (objectsChartRef.current) {
-                createHistogram(objectsChartRef.current, typeCounts, (k) => getColorForObject(fileId, k));
+                createHistogram(objectsChartRef.current, typeCounts, (k) => getColorForNode(nodeId, k));
             }
         }
 
-        return () => tooltip.remove();
-    }, [data, isFullScreen, isCollection, fileId, getColorForObject]);
+        return () => {
+            tooltip.remove();
+        };
+    }, [data, isFullScreen, isCollection, fileId, nodeId, getColorForNode]);
 
-    // 6. Data Preparation
     const eventTypes: string[] = Array.isArray(data?.eventTypes)
         ? data!.eventTypes.map((t: any) => (typeof t === 'string' ? t : t.name))
         : [];
@@ -190,25 +185,12 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
                 )}
 
                 <div className={`grid ${gridLayoutClass} gap-4 p-4 flex-1 overflow-auto`}>
-                    {/* Main Graph Area */}
                     <div
                         className={`bg-white rounded-xl shadow p-3 relative flex flex-col ${isFullScreen || isCollection ? 'col-span-4' : 'col-span-3'}`}
                     >
                         <svg ref={svgRef} className="w-full flex-1 min-h-0 border rounded-lg bg-gray-50" />
-
-                        {/* {chunk * MAX_CHUNK < (data.events?.length || 0) && (
-                            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                                <button
-                                    onClick={() => setChunk((prev) => prev + 1)}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
-                                >
-                                    Load More Events ({chunk * MAX_CHUNK}/{data.events.length})
-                                </button>
-                            </div>
-                        )} */}
                     </div>
 
-                    {/* Side Histograms (Hidden on Fullscreen or Collection Mode) */}
                     {!isFullScreen && !isCollection && (
                         <div className="col-span-1 flex flex-col gap-4">
                             <div className="bg-white rounded-xl shadow p-3 flex-1 flex flex-col">
@@ -224,7 +206,6 @@ const OcelVisualization: React.FC<OcelVisualizationD3Props> = ({
                 </div>
             </div>
 
-            {/* Sidebar for Filtering and Collection Navigation */}
             <OcelCollectionSidebar
                 isCollection={isCollection}
                 selectedType={selectedType}
