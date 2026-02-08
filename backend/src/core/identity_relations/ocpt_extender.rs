@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 
-use crate::models::ocpt::{IdentityRelation, OCPTLeafLabel, OCPTNode, OCPTOperator};
+use crate::models::ocpt::{
+    IdentityRelation, IdentityRelationKind, OCPTLeafLabel, OCPTNode, OCPTOperator,
+};
 
 use super::{Relation, check_relation};
 
@@ -46,6 +48,14 @@ fn set_to_sorted_vec(set: &HashSet<String>) -> Vec<String> {
     items
 }
 
+fn relation_priority(kind: &IdentityRelationKind) -> usize {
+    match kind {
+        IdentityRelationKind::Sync => 0,
+        IdentityRelationKind::ImpConcurrent => 1,
+        IdentityRelationKind::ImpOrdered => 2,
+    }
+}
+
 pub fn get_extended_ocpt(
     ocpt: OCPTNode,
     relations: &[Relation],
@@ -64,42 +74,48 @@ pub fn get_extended_ocpt(
                 collect_activities(child, &mut activities);
             }
 
-            for ot1 in &candidates {
-                for ot2 in &candidates {
-                    if ot1 == ot2 {
-                        continue;
-                    }
+            for priority in 0..3 {
+                for ot1 in &candidates {
+                    for ot2 in &candidates {
+                        if ot1 == ot2 {
+                            continue;
+                        }
 
-                    let mut union_types = ot1.clone();
-                    union_types.extend(ot2.iter().cloned());
+                        let mut union_types = ot1.clone();
+                        union_types.extend(ot2.iter().cloned());
 
-                    let sub_relations: Vec<Relation> = relations
-                        .iter()
-                        .filter(|(_eid, activity, _timestamp, _oid, otype)| {
-                            activities.contains(activity) && union_types.contains(otype)
-                        })
-                        .cloned()
-                        .collect();
-
-                    if let Some(kind) = check_relation(ot1, ot2, &sub_relations) {
-                        let mut next_candidates: Vec<HashSet<String>> = candidates
+                        let sub_relations: Vec<Relation> = relations
                             .iter()
-                            .filter(|set| *set != ot1 && *set != ot2)
+                            .filter(|(_eid, activity, _timestamp, _oid, otype)| {
+                                activities.contains(activity) && union_types.contains(otype)
+                            })
                             .cloned()
                             .collect();
-                        next_candidates.push(union_types);
 
-                        let rel = IdentityRelation {
-                            left: set_to_sorted_vec(ot1),
-                            right: set_to_sorted_vec(ot2),
-                            kind,
-                        };
+                        if let Some(kind) = check_relation(ot1, ot2, &sub_relations) {
+                            if relation_priority(&kind) != priority {
+                                continue;
+                            }
 
-                        let wrapped = OCPTNode::Operator(op);
-                        return OCPTNode::Operator(OCPTOperator::new_identity(
-                            rel,
-                            get_extended_ocpt(wrapped, relations, Some(next_candidates)),
-                        ));
+                            let mut next_candidates: Vec<HashSet<String>> = candidates
+                                .iter()
+                                .filter(|set| *set != ot1 && *set != ot2)
+                                .cloned()
+                                .collect();
+                            next_candidates.push(union_types);
+
+                            let rel = IdentityRelation {
+                                left: set_to_sorted_vec(ot1),
+                                right: set_to_sorted_vec(ot2),
+                                kind,
+                            };
+
+                            let wrapped = OCPTNode::Operator(op);
+                            return OCPTNode::Operator(OCPTOperator::new_identity(
+                                rel,
+                                get_extended_ocpt(wrapped, relations, Some(next_candidates)),
+                            ));
+                        }
                     }
                 }
             }
