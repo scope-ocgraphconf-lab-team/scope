@@ -9,7 +9,10 @@ export type BaseExploreNodeDropdownActionType =
     | 'viewObjectEventGraph'
     | 'setCustomColor';
 
+export type HandleId = 'target' | 'source' | 'conformanceTarget';
+
 export interface BaseExploreNodeHandleOption {
+    id: HandleId;
     position: Position;
     type: 'source' | 'target';
 }
