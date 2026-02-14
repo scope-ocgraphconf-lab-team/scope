@@ -4,7 +4,7 @@ export interface HistogramState {
 }
 
 export interface HistogramSlice {
-    histogramStates: Record<string, HistogramState>;
+    // histogramStates: Record<string, HistogramState>;
     setHistogramState: (nodeId: string, state: HistogramState) => void;
     clearHistogramState: (nodeId: string) => void;
 }

@@ -1,3 +1,4 @@
+import { HistogramState } from '~/stores/slices/histogramSlice.types';
 import type { BaseExploreNodeData } from '~/types/explore/nodeData/baseNodeData';
 
 export interface FileNodeViewState {
@@ -15,4 +16,7 @@ export interface FileExploreNodeData extends BaseExploreNodeData {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     conformanceData?: any;
     isDownstream: boolean;
+    colorMap?: Record<string, string>;
+    colorIndex?: number;
+    histogramState?: HistogramState;
 }

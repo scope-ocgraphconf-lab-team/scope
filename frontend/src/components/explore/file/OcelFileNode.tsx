@@ -20,8 +20,11 @@ const OcelFileNode = memo<NodeProps<FileNode>>((props) => {
             {...props}
             title="OCEL File"
             iconName="fileSpreadsheet"
-            handleOptions={[{ id: 'source', position: Position.Right, type: 'source' as const }]}
-            dropdownOptions={[{ label: 'Open File', action: 'openFileDialog' as const, icon: 'file' }]}
+            handleOptions={[{ position: Position.Right, type: 'source' as const }]}
+            dropdownOptions={[
+                { label: 'Open File', action: 'openFileDialog' as const, icon: 'file' },
+                { label: 'Set Custom Color', action: 'setCustomColor' as const, icon: 'palette' },
+            ]}
         >
             {hasFile && (
                 <div className="mt-2 border-t pt-2">

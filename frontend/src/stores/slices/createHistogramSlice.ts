@@ -2,20 +2,18 @@ import { StateCreator } from 'zustand';
 import { ExploreFlowStore } from '~/stores/exploreStore';
 import { HistogramSlice } from './histogramSlice.types';
 
-export const createHistogramSlice: StateCreator<ExploreFlowStore, [], [], HistogramSlice> = (set) => ({
+export const createHistogramSlice: StateCreator<ExploreFlowStore, [], [], HistogramSlice> = (set, get) => ({
     histogramStates: {},
     setHistogramState: (nodeId, state) => {
-        set((prev) => ({
-            histogramStates: {
-                ...prev.histogramStates,
-                [nodeId]: state,
-            },
-        }));
+        const { updateNodeData } = get();
+        updateNodeData(nodeId, {
+            histogramState: state,
+        } as any);
     },
     clearHistogramState: (nodeId) => {
-        set((prev) => {
-            const { [nodeId]: _, ...rest } = prev.histogramStates;
-            return { histogramStates: rest };
-        });
+        const { updateNodeData } = get();
+        updateNodeData(nodeId, {
+            histogramState: undefined,
+        } as any);
     },
 });
