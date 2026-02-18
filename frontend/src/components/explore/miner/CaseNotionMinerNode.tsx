@@ -27,11 +27,6 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const [objectType, setObjectType] = useState<string>('default');
     const [genericPayload, setGenericPayload] = useState<any>(null);
 
-    /**
-     * Tracks whether the mining configuration (algorithm, object type, etc.)
-     * has changed since the last successful mining operation.
-     * When true, the 'Export as Node' should be disabled to prevent stale data export.
-     */
     const [hasUnminedChanges, setHasUnminedChanges] = useState(false);
 
     // Mining Execution State
@@ -65,30 +60,25 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
                 inputFileName: fileName,
             });
             setIsDialogOpen(false);
-            setMakeFinalFetch(false); // Reset export trigger
+            setMakeFinalFetch(false);
         }
     }, [makeFinalFetch, exportData, node.id, fileName]);
 
-    // Handles the reset whenever the miner node has the isStale state
     const handleReset = useCallback(() => {
-        // 1. Cancel any ongoing related requests
         queryClient.cancelQueries({ queryKey: ['getOcelObjectTypes', fileId] });
         if (currentCnFileId) {
             queryClient.cancelQueries({ queryKey: ['getCaseNotions', currentCnFileId] });
         }
 
-        // 2. Remove queries from cache to ensure fresh start
         queryClient.removeQueries({ queryKey: ['getOcelObjectTypes', fileId] });
         if (currentCnFileId) {
             queryClient.removeQueries({ queryKey: ['getCaseNotions', currentCnFileId] });
         }
 
-        // 3. Reset Local Node State
         setFileId(null);
         setFileName('');
         setIsDialogOpen(false);
 
-        // 4. Reset Mining Form & Execution State
         setAlgorithm('traditional');
         setObjectType('default');
         setGenericPayload(null);
@@ -103,7 +93,7 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
 
         const newCnId = uuidv4();
         setCurrentCnFileId(newCnId);
-        setMakeFinalFetch(false); // Ensure we don't auto-export yet
+        setMakeFinalFetch(false);
 
         mutate(
             {
@@ -128,7 +118,7 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const handleAlgorithmChange = (val: string) => {
         setAlgorithm(val);
         setHasUnminedChanges(true);
-        resetCaseNotionMutation(); // Clear previous results
+        resetCaseNotionMutation();
     };
 
     const handleObjectTypeChange = (val: string) => {
@@ -179,21 +169,19 @@ const CaseNotionMinerNode = memo<NodeProps<MinerNode>>((node) => {
                 isOpen={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
                 fileId={fileId}
-                // State
+                // Passing the nodeId here so the Dialog can pass it to GraphPage
+                nodeId={node.id}
                 algorithm={algorithm}
                 onAlgorithmChange={handleAlgorithmChange}
                 objectType={objectType}
                 onObjectTypeChange={handleObjectTypeChange}
                 genericPayload={genericPayload}
                 onGenericPayloadChange={handleGenericPayloadChange}
-                // Data
                 objectTypes={objectTypesData?.object_types}
                 caseNotionData={caseNotionData}
-                // Status
                 isMining={isMiningCaseNotion}
                 isExporting={makeFinalFetch && isExportingData}
                 hasUnminedChanges={hasUnminedChanges}
-                // Actions
                 onMine={handleMine}
                 onExport={handleExport}
             />
