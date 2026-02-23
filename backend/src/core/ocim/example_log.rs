@@ -1,8 +1,6 @@
-//file to reconstruct the small ocim example 
+//file to reconstruct the small ocim example
+use crate::models::ocel::{OCEL, OCELEvent, OCELObject, OCELRelationship, OCELType};
 use chrono::{DateTime, Duration, FixedOffset, NaiveDate, TimeZone};
-use process_mining::core::event_data::object_centric::{
-    OCEL, OCELEvent, OCELObject, OCELRelationship, OCELType,
-};
 use serde_json;
 use std::collections::BTreeSet;
 use std::fs;
@@ -47,13 +45,12 @@ const RAW_EVENTS: [(&str, &[&str]); 32] = [
 /// Builds an OCEL example log that mirrors the pm4py/Python snippet used for OCIM demos.
 pub fn build_example_log() -> OCEL {
     let timezone = FixedOffset::east_opt(0).expect("UTC timezone must exist");
-    let base_time = timezone
-        .from_utc_datetime(
-            &NaiveDate::from_ymd_opt(2024, 1, 1)
-                .expect("valid date")
-                .and_hms_opt(9, 0, 0)
-                .expect("valid time"),
-        );
+    let base_time = timezone.from_utc_datetime(
+        &NaiveDate::from_ymd_opt(2024, 1, 1)
+            .expect("valid date")
+            .and_hms_opt(9, 0, 0)
+            .expect("valid time"),
+    );
 
     OCEL {
         event_types: collect_event_types(),
@@ -78,11 +75,7 @@ where
 {
     let json = serde_json::to_string_pretty(&build_example_log())
         .expect("serializing example OCEL log should always work");
-    fs::create_dir_all(
-        path.as_ref()
-            .parent()
-            .unwrap_or_else(|| Path::new(".")),
-    )?;
+    fs::create_dir_all(path.as_ref().parent().unwrap_or_else(|| Path::new(".")))?;
     fs::write(path, json)
 }
 
@@ -187,5 +180,4 @@ mod tests {
     fn write_example_log() {
         store_example_log_json("tmp/example_log.json").unwrap();
     }
-
 }

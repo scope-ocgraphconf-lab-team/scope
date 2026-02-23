@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import {
     getAdvancedCN,
     getCaseNotions,
+    getConformanceOcptOcel,
+    getConformanceOcptOcpt,
     getConnectedComponentsCN,
     getHistogram,
     getLogGraphs,
@@ -64,6 +66,24 @@ export const useMineOcpt = (nodeId: string, fileId: string | null, algorithm: st
         queryKey: ['mineOcpt', nodeId, fileId, algorithm],
         queryFn: () => mineOcpt(fileId!, algorithm),
         enabled: Boolean(fileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceOcptOcel = (ocptFileId: string | null, ocelFileId: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceOcptOcel', ocptFileId, ocelFileId],
+        queryFn: () => getConformanceOcptOcel(ocptFileId!, ocelFileId!),
+        enabled: Boolean(ocptFileId) && Boolean(ocelFileId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceOcptOcpt = (ocptFileId1: string | null, ocptFileId2: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceOcptOcpt', ocptFileId1, ocptFileId2],
+        queryFn: () => getConformanceOcptOcpt(ocptFileId1!, ocptFileId2!),
+        enabled: Boolean(ocptFileId1) && Boolean(ocptFileId2),
         refetchOnWindowFocus: false,
     });
 };

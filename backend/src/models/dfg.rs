@@ -1,9 +1,9 @@
 #![allow(dead_code)] // helper functions which didn't get used yet in the code
 use crate::core::utils::flatten::flatten_ocel_on;
-pub use process_mining::core::process_models::case_centric::dfg::DirectlyFollowsGraph;
+pub use crate::models::ocel::IndexLinkedOCEL;
+use crate::models::ocel::LinkedOCELAccess;
 use process_mining::core::event_data::case_centric::EventLog;
-use process_mining::core::event_data::object_centric::linked_ocel::LinkedOCELAccess;
-pub use process_mining::core::event_data::object_centric::linked_ocel::index_linked_ocel::IndexLinkedOCEL;
+pub use process_mining::core::process_models::case_centric::dfg::DirectlyFollowsGraph;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
