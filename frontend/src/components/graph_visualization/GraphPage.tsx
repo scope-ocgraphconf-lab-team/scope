@@ -196,7 +196,7 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
 
         const updatedLinkStyles = () => {
             link.attr('stroke', (d: any) => (d.edgeMode === 'none' ? '#C0C0C0' : 'black'))
-                .attr('stroke-opacity', (d: any) => (d.edgeMode === 'none' ? 0.35 : 0.85))
+                .attr('stroke-opacity', (d: any) => (d.edgeMode === 'none' ? 0.85 : 0.85))
                 .attr('marker-end', (d: any) => (d.edgeMode === 'forward' ? 'url(#arrow)' : null))
                 .attr('marker-start', (d: any) => (d.edgeMode === 'backward' ? 'url(#arrow)' : null));
         };
