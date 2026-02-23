@@ -82,6 +82,8 @@ const GraphPage: React.FC<GraphPageProps> = ({ fileId, caseNotionGraph, editable
             })
         );
 
+        
+
         data.object_types.forEach((ot: string) =>
             nodes.push({
                 id: ot,
