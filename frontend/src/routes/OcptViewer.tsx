@@ -9,7 +9,7 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useIsOcptMode } from '~/stores/store';
 import { addIdsToTree } from '~/lib/ocpt/ocptAddIds';
 import { VisualizationNode } from '~/types/explore/nodes';
-import { type Node, type OcptSchemaApi } from '~/types/ocpt/ocpt.types';
+import { type Node } from '~/types/ocpt/ocpt.types';
 
 const OcptViewer: React.FC = () => {
     const [treeData, setTreeData] = useState<Node | null>(null);
@@ -63,16 +63,27 @@ const OcptViewer: React.FC = () => {
         }
     }, [nodeId, nodeData]);
 
-
     return (
         <SidebarProvider>
             <div className="h-screen w-screen overflow-hidden">
                 <BreadcrumbNav />
                 <div className="flex flex-1 h-full w-full">
                     {isOcptMode && node ? (
-                        <OCPT treeData={treeData} colorScale={colorScale} node={node} showDetails={showDetails} onExportReady={handleExportReady} />
+                        <OCPT
+                            treeData={treeData}
+                            colorScale={colorScale}
+                            node={node}
+                            showDetails={showDetails}
+                            onExportReady={handleExportReady}
+                        />
                     ) : treeData ? (
-                        <OCPT treeData={treeData} colorScale={colorScale} filteredObjectTypes={filteredObjectTypes} showDetails={showDetails} onExportReady={handleExportReady} />
+                        <OCPT
+                            treeData={treeData}
+                            colorScale={colorScale}
+                            filteredObjectTypes={filteredObjectTypes}
+                            showDetails={showDetails}
+                            onExportReady={handleExportReady}
+                        />
                     ) : (
                         <div></div>
                     )}
