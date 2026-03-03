@@ -36,47 +36,70 @@ export function generateColorMap(keys: string[]): Record<string, string> {
     return map;
 }
 /**
- * Forces a complete Color Map to be copied to all downstream nodes recursively.
+ * Copies a color map to all DOWNSTREAM nodes recursively (following outgoing edges).
  */
 export const propagateMapDownstream = (sourceNodeId: string, newMap: Record<string, string>) => {
-    //  Get fresh state immediately
     const state = useExploreFlowStore.getState();
     const { nodes, edges, updateNodeData } = state;
-    console.log(`[Propagation] Starting from Source: ${sourceNodeId}`);
-    console.log(`[Propagation] Pushing Colors:`, newMap);
+    console.log(`[Propagation Down] Starting from: ${sourceNodeId}`);
     const visited = new Set<string>();
     const propagate = (currentId: string) => {
         if (visited.has(currentId)) return;
         visited.add(currentId);
-        // Find all edges pointing AWAY from the current node
         const outgoingEdges = edges.filter((e) => e.source === currentId);
-        if (outgoingEdges.length === 0) {
-            console.log(`[Propagation] Node ${currentId} has no outgoing edges. Stopping.`);
-            return;
-        }
+        if (outgoingEdges.length === 0) return;
         outgoingEdges.forEach((edge) => {
             const targetNode = nodes.find((n) => n.id === edge.target);
             if (targetNode) {
-                console.log(`[Propagation] -> Updating Target Node: ${targetNode.id}`);
-                // Update the Child Node
+                console.log(`[Propagation Down] -> ${targetNode.id}`);
                 updateNodeData(targetNode.id, (prev: any) => ({
                     colorMap: { ...(prev.colorMap || {}), ...newMap },
                 }));
-                // Recurse to children
                 propagate(targetNode.id);
-            } else {
-                console.warn(`[Propagation] Found edge to ${edge.target} but node is missing in store.`);
             }
         });
     };
     propagate(sourceNodeId);
 };
+/**
+ * Copies a color map to all UPSTREAM nodes recursively (following incoming edges).
+ */
+export const propagateMapUpstream = (sourceNodeId: string, newMap: Record<string, string>) => {
+    const state = useExploreFlowStore.getState();
+    const { nodes, edges, updateNodeData } = state;
+    console.log(`[Propagation Up] Starting from: ${sourceNodeId}`);
+    const visited = new Set<string>();
+    const propagate = (currentId: string) => {
+        if (visited.has(currentId)) return;
+        visited.add(currentId);
+        const incomingEdges = edges.filter((e) => e.target === currentId);
+        if (incomingEdges.length === 0) return;
+        incomingEdges.forEach((edge) => {
+            const parentNode = nodes.find((n) => n.id === edge.source);
+            if (parentNode) {
+                console.log(`[Propagation Up] -> ${parentNode.id}`);
+                updateNodeData(parentNode.id, (prev: any) => ({
+                    colorMap: { ...(prev.colorMap || {}), ...newMap },
+                }));
+                propagate(parentNode.id);
+            }
+        });
+    };
+    propagate(sourceNodeId);
+};
+/**
+ * Updates a single color on a node and propagates BOTH upstream and downstream.
+ * This ensures that changing a color on the filtered OCEL updates the original
+ * OCEL, the miner nodes, and everything else in the pipeline.
+ */
 export const updateNodeColorAndPropagate = (nodeId: string, key: string, color: string) => {
     const { updateNodeData } = useExploreFlowStore.getState();
     updateNodeData(nodeId, (prev: any) => ({
         colorMap: { ...(prev.colorMap || {}), [key]: color },
     }));
-    propagateMapDownstream(nodeId, { [key]: color });
+    const delta = { [key]: color };
+    propagateMapDownstream(nodeId, delta);
+    propagateMapUpstream(nodeId, delta);
 };
 export const handleConnect = (connection: Connection) => {
     const { source, target } = connection;
@@ -163,7 +186,6 @@ export const handleMinerOutput = ({
                     colorMap: nextColorMap,
                 };
             });
-            // Force propagate here too just in case
             if ((node.data as any).colorMap) {
                 propagateMapDownstream(nodeId, (node.data as any).colorMap);
             }

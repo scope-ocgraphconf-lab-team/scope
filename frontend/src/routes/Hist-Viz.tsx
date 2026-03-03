@@ -17,46 +17,36 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useSetFilteredHistogramMutation } from '~/services/mutation';
 import { useGetHistogramEventPersp, useGetHistogramObjectPersp } from '~/services/queries';
 import { getDeterministicColor } from '~/lib/colors';
-import { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
+import { handleMinerOutput } from '~/lib/explore/flowActions';
 import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
 import '~/styles/hist-viz.css';
 import type { HistogramEntry } from '~/types';
 
 type Perspective = 'event' | 'object';
-
 export default function HistViz() {
     const navigate = useNavigate();
     const [sortMode, setSortMode] = useState<'name' | 'bins' | 'random'>('bins');
     const { nodeId } = useParams<{ nodeId: string }>();
     const [fileId, setFileId] = useState<string | undefined>(undefined);
-
     const [perspective, setPerspective] = useState<Perspective>('event');
-
     const { data: eventData } = useGetHistogramEventPersp(fileId);
     const { data: objectData } = useGetHistogramObjectPersp(fileId);
-
     const currentData = perspective === 'event' ? eventData : objectData;
-
     const { mutate: setFilteredHistogram } = useSetFilteredHistogramMutation();
-
     const [allEventTypes, setAllEventTypes] = useState<string[]>([]);
     const [allObjectTypes, setAllObjectTypes] = useState<string[]>([]);
     const [selectedEventTypes, setSelectedEventTypes] = useState(new Set<string>());
     const [selectedObjectTypes, setSelectedObjectTypes] = useState(new Set<string>());
     const [eventSearch, setEventSearch] = useState('');
     const [objectSearch, setObjectSearch] = useState('');
-
     const [allSelections, setAllSelections] = useState<Record<string, number[]>>({});
     const [isEditing, setIsEditing] = useState(true);
-
     const { getNode, setHistogramState, initializeDataState, updateNodeData } = useExploreFlowStore();
-
     // New Color Logic
     const colorMap = useExploreFlowStore((s) => {
         const node = s.nodes.find((n) => n.id === nodeId);
         return (node?.data as any)?.colorMap as Record<string, string> | undefined;
     });
-
     const getObjectColor = useCallback(
         (objectType: string) => {
             if (colorMap && colorMap[objectType]) {
@@ -66,9 +56,7 @@ export default function HistViz() {
         },
         [colorMap]
     );
-
     const node = nodeId ? getNode(nodeId) : undefined;
-
     useMemo(() => {
         if (node) {
             const inputFile = node.data.assets.find((asset) => asset.io === 'input');
@@ -77,7 +65,6 @@ export default function HistViz() {
             setFileId(undefined);
         }
     }, [node]);
-
     useEffect(() => {
         if (!currentData) return;
         try {
@@ -89,42 +76,33 @@ export default function HistViz() {
             }
             const sortedEventTypes = Array.from(eventTypes).sort();
             const sortedObjectTypes = Array.from(objectTypes).sort();
-
             setAllEventTypes(sortedEventTypes);
             setAllObjectTypes(sortedObjectTypes);
-
             if (selectedEventTypes.size === 0) setSelectedEventTypes(new Set(sortedEventTypes));
             if (selectedObjectTypes.size === 0) setSelectedObjectTypes(new Set(sortedObjectTypes));
         } catch (error) {
             console.error('Failed to process histogram data:', error);
         }
     }, [currentData]);
-
     useEffect(() => {
         if (nodeId && allObjectTypes.length > 0) {
             initializeDataState(nodeId, allObjectTypes);
         }
     }, [nodeId, allObjectTypes, initializeDataState]);
-
     const getChartKey = (persp: Perspective, evtType: string, objType: string) => {
         return `${persp}|${evtType}|${objType}`;
     };
-
     useEffect(() => {
         if (!nodeId || !node) return;
-
         const nodeData = node.data as FileExploreNodeData;
         const savedState = nodeData.histogramState;
-
         let baseSelections = {};
-
         if (savedState) {
             baseSelections = { ...savedState.selections };
             setIsEditing(!savedState.isSubmitted);
         } else {
             setIsEditing(true);
         }
-
         if (eventData) {
             eventData.histograms.forEach((entry) => {
                 const key = getChartKey('event', entry.event_type, entry.object_type);
@@ -133,7 +111,6 @@ export default function HistViz() {
                 }
             });
         }
-
         if (objectData) {
             objectData.histograms.forEach((entry) => {
                 const key = getChartKey('object', entry.event_type, entry.object_type);
@@ -142,10 +119,8 @@ export default function HistViz() {
                 }
             });
         }
-
         setAllSelections((prev) => ({ ...prev, ...baseSelections }));
     }, [eventData, objectData, nodeId, node]);
-
     const handleEventTypeSelect = useCallback((eventType: string) => {
         setSelectedEventTypes((prev) => {
             const next = new Set(prev);
@@ -154,7 +129,6 @@ export default function HistViz() {
             return next;
         });
     }, []);
-
     const handleObjectTypeSelect = useCallback((objectType: string) => {
         setSelectedObjectTypes((prev) => {
             const next = new Set(prev);
@@ -163,26 +137,21 @@ export default function HistViz() {
             return next;
         });
     }, []);
-
     const rows = useMemo(() => {
         if (!currentData) return [];
         const filteredHistograms = currentData.histograms.filter(
             (h) => selectedEventTypes.has(h.event_type) && selectedObjectTypes.has(h.object_type)
         );
-
         const groupedMap = new Map<string, HistogramEntry[]>();
-
         for (const h of filteredHistograms) {
             const key = h.event_type;
             if (!groupedMap.has(key)) groupedMap.set(key, []);
             groupedMap.get(key)!.push(h);
         }
-
         const sortableRows = [...groupedMap.entries()].map(([key, arr]) => {
             const totalBins = arr.reduce((sum, e) => sum + (e.histogram?.length || 0), 0);
             return [key, arr, totalBins] as const;
         });
-
         switch (sortMode) {
             case 'name':
                 sortableRows.sort((a, b) => a[0].localeCompare(b[0]));
@@ -199,7 +168,6 @@ export default function HistViz() {
         }
         return sortableRows.map(([key, arr]) => [key, arr] as const);
     }, [currentData, sortMode, selectedEventTypes, selectedObjectTypes]);
-
     const mergeToRanges = (counts: number[]): [number, number][] => {
         if (counts.length === 0) return [];
         const sortedCounts = [...counts].sort((a, b) => a - b);
@@ -218,78 +186,63 @@ export default function HistViz() {
         ranges.push([start, end]);
         return ranges;
     };
-
     const handleSelectionChange = (chartKey: string, indices: number[]) => {
         setAllSelections((prev) => ({
             ...prev,
             [chartKey]: indices,
         }));
     };
-
     const handleSubmit = () => {
         if (!nodeId) return;
         setIsEditing(false);
-
         setHistogramState(nodeId, {
             selections: allSelections,
             isSubmitted: true,
         });
-
         const eventDataMap = new Map<string, HistogramEntry>();
         if (eventData) {
             eventData.histograms.forEach((h) => {
                 eventDataMap.set(`${h.event_type}|${h.object_type}`, h);
             });
         }
-
         const objectDataMap = new Map<string, HistogramEntry>();
         if (objectData) {
             objectData.histograms.forEach((h) => {
                 objectDataMap.set(`${h.event_type}|${h.object_type}`, h);
             });
         }
-
         const event_perspective_filters: any[] = [];
         const object_perspective_filters: any[] = [];
-
         Object.entries(allSelections).forEach(([chartKey, selectedIndices]) => {
             const parts = chartKey.split('|');
             if (parts.length < 3) return;
-
             const persp = parts[0];
             const event_type = parts[1];
             const object_type = parts[2];
             const dataLookupKey = `${event_type}|${object_type}`;
-
             let originalEntry: HistogramEntry | undefined;
-
             if (persp === 'event') {
                 originalEntry = eventDataMap.get(dataLookupKey);
             } else if (persp === 'object') {
                 originalEntry = objectDataMap.get(dataLookupKey);
             }
-
             if (!originalEntry) return;
-
             let ranges: [number, number][] = [];
             if (selectedIndices.length > 0) {
                 const selectedCounts = selectedIndices.map((index) => originalEntry!.histogram[index].count);
                 ranges = mergeToRanges(selectedCounts);
             }
-
             const filterObj = {
                 event_type,
                 object_type,
                 ranges,
             };
-
             if (persp === 'event') {
                 event_perspective_filters.push(filterObj);
             } else if (persp === 'object') {
                 object_perspective_filters.push(filterObj);
             }
         });
-
         const finalPayload = {
             selections: [
                 {
@@ -299,25 +252,24 @@ export default function HistViz() {
                 },
             ],
         };
-
         setFilteredHistogram(
             { fileId: fileId!, payload: finalPayload },
             {
                 onSuccess: (data) => {
-                    const newAsset: BaseExploreNodeAsset = {
-                        id: data[0],
-                        io: 'output',
-                        origin: 'mined',
-                        type: 'ocelFile',
-                        name: `ocel_${data[0]}`,
-                    };
-                    if (node && nodeId) {
-                        const otherAssets = node.data.assets.filter((asset) => asset.io !== 'output');
-                        const updatedAssets = [...otherAssets, newAsset];
-
-                        updateNodeData(nodeId, { assets: updatedAssets });
-                    }
-                    navigate('/data/pipeline/explore');
+                    console.log('Filtered histogram created:', data);
+                    const outputId = data[0];
+                    // Use handleMinerOutput — name uses the output OCEL ID
+                    handleMinerOutput({
+                        nodeId: nodeId!,
+                        outputAssetId: outputId,
+                        outputAssetType: 'ocelFile',
+                        outputNodeType: 'ocelFileNode',
+                        inputFileName: `filtered_ocel_${outputId}`,
+                    });
+                    // Delay navigation so Zustand state (node + edge creation) settles
+                    setTimeout(() => {
+                        navigate('/data/pipeline/explore');
+                    }, 50);
                 },
                 onError: (error) => {
                     console.error('Failed to submit filtered histogram data:', error);
@@ -325,7 +277,6 @@ export default function HistViz() {
             }
         );
     };
-
     const handleEditClick = () => {
         setIsEditing(true);
         if (nodeId) {
@@ -335,7 +286,6 @@ export default function HistViz() {
             });
         }
     };
-
     return (
         <SidebarProvider>
             <TooltipProvider>
@@ -378,7 +328,6 @@ export default function HistViz() {
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </div>
-
                                             <Switch
                                                 id="view-mode"
                                                 checked={perspective === 'object'}
@@ -386,7 +335,6 @@ export default function HistViz() {
                                                     setPerspective(checked ? 'object' : 'event')
                                                 }
                                             />
-
                                             <div className="flex items-center gap-1">
                                                 <Label
                                                     htmlFor="view-mode"
@@ -410,9 +358,7 @@ export default function HistViz() {
                                                 </Tooltip>
                                             </div>
                                         </div>
-
                                         <div className="h-6 w-px bg-gray-300 mx-2" />
-
                                         <FilterDropdown
                                             title="Activity Filter"
                                             items={allEventTypes}
@@ -430,7 +376,6 @@ export default function HistViz() {
                                             search={objectSearch}
                                             setSearch={setObjectSearch}
                                             isEditing={isEditing}
-                                            // --- CHANGED: Pass Color Getter ---
                                             getColor={getObjectColor}
                                         />
                                         <Select
@@ -490,7 +435,6 @@ export default function HistViz() {
                                                                                 fileId={fileId || ''}
                                                                                 nodeId={nodeId || ''}
                                                                                 perspective={perspective}
-                                                                                // --- CHANGED: Pass Color ---
                                                                                 color={getObjectColor(e.object_type)}
                                                                             />
                                                                         </div>
@@ -513,7 +457,6 @@ export default function HistViz() {
                             </div>
                         )}
                     </div>
-                    {/* --- FOOTER (Submit/Edit Buttons) --- */}
                     {currentData && (
                         <div className="absolute bottom-0 left-0 w-full h-[70px] bg-white border-t border-gray-200 flex items-center justify-end px-8 shadow-inner-top z-10">
                             {isEditing ? (
@@ -535,7 +478,6 @@ export default function HistViz() {
         </SidebarProvider>
     );
 }
-
 interface HistogramCardProps {
     entry: HistogramEntry;
     selectedIdx: number[];
@@ -546,7 +488,6 @@ interface HistogramCardProps {
     perspective: Perspective;
     color: string;
 }
-
 function HistogramCard({
     entry,
     selectedIdx,
@@ -574,7 +515,6 @@ function HistogramCard({
         />
     );
 }
-
 interface FilterDropdownProps {
     title: string;
     items: string[];
@@ -585,7 +525,6 @@ interface FilterDropdownProps {
     isEditing: boolean;
     getColor?: (item: string) => string;
 }
-
 const FilterDropdown = ({
     title,
     items,
@@ -597,7 +536,6 @@ const FilterDropdown = ({
     getColor,
 }: FilterDropdownProps) => {
     const filteredItems = items.filter((item) => item.toLowerCase().includes(search.toLowerCase()));
-
     return (
         <Popover>
             <PopoverTrigger asChild>

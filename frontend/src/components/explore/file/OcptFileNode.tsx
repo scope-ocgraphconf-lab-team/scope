@@ -31,7 +31,6 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         () => nodeData.viewState || { filteredObjectTypes: [], colorScale: { domain: [], range: [] } },
         [nodeData.viewState]
     );
-
     // Reactively subscribe to colorMap so filter checkboxes re-render when colors change
     const colorMap = useExploreFlowStore((s) => {
         const node = s.nodes.find((n) => n.id === id);
@@ -41,20 +40,16 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         }
         return undefined;
     });
-
     // The conformance input can be either an OCEL file or another OCPT file
     const ocelFileId = useMemo(() => {
         const ocelAsset = assets.find((a) => a.io === 'input' && a.type === 'ocelFile');
         return ocelAsset?.id ?? null;
     }, [assets]);
-
     const ocptInputFileId = useMemo(() => {
         const ocptAsset = assets.find((a) => a.io === 'input' && (a.type === 'ocptFile' || a.type === 'ocptAsset'));
         return ocptAsset?.id ?? null;
     }, [assets]);
-
     const conformanceMode = ocelFileId ? 'ocpt-ocel' : ocptInputFileId ? 'ocpt-ocpt' : null;
-
     const { data: conformanceOcelResult, isLoading: isOcelLoading } = useGetConformanceOcptOcel(
         conformanceMode === 'ocpt-ocel' ? fileId : null,
         conformanceMode === 'ocpt-ocel' ? ocelFileId : null
@@ -63,24 +58,20 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         conformanceMode === 'ocpt-ocpt' ? fileId : null,
         conformanceMode === 'ocpt-ocpt' ? ocptInputFileId : null
     );
-
     const conformanceResult = conformanceOcelResult ?? conformanceOcptResult;
     const isConformanceLoading = isOcelLoading || isOcptLoading;
-
     // Store conformance result in node data for access from OcptViewer/Sidebar
     useEffect(() => {
         if (conformanceResult) {
             updateNodeData(id, { conformanceData: conformanceResult });
         }
     }, [conformanceResult, id, updateNodeData]);
-
     // Clear conformance data when conformance input disconnected
     useEffect(() => {
         if (!conformanceMode && conformanceData) {
             updateNodeData(id, { conformanceData: undefined });
         }
     }, [conformanceMode, conformanceData, id, updateNodeData]);
-
     useEffect(() => {
         if (data && viewState.colorScale.domain.length === 0) {
             const initialViewState = {
@@ -93,7 +84,6 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
             updateNodeData(id, { viewState: initialViewState });
         }
     }, [data, viewState, id, updateNodeData]);
-
     // Initialize colorMap when OCPT data loads, if no valid colorMap exists yet.
     // This mirrors what FileSelectionDialog does for OCEL files on upload.
     useEffect(() => {
@@ -110,26 +100,21 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
             }
         }
     }, [data, id, updateNodeData, nodeData.colorMap]);
-
     const visualize = (filter?: string) => {
         navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
     };
-
     const ocptAsset = useMemo(
         () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset')),
         [assets]
     );
-
     useMemo(() => {
         setFileId(ocptAsset?.id ?? null);
     }, [ocptAsset]);
-
     useEffect(() => {
         if (data) {
             updateNodeData(id, { processedData: data.ocpt });
         }
     }, [data, id, updateNodeData]);
-
     const handleObjectTypeToggle = (objectType: string) => {
         if (viewState) {
             const newFilteredObjectTypes = viewState.filteredObjectTypes.includes(objectType)
@@ -138,7 +123,6 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
             updateNodeData(id, { viewState: { ...viewState, filteredObjectTypes: newFilteredObjectTypes } });
         }
     };
-
     // Build colorScale: if colorMap exists use it, otherwise fall back to viewState.colorScale.range
     const colorScale = useMemo(() => {
         if (colorMap && viewState.colorScale.domain.length > 0) {
@@ -150,9 +134,7 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
             ? scaleOrdinal({ domain: viewState.colorScale.domain, range: viewState.colorScale.range })
             : scaleOrdinal<string, string>({ domain: [], range: [] });
     }, [colorMap, viewState]);
-
     const hasFile = Boolean(ocptAsset);
-
     return (
         <BaseFileNode
             {...props}
@@ -180,7 +162,6 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
                             <TreePine className="mr-2 h-3.5 w-3.5 text-green-600" />
                             Process Tree
                         </Button>
-
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -268,5 +249,4 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         </BaseFileNode>
     );
 });
-
 export default OcptFileNode;
