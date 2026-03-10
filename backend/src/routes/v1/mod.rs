@@ -1,3 +1,4 @@
+pub mod abstractions;
 pub mod case_notion;
 pub mod conformance;
 pub mod df2;
@@ -13,6 +14,7 @@ pub fn router() -> Router {
     Router::new()
         .nest("/upload", upload::router())
         .nest("/objects", objects::router())
+        .nest("/abstractions", abstractions::router())
         .nest("/conformance", conformance::router())
         .nest(
             "/event_object_frequencies",
