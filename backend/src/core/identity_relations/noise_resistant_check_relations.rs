@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+﻿use std::collections::{HashMap, HashSet};
 
 use crate::models::ocpt::IdentityRelationKind;
 
@@ -37,12 +37,22 @@ struct EventAccumulator {
     pairs: Vec<(String, String)>,
 }
 
+/// Returns a sorted, duplicate-free vector that is treated like a deterministic set.
+///
+/// Many checks in this module store object-id groups in `Vec<String>` so they can be
+/// compared, hashed, and reused as map keys. Normalizing them here avoids order-driven
+/// mismatches and keeps later subset/intersection checks stable.
 fn sorted_unique(mut values: Vec<String>) -> Vec<String> {
     values.sort();
     values.dedup();
     values
 }
 
+/// Checks whether two sorted string slices share at least one common value.
+///
+/// Both inputs are expected to already be sorted. The function uses a two-pointer scan
+/// instead of building temporary sets, which keeps the overlap test cheap inside the
+/// subset-overlap classification loop.
 fn intersects(a: &[String], b: &[String]) -> bool {
     let mut i = 0usize;
     let mut j = 0usize;
@@ -59,6 +69,11 @@ fn intersects(a: &[String], b: &[String]) -> bool {
     false
 }
 
+/// Checks whether one sorted string slice is fully contained in another.
+///
+/// The implementation assumes both slices are sorted and walks them once from left to
+/// right. This is used for relaxed subset-sync events where the right-hand object set
+/// must stay within the strict reference mapping.
 fn is_subset_of(sub: &[String], sup: &[String]) -> bool {
     let mut i = 0usize;
     let mut j = 0usize;
@@ -75,6 +90,11 @@ fn is_subset_of(sub: &[String], sup: &[String]) -> bool {
     i == sub.len()
 }
 
+/// Collects all distinct activities present in the relation rows in sorted order.
+///
+/// Subset synchronization discovery tries different activity partitions. Sorting the
+/// activity universe makes that search deterministic so the same input relations always
+/// produce the same clustering order and therefore the same chosen subset result.
 fn collect_unique_activities(relations: &[Relation]) -> Vec<String> {
     let mut activities: Vec<String> = relations
         .iter()
@@ -86,6 +106,11 @@ fn collect_unique_activities(relations: &[Relation]) -> Vec<String> {
     activities
 }
 
+/// Keeps only relation rows whose activity belongs to the provided activity set.
+///
+/// This helper is mainly used while exploring candidate strict-activity clusters for
+/// subset synchronization. It preserves the original relation row shape and simply drops
+/// events whose activity is outside the current candidate set.
 fn filter_relations_by_activities(
     relations: &[Relation],
     activities: &HashSet<String>,
@@ -97,6 +122,13 @@ fn filter_relations_by_activities(
         .collect()
 }
 
+/// Groups relation rows per event and derives the compared oid sets for both object-type groups.
+///
+/// Each event is accumulated as explicit `(oid, otype)` pairs first, then projected into
+/// the `ot1_set` and `ot2_set`. Keeping pairs intact avoids the old unordered-set pairing
+/// bug where object ids and object types could become misaligned before the two sets were
+/// constructed. Events that contain neither side are discarded because they cannot affect
+/// any identity-relation decision.
 fn build_event_sets(
     relations: &[Relation],
     ot1: &HashSet<String>,
@@ -157,6 +189,12 @@ fn build_event_sets(
     events
 }
 
+/// Verifies strict synchronization by requiring stable two-way mappings between both event-side oid sets.
+///
+/// The check requires that the left-side object-id group of
+/// an event must always map to the same right-side group and vice versa, and individual
+/// objects must not appear in multiple incompatible groups over time. Violations are counted
+/// at the set level, and the final ratio is compared against `violation_threshold`.
 fn check_strict_sync(
     relations: &[Relation],
     ot1: &HashSet<String>,
@@ -238,6 +276,12 @@ fn check_strict_sync(
     (violating_sets.len() as f64) / (all_sets.len() as f64) <= violation_threshold
 }
 
+/// Verifies subset synchronization for a strict activity core plus a relaxed activity remainder.
+///
+/// Events from `strict_activities` behave like strict synchronization and define the
+/// reference mapping. Events from `relaxed_activities` are then allowed to map each left-side
+/// set to a subset of that strict target on the right-hand side. Any missing strict anchor or
+/// any relaxed target that exceeds the strict reference mapping is counted as a violation.
 fn check_subset_sync(
     relations: &[Relation],
     ot1: &HashSet<String>,
@@ -294,7 +338,7 @@ fn check_subset_sync(
         .collect();
 
     if !relaxed_events.is_empty() && !strict_events.is_empty() {
-        // Mirrors src_journal behavior: last strict mapping for an ot1_set wins.
+        // If the same left-side set appears multiple times in the strict part, the last observed mapping is kept.
         let mut strict_map: HashMap<Vec<String>, Vec<String>> = HashMap::new();
         for event in strict_events {
             strict_map.insert(event.ot1_set.clone(), event.ot2_set.clone());
@@ -325,6 +369,11 @@ fn check_subset_sync(
     (violating_sets.len() as f64) / (all_sets.len() as f64) <= violation_threshold
 }
 
+/// Distinguishes overlap from partition by checking whether one left-side set maps to intersecting right-side subsets.
+///
+/// Once subset synchronization is known to hold, this helper asks whether multiple relaxed
+/// right-side subsets for the same left-side set share objects. Shared objects indicate an
+/// overlap variant; pairwise disjoint subsets indicate a partition variant.
 fn check_subset_overlap(
     relations: &[Relation],
     ot1: &HashSet<String>,
@@ -377,6 +426,12 @@ fn check_subset_overlap(
     (violating_ot1_sets.len() as f64) / (all_ot1_sets.len() as f64) <= violation_threshold
 }
 
+/// Checks whether each left-side oid set implies a unique right-side oid set within the allowed noise level.
+///
+/// Only events containing a non-empty left-hand object set are relevant here. The relation
+/// holds if each observed left-side set determines one right-side set consistently enough
+/// under the configured noise threshold. If a left-side set maps to multiple right-side sets,
+/// both the source and the competing targets are counted as violating sets.
 fn check_implication(
     relations: &[Relation],
     ot1: &HashSet<String>,
@@ -421,6 +476,13 @@ fn check_implication(
     (violating_sets.len() as f64) / (all_sets.len() as f64) <= violation_threshold
 }
 
+/// Estimates the implication arity by measuring how many left-side object lifecycles overlap per right-side object.
+///
+/// For implication matches, this refines the result into ordered, finite batch, or concurrent
+/// behavior. It approximates concurrency by deriving time intervals for each left-side object
+/// and then checking how many such intervals overlap for each right-side object. The computed
+/// maximum overlap, adjusted by the allowed noise, becomes the batch size `k` or signals a
+/// concurrent implication when it exceeds the average left-to-right object ratio.
 fn check_implication_k(
     relations: &[Relation],
     ot1: &HashSet<String>,
@@ -536,6 +598,13 @@ fn check_implication_k(
     }
 }
 
+/// Searches activity partitions that satisfy subset synchronization and classifies the result as overlap or partition.
+///
+/// The algorithm incrementally clusters activities into strict candidates. An activity is
+/// added to an existing cluster only if the cluster still satisfies strict synchronization on
+/// its own. Each resulting strict cluster is then tested against the complementary relaxed
+/// activity set. The first successful split is returned together with the corresponding
+/// `SubsetSyncOverlap` or `SubsetSyncPartition` classification.
 fn discover_subset_sync(
     relations: &[Relation],
     ot1: &HashSet<String>,
@@ -606,6 +675,11 @@ fn discover_subset_sync(
     None
 }
 
+/// Runs the selected noise-resistant relation family check and returns the detected backend relation kind.
+///
+/// This is the public entry point used by the OCPT extender. It delegates to the family-specific
+/// helper, converts successful implication matches into their concrete backend kind, and carries
+/// relaxed-activity information only for subset synchronization where that extra metadata matters.
 pub fn check_noise_resistant_relation(
     ot1: &HashSet<String>,
     ot2: &HashSet<String>,
@@ -653,6 +727,12 @@ pub fn check_noise_resistant_relation(
     }
 }
 
+/// Finds object types for which the target activity occurs once and almost always at the start or end of the lifecycle.
+///
+/// The function first filters to object types where the target activity appears exactly once for
+/// a sufficiently large fraction of objects. For those candidates, it orders each object's events
+/// by timestamp and checks whether the target activity is almost always the first or the last
+/// lifecycle event. The result is returned as `(first_types, last_types)`.
 pub fn object_types_first_or_last(
     relations: &[Relation],
     activity: &str,
@@ -767,6 +847,12 @@ pub fn object_types_first_or_last(
     (first_types, last_types)
 }
 
+/// Detects merge/split candidates by requiring non-empty first-type and last-type groups for the same activity.
+///
+/// This is a thin wrapper around `object_types_first_or_last`. A merge/split candidate exists only
+/// when the same activity has at least one object type that behaves like a lifecycle start and at
+/// least one object type that behaves like a lifecycle end. If either side is empty, no merge/split
+/// wrapper should be added to the tree.
 pub fn detect_object_merge_split(
     relations: &[Relation],
     activity: &str,
@@ -789,6 +875,8 @@ mod tests {
     use crate::models::ocpt::IdentityRelationKind;
     use std::collections::HashSet;
 
+    // Builds a one-element set for compact test setup so the test cases stay focused on
+    // the relation behavior instead of repetitive HashSet construction.
     fn singleton(value: &str) -> HashSet<String> {
         let mut set = HashSet::new();
         set.insert(value.to_string());
@@ -796,6 +884,8 @@ mod tests {
     }
 
     #[test]
+    // Covers the simplest strict-sync situation: each order is paired with exactly one
+    // package and no competing mappings are present across the two events.
     fn detects_strict_sync_for_one_to_one_pairs() {
         let ot1 = singleton("order");
         let ot2 = singleton("package");
@@ -842,6 +932,8 @@ mod tests {
     }
 
     #[test]
+    // Covers ordered implication where the same right-side object observes left-side
+    // objects in non-overlapping time intervals, which should produce `ImpOrdered`.
     fn detects_ordered_implication_for_non_overlapping_intervals() {
         let ot1 = singleton("order");
         let ot2 = singleton("package");
@@ -887,3 +979,5 @@ mod tests {
         assert_eq!(found.kind, IdentityRelationKind::ImpOrdered);
     }
 }
+
+
