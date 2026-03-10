@@ -1,4 +1,4 @@
-﻿use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use crate::models::ocpt::IdentityRelationKind;
 
@@ -870,7 +870,7 @@ pub fn detect_object_merge_split(
 
 #[cfg(test)]
 mod tests {
-    use super::{check_noise_resistant_relation, NoiseResistantRelationFamily};
+    use super::{NoiseResistantRelationFamily, check_noise_resistant_relation};
     use crate::core::identity_relations::Relation;
     use crate::models::ocpt::IdentityRelationKind;
     use std::collections::HashSet;
@@ -979,5 +979,3 @@ mod tests {
         assert_eq!(found.kind, IdentityRelationKind::ImpOrdered);
     }
 }
-
-

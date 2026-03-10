@@ -5,8 +5,8 @@ use crate::models::ocpt::{
 };
 
 use super::{
-    check_noise_resistant_relation, detect_object_merge_split, NoiseResistantRelationFamily,
-    Relation,
+    NoiseResistantRelationFamily, Relation, check_noise_resistant_relation,
+    detect_object_merge_split,
 };
 
 fn collect_activities(node: &OCPTNode, out: &mut HashSet<String>) {
@@ -183,12 +183,9 @@ pub fn get_extended_ocpt(
         OCPTNode::Leaf(leaf) => {
             if let OCPTLeafLabel::Activity(activity) = &leaf.activity_label {
                 let available = leaf.related_ob_types.clone();
-                if let Some((first_types, last_types)) = detect_object_merge_split(
-                    relations,
-                    activity,
-                    &available,
-                    violation_threshold,
-                ) {
+                if let Some((first_types, last_types)) =
+                    detect_object_merge_split(relations, activity, &available, violation_threshold)
+                {
                     let first: HashSet<String> = first_types.into_iter().collect();
                     let last: HashSet<String> = last_types.into_iter().collect();
                     if !first.is_empty() && !last.is_empty() {
@@ -275,13 +272,12 @@ pub fn get_extended_ocpt(
                                 );
                             }
                             backend_kind => {
-                                let extended_inner =
-                                    get_extended_ocpt(
-                                        wrapped,
-                                        relations,
-                                        Some(next_candidates),
-                                        violation_threshold,
-                                    );
+                                let extended_inner = get_extended_ocpt(
+                                    wrapped,
+                                    relations,
+                                    Some(next_candidates),
+                                    violation_threshold,
+                                );
                                 return wrap_identity(extended_inner, ot1, ot2, backend_kind);
                             }
                         }

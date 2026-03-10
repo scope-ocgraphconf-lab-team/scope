@@ -1,10 +1,11 @@
 //! Convert **[OcptFE]** to **[OCPT]** and viceversa.
 use crate::models::ocpt::{
     ActivityValue, HierarchyNode, IdentityRelation, IdentityRelationFE, IdentityRelationKind,
-    IdentityRelationKindFE, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator, OCPTOperatorType,
-    ObjectTypeFE as FeObjectType, OcptFE, OperatorFE, OperatorValue, OperatorValueData, OCPT,
+    IdentityRelationKindFE, OCPT, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator,
+    OCPTOperatorType, ObjectTypeFE as FeObjectType, OcptFE, OperatorFE, OperatorValue,
+    OperatorValueData,
 };
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::collections::{HashMap, HashSet};
 
 /// Converts a frontend OCPT [OcptFE] to a backend OCPT [OCPT].
@@ -592,7 +593,7 @@ mod tests {
         use crate::core::struct_converters::ocpt_frontend_backend::{
             backend_to_frontend, frontend_to_backend,
         };
-        use crate::models::ocpt::{OcptFE, OCPT};
+        use crate::models::ocpt::{OCPT, OcptFE};
         use tokio::fs;
 
         // Hard-coded file
