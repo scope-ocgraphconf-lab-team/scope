@@ -12,8 +12,8 @@ use uuid::Uuid;
 // Re-exported for downstream API consumers; not referenced in this module yet.
 pub use process_mining::core::process_models::object_centric::ocpt::{EventType, ObjectType};
 pub use process_mining::core::process_models::object_centric::ocpt::{
-    IdentityRelation, IdentityRelationKind, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator,
-    OCPTOperatorType, OCPT,
+    IdentityRelation, IdentityRelationKind, OCPT, OCPTLeaf, OCPTLeafLabel, OCPTNode, OCPTOperator,
+    OCPTOperatorType,
 };
 
 pub trait OCPTPretty {
