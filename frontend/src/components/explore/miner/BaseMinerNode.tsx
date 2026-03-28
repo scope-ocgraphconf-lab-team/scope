@@ -1,11 +1,13 @@
 import { memo, type ReactNode, useEffect, useRef } from 'react';
 import { useNodeConnections } from '@xyflow/react';
-import { Pickaxe, RefreshCw } from 'lucide-react';
+import { CheckCircle, Pickaxe, RefreshCw } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { pullUpstreamData } from '~/lib/explore/flowActions';
+import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
 import {
+    BaseExploreNodeAsset,
     BaseExploreNodeDropdownActionType,
     BaseExploreNodeDropdownOption,
     BaseExploreNodeHandleOption,
@@ -25,8 +27,21 @@ interface MinerNodeProps {
     onDropdownAction?: (action: BaseExploreNodeDropdownActionType) => void;
     onReset?: () => void;
     customActions?: ReactNode;
+    settings?: ReactNode;
     children?: ReactNode;
 }
+
+const OutputBadge = ({ asset }: { asset: BaseExploreNodeAsset }) => {
+    const visual = ASSET_TYPE_VISUALS[asset.type];
+    const Icon = visual.icon;
+    return (
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-gray-50 border border-gray-200">
+            <Icon className={`h-3.5 w-3.5 shrink-0 ${visual.color}`} />
+            <span className="text-xs font-medium text-gray-700">{visual.label}</span>
+            <CheckCircle className="h-3 w-3 text-emerald-500 ml-auto shrink-0" />
+        </div>
+    );
+};
 
 const BaseMinerNode = memo<MinerNodeProps>((props) => {
     const {
@@ -41,6 +56,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
         onDropdownAction,
         onReset,
         customActions,
+        settings,
         children,
     } = props;
     const { assets, isStale } = data;
@@ -131,8 +147,6 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             );
         }
 
-        if (assets.length === 0) return <p className="text-sm text-gray-500">Ready to mine!</p>;
-
         if (isLoading) {
             return (
                 <div className="flex flex-col items-center justify-center h-32 w-full">
@@ -150,34 +164,16 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
             );
         }
 
+        const outputAssets = assets.filter((a) => a.io === 'output');
+
         return (
-            <div>
-                <div>
-                    <p>Input Files</p>
-                    {assets.map((asset, index) => {
-                        if (asset.io === 'input') {
-                            return (
-                                <div key={index} className="text-sm text-gray-600">
-                                    {'📄'}
-                                    {asset.name}
-                                </div>
-                            );
-                        }
-                    })}
-                </div>
-                <div>
-                    <p>Output Files</p>
-                    {assets.map((asset, index) => {
-                        if (asset.io === 'output') {
-                            return (
-                                <div key={index} className="text-sm text-gray-600">
-                                    {'⛏️'}
-                                    {asset.name}
-                                </div>
-                            );
-                        }
-                    })}
-                </div>
+            <div className="flex flex-col gap-2">
+                {outputAssets.length > 0 ? (
+                    outputAssets.map((asset) => <OutputBadge key={asset.id} asset={asset} />)
+                ) : (
+                    <p className="text-sm text-gray-500 text-center py-1">Ready to mine!</p>
+                )}
+                {settings && <div className="border-t pt-2">{settings}</div>}
             </div>
         );
     };

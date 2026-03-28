@@ -2,7 +2,6 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
-import { Pickaxe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
@@ -75,15 +74,15 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
         dropdownOptions.push({ label: 'Export JSON', action: 'exportJson' as const });
     }
 
-    const renderCustomActions = () => (
-        <div className="flex items-center gap-1">
+    const renderSettings = () => (
+        <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Algorithm</span>
             <Select value={algorithm} onValueChange={setAlgorithm}>
                 <SelectTrigger
-                    className="flex items-center h-6 px-2 bg-gray-100 text-amber-600 hover:bg-gray-200 rounded-md w-auto justify-between gap-1"
+                    className="h-6 px-2 bg-gray-100 text-amber-600 hover:bg-gray-200 rounded-md w-auto gap-1 text-xs font-semibold"
                     aria-label="Select mining algorithm"
                 >
-                    <Pickaxe className="h-3.5 w-3.5 mr-1 text-amber-500" />
-                    <SelectValue className="text-xs font-semibold" placeholder="Algorithm" />
+                    <SelectValue placeholder="Algorithm" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem className="text-xs text-amber-600 font-semibold" value="DF2">
@@ -113,7 +112,7 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
             dropdownOptions={dropdownOptions}
             onDropdownAction={handleDropdownAction}
             isLoading={isLoading || isFetching}
-            customActions={renderCustomActions()}
+            settings={renderSettings()}
             onReset={handleReset}
         />
     );
