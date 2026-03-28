@@ -11,7 +11,6 @@ export type ExploreVisualizationNodeType = (typeof visualizationNodeTypes)[numbe
 
 export const minerNodeTypes = [
     'ocptMinerNode',
-    'objectEventGraphMinerNode',
     'histogramMinerNode',
     'caseNotionMinerNode',
     'identityExtendMinerNode',
