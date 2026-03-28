@@ -1,22 +1,36 @@
 import { DragEvent, useCallback, useMemo } from 'react';
-import { Background, Controls, ReactFlow, ReactFlowProvider } from '@xyflow/react';
+import { Background, Controls, NodeProps, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { SidebarInset, SidebarProvider } from '~/components/ui/sidebar';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
 import { DnDProvider, useDnD } from '~/components/explore/DndContext';
 import ExploreSidebar from '~/components/explore/ExploreSidebar';
+import OcelCollectionNode from '~/components/explore/file/OcelCollectionNode';
+import OcelFileNode from '~/components/explore/file/OcelFileNode';
+import OcptFileNode from '~/components/explore/file/OcptFileNode';
 import FileSelectionDialog from '~/components/explore/file/ui/FileSelectionDialog';
+import CaseNotionMinerNode from '~/components/explore/miner/CaseNotionMinerNode';
+import ExtendWithIdentityNode from '~/components/explore/miner/ExtendWithIdentityNode';
+import HistogramMinerNode from '~/components/explore/miner/HistogramMinerNode';
+import OcptMinerNode from '~/components/explore/miner/OcptMinerNode';
+import { RefocusProgressPanel } from '~/components/explore/RefocusProgressPanel';
 import { useConnections } from '~/hooks/explore/useConnections';
 import { useDragDrop } from '~/hooks/explore/useDragDrop';
 import { useNodeOperations } from '~/hooks/explore/useNodeOperations';
-import { nodeRegistry } from '~/lib/explore/nodeRegistry';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
-import { RefocusProgressPanel } from '~/components/explore/RefocusProgressPanel';
+import { nodeRegistry } from '~/lib/explore/nodeRegistry';
 
-const nodeTypes = Object.fromEntries(
-    Object.entries(nodeRegistry).map(([type, entry]) => [type, entry.component])
-);
+const nodeTypes = {
+    ocptFileNode: OcptFileNode,
+    ocelFileNode: OcelFileNode,
+    ocelCollectionNode: OcelCollectionNode,
+    ocptMinerNode: OcptMinerNode,
+    histogramMinerNode: HistogramMinerNode,
+    caseNotionMinerNode: CaseNotionMinerNode,
+    identityExtendMinerNode: ExtendWithIdentityNode,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} satisfies Record<keyof typeof nodeRegistry, React.ComponentType<NodeProps<any>>>;
 
 const Explore: React.FC = () => {
     const { nodes, edges, onEdgesChange } = useExploreFlowStore();
