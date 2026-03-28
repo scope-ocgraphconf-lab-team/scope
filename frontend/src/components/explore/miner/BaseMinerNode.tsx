@@ -13,6 +13,7 @@ import {
     BaseExploreNodeHandleOption,
 } from '~/types/explore/nodeData/baseNodeData';
 import { MinerNode } from '~/types/explore/nodes';
+import { AssetType } from '~/types/files.types';
 import '~/styles/animations.css';
 
 interface MinerNodeProps {
@@ -30,6 +31,21 @@ interface MinerNodeProps {
     settings?: ReactNode;
     children?: ReactNode;
 }
+
+const AllowedInputsHint = ({ allowedAssetTypes }: { allowedAssetTypes: readonly AssetType[] }) => {
+    const uniqueLabels = [...new Map(allowedAssetTypes.map((t) => [ASSET_TYPE_VISUALS[t].label, ASSET_TYPE_VISUALS[t]])).values()];
+    return (
+        <div className="flex flex-col gap-1 py-1">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Accepts</p>
+            {uniqueLabels.map(({ label, icon: Icon, color }) => (
+                <div key={label} className="flex items-center gap-1.5">
+                    <Icon className={`h-3 w-3 ${color}`} />
+                    <span className="text-xs text-gray-600">{label}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 const OutputBadge = ({ asset }: { asset: BaseExploreNodeAsset }) => {
     const visual = ASSET_TYPE_VISUALS[asset.type];
@@ -171,7 +187,7 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
                 {outputAssets.length > 0 ? (
                     outputAssets.map((asset) => <OutputBadge key={asset.id} asset={asset} />)
                 ) : (
-                    <p className="text-sm text-gray-500 text-center py-1">Ready to mine!</p>
+                    <AllowedInputsHint allowedAssetTypes={data.allowedAssetTypes} />
                 )}
                 {settings && <div className="border-t pt-2">{settings}</div>}
             </div>
