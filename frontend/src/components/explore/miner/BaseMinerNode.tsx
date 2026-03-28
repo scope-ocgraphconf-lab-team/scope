@@ -50,8 +50,9 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
     const hasResetStale = useRef(false);
 
     const inConnections = useNodeConnections({ handleType: 'target' });
-    const inSourceNode = inConnections[0] ? getNode(inConnections[0].source) : undefined;
-    const inSourceHasOutputAsset = inSourceNode?.data.assets.some((asset) => asset.io === 'output');
+    const inSourceHasOutputAsset = inConnections.some((conn) =>
+        getNode(conn.source)?.data.assets.some((asset) => asset.io === 'output')
+    );
 
     const hasInputAsset = assets.some((asset) => asset.io === 'input');
     const isWaitingForInput = inSourceHasOutputAsset && !hasInputAsset && isStale;
