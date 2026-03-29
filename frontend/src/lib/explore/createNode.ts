@@ -46,8 +46,3 @@ export const createNode = (
     };
     return { ...base, data };
 };
-
-/** @deprecated use createNode directly */
-export class NodeFactory {
-    static createNode = createNode;
-}

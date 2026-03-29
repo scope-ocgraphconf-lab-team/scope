@@ -4,7 +4,7 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 import { isFileNode } from '~/lib/explore/exploreNodes.utils';
 import { ExploreNodeType } from '~/types/explore/nodeTypesCategories';
-import { NodeFactory } from '~/model/explore/node-factory.model';
+import { createNode } from '~/lib/explore/createNode';
 
 export const useDragDrop = () => {
     const { addNode } = useExploreFlowStore();
@@ -38,7 +38,7 @@ export const useDragDrop = () => {
 
             // Constructs a new node using a factory where the logic is handled
             // on determining whether it is a 'file', 'visualization', ... node
-            const newNode = NodeFactory.createNode(position, type);
+            const newNode = createNode(position, type);
 
             // This statement opens the 'File Selection Dialog' automatically
             // if the node received is a FileNode.

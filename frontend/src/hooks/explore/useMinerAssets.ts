@@ -1,9 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { handleMinerOutput } from '~/lib/explore/flowActions';
 import type { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
 import type { ExploreNodeType } from '~/types/explore/nodeTypesCategories';
 import type { AssetType } from '~/types/files.types';
-import { useEffect } from 'react';
 
 /**
  * Returns the first input asset matching the given type(s), or null.
