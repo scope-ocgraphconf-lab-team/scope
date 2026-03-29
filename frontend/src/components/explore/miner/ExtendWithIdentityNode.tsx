@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
@@ -28,9 +28,9 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
 
     useMinerOutput(node.id, data?.file_id, inputFileName, 'identityOcptAsset', 'ocptFileNode');
 
-    const handleReset = () => {
+    const handleReset = useCallback(() => {
         queryClient.removeQueries({ queryKey: ['extendOcptWithIdentity', node.id] });
-    };
+    }, [queryClient, node.id]);
 
     return (
         <BaseMinerNode

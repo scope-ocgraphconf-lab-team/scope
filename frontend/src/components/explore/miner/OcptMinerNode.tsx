@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
@@ -95,9 +95,9 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
         </div>
     );
 
-    const handleReset = () => {
+    const handleReset = useCallback(() => {
         queryClient.removeQueries({ queryKey: ['mineOcpt', node.id] });
-    };
+    }, [queryClient, node.id]);
 
     return (
         <BaseMinerNode
