@@ -13,9 +13,16 @@ export interface SidebarGroupMeta {
     menuClassName: string;
 }
 
+export interface NodeInputGroup {
+    label: string;
+    types: readonly AssetType[];
+}
+
 export interface NodeRegistryEntry {
     category: ExploreNodeCategory;
     allowedAssetTypes: readonly AssetType[];
+    /** Describes named input groups for display in the node body hint. If omitted, falls back to allowedAssetTypes. */
+    inputs?: readonly NodeInputGroup[];
     /** null = not user-placeable (spawned programmatically only) */
     sidebar: { label: string; icon: string; group: SidebarGroup } | null;
 }
@@ -66,6 +73,10 @@ export const nodeRegistry = {
     identityExtendMinerNode: {
         category: 'miner',
         allowedAssetTypes: ['ocptAsset', 'ocptFile', 'identityOcptAsset'],
+        inputs: [
+            { label: 'Primary', types: ['ocptAsset', 'ocptFile'] },
+            { label: 'Secondary', types: ['ocelAsset', 'ocelFile'] },
+        ],
         sidebar: { label: 'Extend Identity', icon: 'fingerprint', group: 'miners' },
     },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;

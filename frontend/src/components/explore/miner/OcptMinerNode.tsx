@@ -75,8 +75,7 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
     }
 
     const renderSettings = () => (
-        <div className="flex items-center justify-between gap-2">
-            <span className="text-xs text-muted-foreground">Algorithm</span>
+        <div className="flex items-center gap-2">
             <Select value={algorithm} onValueChange={setAlgorithm}>
                 <SelectTrigger
                     className="h-6 px-2 bg-gray-100 text-amber-600 hover:bg-gray-200 rounded-md w-auto gap-1 text-xs font-semibold"
@@ -112,7 +111,7 @@ const OcptMinerNode = memo<NodeProps<MinerNode>>((node) => {
             dropdownOptions={dropdownOptions}
             onDropdownAction={handleDropdownAction}
             isLoading={isLoading || isFetching}
-            settings={renderSettings()}
+            customActions={renderSettings()}
             onReset={handleReset}
         />
     );

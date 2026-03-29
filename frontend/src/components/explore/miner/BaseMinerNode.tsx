@@ -2,9 +2,11 @@ import { memo, type ReactNode, useEffect, useRef } from 'react';
 import { useNodeConnections } from '@xyflow/react';
 import { CheckCircle, Pickaxe, RefreshCw } from 'lucide-react';
 import { Button } from '~/components/ui/button';
+import AssetTypeList from '~/components/explore/AssetTypeList';
 import BaseExploreNode from '~/components/explore/BaseExploreNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
 import { pullUpstreamData } from '~/lib/explore/flowActions';
+import { nodeRegistry, type NodeInputGroup } from '~/lib/explore/nodeRegistry';
 import { ASSET_TYPE_VISUALS } from '~/lib/iconMap';
 import {
     BaseExploreNodeAsset,
@@ -32,19 +34,27 @@ interface MinerNodeProps {
     children?: ReactNode;
 }
 
-const AllowedInputsHint = ({ allowedAssetTypes }: { allowedAssetTypes: readonly AssetType[] }) => {
-    const uniqueLabels = [...new Map(allowedAssetTypes.map((t) => [ASSET_TYPE_VISUALS[t].label, ASSET_TYPE_VISUALS[t]])).values()];
-    return (
-        <div className="flex flex-col gap-1 py-1">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Accepts</p>
-            {uniqueLabels.map(({ label, icon: Icon, color }) => (
-                <div key={label} className="flex items-center gap-1.5">
-                    <Icon className={`h-3 w-3 ${color}`} />
-                    <span className="text-xs text-gray-600">{label}</span>
-                </div>
-            ))}
-        </div>
-    );
+
+const AllowedInputsHint = ({
+    allowedAssetTypes,
+    inputs,
+}: {
+    allowedAssetTypes: readonly AssetType[];
+    inputs?: readonly NodeInputGroup[];
+}) => {
+    if (inputs) {
+        // Only the primary (first) group is shown in the body.
+        // Secondary groups are shown inline at their respective handles.
+        const primary = inputs[0];
+        return (
+            <div className="flex flex-col gap-1 py-1">
+                <p className="text-xs font-semibold text-gray-500 mb-1">{primary.label}</p>
+                <AssetTypeList types={primary.types} />
+            </div>
+        );
+    }
+
+    return <AssetTypeList types={allowedAssetTypes} />;
 };
 
 const OutputBadge = ({ asset }: { asset: BaseExploreNodeAsset }) => {
@@ -185,9 +195,18 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
         return (
             <div className="flex flex-col gap-2">
                 {outputAssets.length > 0 ? (
-                    outputAssets.map((asset) => <OutputBadge key={asset.id} asset={asset} />)
+                    <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Output</p>
+                        {outputAssets.map((asset) => <OutputBadge key={asset.id} asset={asset} />)}
+                    </div>
                 ) : (
-                    <AllowedInputsHint allowedAssetTypes={data.allowedAssetTypes} />
+                    <div>
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Input</p>
+                        <AllowedInputsHint
+                            allowedAssetTypes={data.allowedAssetTypes}
+                            inputs={nodeRegistry[data.nodeType as keyof typeof nodeRegistry]?.inputs}
+                        />
+                    </div>
                 )}
                 {settings && <div className="border-t pt-2">{settings}</div>}
             </div>
