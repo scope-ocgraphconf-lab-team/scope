@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { scaleOrdinal } from '@visx/scale';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { SidebarProvider } from '~/components/ui/sidebar';
