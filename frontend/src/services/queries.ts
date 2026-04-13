@@ -3,6 +3,7 @@ import {
     AbstractionSourceKind,
     extendOcptWithIdentity,
     getAbstraction,
+    getAbstractionById,
     getAdvancedCN,
     getCaseNotions,
     getConformanceOcptOcel,
@@ -139,6 +140,15 @@ export const useExtendOcptWithIdentity = (
         queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId],
         queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!),
         enabled: Boolean(ocptFileId) && Boolean(ocelFileId) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetAbstractionById = (fileId: string | null) => {
+    return useQuery({
+        queryKey: ['getAbstractionById', fileId],
+        queryFn: () => getAbstractionById(fileId!),
+        enabled: Boolean(fileId),
         refetchOnWindowFocus: false,
     });
 };

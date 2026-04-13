@@ -53,6 +53,11 @@ export const nodeRegistry = {
         allowedAssetTypes: ['ocelCollectionFile'],
         sidebar: null,
     },
+    abstractionFileNode: {
+        category: 'file',
+        allowedAssetTypes: ['abstractionAsset'],
+        sidebar: null,
+    },
 
     // ── Miner nodes ────────────────────────────────────────────────────────────
     ocptMinerNode: {

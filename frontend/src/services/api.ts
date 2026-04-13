@@ -148,6 +148,16 @@ export const getAbstraction = async (
     return response.data;
 };
 
+export type GetAbstractionByIdResponse = {
+    file_id: string;
+    abstraction: unknown;
+};
+
+export const getAbstractionById = async (fileId: string): Promise<GetAbstractionByIdResponse> => {
+    const response = await api.get(`/v1/objects/abstraction/${fileId}`);
+    return response.data;
+};
+
 export const mineOcpt = async (fileId: string, algorithm: string = 'DF2'): Promise<GetOcptResponse> => {
     if (algorithm === 'DF2') {
         const response = await api.get(`v1/ocpt/df2/${fileId}`);
