@@ -1,5 +1,5 @@
 import type { Edge, Node } from '@xyflow/react';
-import { GROUP_STRIDE, toObjectTypeGroup } from '~/components/abstraction/ObjectCentricDirectlyFollows';
+import { toObjectTypeGroup } from '~/components/abstraction/ObjectCentricDirectlyFollows';
 import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 
 export const getObjectTypes = (abstraction: OCLanguageAbstraction): string[] =>
@@ -7,14 +7,15 @@ export const getObjectTypes = (abstraction: OCLanguageAbstraction): string[] =>
 
 export const toAbstractionFlow = (abstraction: OCLanguageAbstraction): { nodes: Node[]; edges: Edge[] } => {
     const objectTypes = getObjectTypes(abstraction);
+    const result: { nodes: Node[]; edges: Edge[] } = { nodes: [], edges: [] };
+    let xOffset = 0;
 
-    return objectTypes.reduce<{ nodes: Node[]; edges: Edge[] }>(
-        (acc, objectType, index) => {
-            const group = toObjectTypeGroup(objectType, abstraction, index * GROUP_STRIDE);
-            acc.nodes.push(...group.nodes);
-            acc.edges.push(...group.edges);
-            return acc;
-        },
-        { nodes: [], edges: [] }
-    );
+    for (const objectType of objectTypes) {
+        const { nodes, edges, groupWidth } = toObjectTypeGroup(objectType, abstraction, xOffset);
+        result.nodes.push(...nodes);
+        result.edges.push(...edges);
+        xOffset += groupWidth;
+    }
+
+    return result;
 };

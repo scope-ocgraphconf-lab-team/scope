@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { BaseEdge, type Edge, type EdgeProps, EdgeText, getSmoothStepPath } from '@xyflow/react';
+import { BaseEdge, type Edge, type EdgeProps, getSmoothStepPath, useInternalNode } from '@xyflow/react';
 import { useColorScaleStore } from '~/stores/store';
+import { getFloatingEdgeParams } from '~/lib/abstraction/floatingEdge';
 
 export type AbstractionOtEvEdgeData = {
     objectType: string;
@@ -9,51 +10,39 @@ export type AbstractionOtEvEdgeData = {
 
 export const AbstractionOtEvEdge = ({
     id,
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
+    source,
+    target,
     style = {},
-    label, // May be used for something else in the future
     data,
 }: EdgeProps<Edge<AbstractionOtEvEdgeData>>) => {
     const { colorScale } = useColorScaleStore();
 
-    const [edgePath, labelX, labelY] = getSmoothStepPath({
-        sourceX,
-        sourceY,
-        sourcePosition,
-        targetX,
-        targetY,
-        targetPosition,
+    const sourceNode = useInternalNode(source);
+    const targetNode = useInternalNode(target);
+
+    const edgeStyle = useMemo(
+        () => ({
+            ...style,
+            stroke: data?.objectType ? colorScale(data.objectType) : '#b1b1b7',
+            strokeWidth: 1,
+            strokeDasharray: '5 4',
+            opacity: 0.7,
+        }),
+        [data?.objectType, colorScale, style]
+    );
+
+    if (!sourceNode || !targetNode) return null;
+
+    const { sx, sy, tx, ty, sourcePos, targetPos } = getFloatingEdgeParams(sourceNode, targetNode);
+
+    const [path] = getSmoothStepPath({
+        sourceX: sx,
+        sourceY: sy,
+        sourcePosition: sourcePos,
+        targetX: tx,
+        targetY: ty,
+        targetPosition: targetPos,
     });
 
-    const edgeColor = useMemo(() => {
-        if (data?.objectType) {
-            return colorScale(data.objectType);
-        }
-        return '#b1b1b7';
-    }, [data?.objectType, colorScale]);
-
-    const edgeStyle = useMemo(() => {
-        return {
-            ...style,
-            stroke: edgeColor,
-            strokeWidth: 1.5,
-            strokeStyle: { strokeDasharray: '5,5' },
-        };
-    }, [edgeColor, style]);
-
-    return (
-        <>
-            <BaseEdge id={id} path={edgePath} style={edgeStyle} markerEnd={`url(#marker)`} />
-
-            {/* Edge label */}
-            {data?.multiplicityLabel && (
-                <EdgeText x={labelX} y={labelY} label={data?.multiplicityLabel} className="text-black" />
-            )}
-        </>
-    );
+    return <BaseEdge id={id} path={path} style={edgeStyle} />;
 };

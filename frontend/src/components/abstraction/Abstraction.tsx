@@ -33,6 +33,13 @@ const Abstraction: React.FC<AbstractionProps> = ({ abstraction }) => {
 
     return (
         <div className="h-full w-full relative">
+            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+                <defs>
+                    <marker id="df-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+                    </marker>
+                </defs>
+            </svg>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
