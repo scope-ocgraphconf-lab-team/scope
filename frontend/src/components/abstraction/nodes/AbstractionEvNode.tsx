@@ -7,11 +7,18 @@ type AbstractionEvNodeProps = {
     color: string;
     isStartEvent: boolean;
     isEndEvent: boolean;
+    diffStatus?: 'unique' | 'shared';
 };
 
+const MUTED_COLOR = '#b1b1b7';
+
 const AbstractionEvNode = memo(({ data, id }: NodeProps<Node<AbstractionEvNodeProps>>) => {
+    const isShared = data.diffStatus === 'shared';
+    const badgeColor = isShared ? MUTED_COLOR : data.color;
+    const nodeOpacity = isShared ? 0.35 : 1;
+
     return (
-        <BaseNode id={id} className="px-3 py-2 overflow-visible">
+        <BaseNode id={id} className="px-3 py-2 overflow-visible" style={{ opacity: nodeOpacity }}>
             {/* Logical anchors for edge validation — DF edges draw via floating geometry */}
             <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: 'none' }} />
             <Handle type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: 'none' }} />
@@ -21,7 +28,7 @@ const AbstractionEvNode = memo(({ data, id }: NodeProps<Node<AbstractionEvNodePr
             {data.isStartEvent && (
                 <div
                     className="absolute left-1/2 -translate-x-1/2 -top-3 px-2 py-0.5 rounded-full text-[9px] font-bold text-white whitespace-nowrap"
-                    style={{ backgroundColor: data.color }}
+                    style={{ backgroundColor: badgeColor }}
                 >
                     Start
                 </div>
@@ -32,7 +39,7 @@ const AbstractionEvNode = memo(({ data, id }: NodeProps<Node<AbstractionEvNodePr
             {data.isEndEvent && (
                 <div
                     className="absolute left-1/2 -translate-x-1/2 -bottom-3 px-2 py-0.5 rounded-full text-[9px] font-bold text-white whitespace-nowrap"
-                    style={{ backgroundColor: data.color }}
+                    style={{ backgroundColor: badgeColor }}
                 >
                     End
                 </div>

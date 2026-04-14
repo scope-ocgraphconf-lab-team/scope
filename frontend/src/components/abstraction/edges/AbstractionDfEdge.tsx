@@ -7,6 +7,7 @@ export type AbstractionDfEdgeData = {
     color: string;
     identityLabel?: string;
     loopSide?: Position;
+    diffStatus?: 'unique' | 'shared';
 };
 
 /** How far the loop bulges out from the node edge. */
@@ -59,9 +60,15 @@ export const AbstractionDfEdge = ({
     const sourceNode = useInternalNode(source);
     const targetNode = useInternalNode(target);
 
+    const isShared = data?.diffStatus === 'shared';
     const edgeStyle = useMemo(
-        () => ({ ...style, stroke: data?.color ?? '#b1b1b7', strokeWidth: 1.5 }),
-        [data?.color, style]
+        () => ({
+            ...style,
+            stroke: isShared ? '#b1b1b7' : (data?.color ?? '#b1b1b7'),
+            strokeWidth: 1.5,
+            opacity: isShared ? 0.35 : 1,
+        }),
+        [data?.color, isShared, style]
     );
 
     if (!sourceNode || !targetNode) return null;

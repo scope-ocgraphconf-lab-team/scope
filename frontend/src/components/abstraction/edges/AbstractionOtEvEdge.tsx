@@ -6,6 +6,7 @@ export type AbstractionOtEvEdgeData = {
     objectType: string;
     color: string;
     multiplicityLabel?: string;
+    diffStatus?: 'unique' | 'shared';
 };
 
 export const AbstractionOtEvEdge = ({
@@ -18,15 +19,16 @@ export const AbstractionOtEvEdge = ({
     const sourceNode = useInternalNode(source);
     const targetNode = useInternalNode(target);
 
+    const isShared = data?.diffStatus === 'shared';
     const edgeStyle = useMemo(
         () => ({
             ...style,
-            stroke: data?.color ?? '#b1b1b7',
+            stroke: isShared ? '#b1b1b7' : (data?.color ?? '#b1b1b7'),
             strokeWidth: 1,
             strokeDasharray: '5 4',
-            opacity: 0.7,
+            opacity: isShared ? 0.2 : 0.7,
         }),
-        [data?.color, style]
+        [data?.color, isShared, style]
     );
 
     if (!sourceNode || !targetNode) return null;

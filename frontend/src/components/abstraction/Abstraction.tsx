@@ -6,6 +6,7 @@ import { AbstractionOtEvEdge } from '~/components/abstraction/edges/AbstractionO
 import AbstractionEvNode from '~/components/abstraction/nodes/AbstractionEvNode';
 import AbstractionOtNode from '~/components/abstraction/nodes/AbstractionOtNode';
 import { toAbstractionFlow } from '~/lib/abstraction/abstractionToFlow';
+import type { DfgDiff } from '~/lib/abstraction/abstractionDiff';
 import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 
 const nodeTypes = {
@@ -22,12 +23,13 @@ interface AbstractionProps {
     abstraction: OCLanguageAbstraction;
     getObjectColor: (objectType: string) => string;
     filteredObjectTypes: string[];
+    diffInfo?: DfgDiff;
 }
 
-const Abstraction: React.FC<AbstractionProps> = ({ abstraction, getObjectColor, filteredObjectTypes }) => {
+const Abstraction: React.FC<AbstractionProps> = ({ abstraction, getObjectColor, filteredObjectTypes, diffInfo }) => {
     const { nodes: initialNodes, edges: initialEdges } = useMemo(
-        () => toAbstractionFlow(abstraction, getObjectColor, filteredObjectTypes),
-        [abstraction, getObjectColor, filteredObjectTypes]
+        () => toAbstractionFlow(abstraction, getObjectColor, filteredObjectTypes, diffInfo),
+        [abstraction, getObjectColor, filteredObjectTypes, diffInfo]
     );
 
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes);

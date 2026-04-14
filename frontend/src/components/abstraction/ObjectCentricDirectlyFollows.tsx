@@ -3,6 +3,7 @@ import type { Edge, Node } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import type { AbstractionDfEdgeData } from '~/components/abstraction/edges/AbstractionDfEdge';
 import type { AbstractionOtEvEdgeData } from '~/components/abstraction/edges/AbstractionOtEvEdge';
+import type { DfgDiff } from '~/lib/abstraction/abstractionDiff';
 import type { OCLanguageAbstraction } from '~/types/abstraction.types';
 
 const OT_NODE_SIZE = 80;
@@ -49,7 +50,8 @@ export const toObjectTypeGroup = (
     objectType: string,
     abstraction: OCLanguageAbstraction,
     xOffset: number,
-    getObjectColor: (objectType: string) => string
+    getObjectColor: (objectType: string) => string,
+    diffInfo?: DfgDiff
 ): { nodes: Node[]; edges: Edge[]; groupWidth: number } => {
     const dfRelations = abstraction.directly_follows_ev_types_per_ob_type[objectType] ?? [];
     const eventTypes = Array.from(new Set(dfRelations.flatMap(([from, to]) => [from, to]))).sort();
@@ -81,7 +83,7 @@ export const toObjectTypeGroup = (
         id: otNodeId,
         type: 'abstractionOtNode',
         position: { x: xOffset, y: otY },
-        data: { objectType, color },
+        data: { objectType, color, diffStatus: diffInfo ? 'unique' : undefined },
         width: OT_NODE_SIZE,
         height: OT_NODE_SIZE,
     };
@@ -89,6 +91,9 @@ export const toObjectTypeGroup = (
     // ── Event nodes: dagre center → ReactFlow top-left ───────────────────────
     const evNodes: Node[] = eventTypes.map((eventType) => {
         const { x, y } = g.node(eventType);
+        const diffStatus = diffInfo
+            ? (diffInfo.uniqueEvents.has(eventType) ? 'unique' : 'shared')
+            : undefined;
         return {
             id: `ev-${objectType}-${eventType}`,
             type: 'abstractionEvNode',
@@ -99,6 +104,7 @@ export const toObjectTypeGroup = (
             data: {
                 eventName: eventType,
                 color,
+                diffStatus,
                 isStartEvent: abstraction.start_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false,
                 isEndEvent: abstraction.end_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false,
             },
@@ -106,27 +112,39 @@ export const toObjectTypeGroup = (
     });
 
     // ── Edges ─────────────────────────────────────────────────────────────────
-    const dfEdges: Edge<AbstractionDfEdgeData>[] = dfRelations.map(([from, to]) => ({
-        id: `df-${objectType}-${from}-${to}`,
-        source: `ev-${objectType}-${from}`,
-        target: `ev-${objectType}-${to}`,
-        type: 'abstractionDfEdge',
-        data: {
-            objectType,
-            color,
-            loopSide: from === to ? bestLoopSide(from, dfRelations, g) : undefined,
-        },
-    }));
+    const dfEdges: Edge<AbstractionDfEdgeData>[] = dfRelations.map(([from, to]) => {
+        const edgeKey = `${from}|${to}`;
+        const diffStatus = diffInfo
+            ? (diffInfo.uniqueEdges.has(edgeKey) ? 'unique' : 'shared')
+            : undefined;
+        return {
+            id: `df-${objectType}-${from}-${to}`,
+            source: `ev-${objectType}-${from}`,
+            target: `ev-${objectType}-${to}`,
+            type: 'abstractionDfEdge',
+            data: {
+                objectType,
+                color,
+                diffStatus,
+                loopSide: from === to ? bestLoopSide(from, dfRelations, g) : undefined,
+            },
+        };
+    });
 
-    const otEvEdges: Edge<AbstractionOtEvEdgeData>[] = eventTypes.map((eventType) => ({
-        id: `otev-${objectType}-${eventType}`,
-        source: otNodeId,
-        sourceHandle: `${otNodeId}-out`,
-        target: `ev-${objectType}-${eventType}`,
-        targetHandle: 'otev-target',
-        type: 'abstractionOtEvEdge',
-        data: { objectType, color },
-    }));
+    const otEvEdges: Edge<AbstractionOtEvEdgeData>[] = eventTypes.map((eventType) => {
+        const diffStatus = diffInfo
+            ? (diffInfo.uniqueEvents.has(eventType) ? 'unique' : 'shared')
+            : undefined;
+        return {
+            id: `otev-${objectType}-${eventType}`,
+            source: otNodeId,
+            sourceHandle: `${otNodeId}-out`,
+            target: `ev-${objectType}-${eventType}`,
+            targetHandle: 'otev-target',
+            type: 'abstractionOtEvEdge',
+            data: { objectType, color, diffStatus },
+        };
+    });
 
     const groupWidth = OT_NODE_SIZE + OT_TO_EV_GAP + dagreGraphWidth + GROUP_GAP;
 
