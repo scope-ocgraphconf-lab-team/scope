@@ -49,7 +49,7 @@ export const toObjectTypeGroup = (
     objectType: string,
     abstraction: OCLanguageAbstraction,
     xOffset: number,
-    getObjectColor?: (objectType: string) => string
+    getObjectColor: (objectType: string) => string
 ): { nodes: Node[]; edges: Edge[]; groupWidth: number } => {
     const dfRelations = abstraction.directly_follows_ev_types_per_ob_type[objectType] ?? [];
     const eventTypes = Array.from(new Set(dfRelations.flatMap(([from, to]) => [from, to]))).sort();
@@ -75,7 +75,7 @@ export const toObjectTypeGroup = (
     const otY = dagreGraphHeight / 2 - OT_NODE_SIZE / 2;
     const otNodeId = `ot-${objectType}`;
 
-    const color = getObjectColor ? getObjectColor(objectType) : '#b1b1b7';
+    const color = getObjectColor(objectType);
 
     const otNode: Node = {
         id: otNodeId,
@@ -98,6 +98,7 @@ export const toObjectTypeGroup = (
             },
             data: {
                 eventName: eventType,
+                color,
                 isStartEvent: abstraction.start_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false,
                 isEndEvent: abstraction.end_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false,
             },

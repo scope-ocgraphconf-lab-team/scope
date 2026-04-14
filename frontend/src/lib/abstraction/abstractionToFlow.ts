@@ -7,9 +7,13 @@ export const getObjectTypes = (abstraction: OCLanguageAbstraction): string[] =>
 
 export const toAbstractionFlow = (
     abstraction: OCLanguageAbstraction,
-    getObjectColor?: (objectType: string) => string
+    getObjectColor: (objectType: string) => string,
+    filteredObjectTypes: string[]
 ): { nodes: Node[]; edges: Edge[] } => {
-    const objectTypes = getObjectTypes(abstraction);
+    const allObjectTypes = getObjectTypes(abstraction);
+    const objectTypes = filteredObjectTypes.length > 0
+        ? allObjectTypes.filter((ot) => filteredObjectTypes.includes(ot))
+        : allObjectTypes;
     const result: { nodes: Node[]; edges: Edge[] } = { nodes: [], edges: [] };
     let xOffset = 0;
 
