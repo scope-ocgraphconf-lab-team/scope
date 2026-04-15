@@ -25,8 +25,6 @@ pub struct ResourceMinerResponse {
 #[derive(Debug, Serialize)]
 pub struct NonDivergingCombination {
     pub object_types: Vec<String>,
-    pub considered_events: usize,
-    pub joint_signatures: usize,
 }
 
 // Response for a special activity: contains the activity name and the non-diverging object type combinations found for it
@@ -38,7 +36,7 @@ pub struct SpecialActivityCombinationResponse {
 
 // Represents a single event of a specific activity:
 // - all_objects: all object IDs involved in the event
-// - objects_by_type: grouping of relevant object IDs by their object type
+// - objects_by_type: grouping of linked object IDs by their object type
 #[derive(Debug)]
 struct ActivityEventProfile {
     all_objects: BTreeSet<String>,
@@ -238,19 +236,14 @@ pub async fn get_special_activity_non_diverging_combinations(
         .map(|object| (object.id.clone(), object.object_type.clone()))
         .collect();
 
-    let activity_profiles =
-        build_activity_event_profiles(&ocel, &activity, &related_types_sorted, &object_id_to_type);
+    let activity_profiles = build_activity_event_profiles(&ocel, &activity, &object_id_to_type);
     let mut selected_combination: Option<NonDivergingCombination> = None;
     for size in 2..=max_size {
         let type_combinations = generate_type_combinations_of_size(&related_types_sorted, size);
         for combination in type_combinations {
-            if let Some((considered_events, joint_signatures)) =
-                evaluate_joint_non_divergence(&activity_profiles, &combination)
-            {
+            if evaluate_joint_non_divergence(&activity_profiles, &combination) {
                 selected_combination = Some(NonDivergingCombination {
                     object_types: combination,
-                    considered_events,
-                    joint_signatures,
                 });
                 break;
             }
@@ -268,11 +261,10 @@ pub async fn get_special_activity_non_diverging_combinations(
     Ok(Json(response))
 }
 
-// Build reusable data for each event of one activity
+// Build reusable per-event profiles for one activity.
 fn build_activity_event_profiles(
     ocel: &OCEL,
     activity: &str,
-    _related_types_sorted: &[String],
     object_id_to_type: &BTreeMap<String, String>,
 ) -> Vec<ActivityEventProfile> {
     ocel.events
@@ -322,12 +314,11 @@ fn build_combinations_recursive(
 fn evaluate_joint_non_divergence(
     activity_profiles: &[ActivityEventProfile],
     combination: &[String],
-) -> Option<(usize, usize)> {
-    // Group by the combination's concrete object signature.
-    // For each signature we collect the set of "outside" contexts.
+) -> bool {
+    // Group by the combination's concrete object signature and track
+    // which outside contexts (objects not in the combination) occur for each signature.
     let mut groups: BTreeMap<Vec<(String, BTreeSet<String>)>, FxHashSet<BTreeSet<String>>> =
         BTreeMap::new();
-    let mut considered_events = 0usize;
 
     for profile in activity_profiles {
         // Signature of this event for the tested combination
@@ -356,7 +347,6 @@ fn evaluate_joint_non_divergence(
             continue;
         }
 
-        considered_events += 1;
         // Treat the combination as one unit: compare only the context outside it.
         let context_without_joint: BTreeSet<String> = profile
             .all_objects
@@ -371,18 +361,12 @@ fn evaluate_joint_non_divergence(
 
     if groups.is_empty() {
         // No event contained all types from this combination.
-        return None;
+        return false;
     }
 
-    // Divergent if same combination signature appears with different outside contexts.
+    // Divergent if one signature appears with multiple outside contexts.
     let is_divergent = groups.values().any(|overall_sets| overall_sets.len() > 1);
-    if is_divergent {
-        return None;
-    }
-
-    // Non-divergent combination:
-    // (number of usable events, number of distinct joint signatures).
-    Some((considered_events, groups.len()))
+    !is_divergent
 }
 
 fn is_special_activity(
