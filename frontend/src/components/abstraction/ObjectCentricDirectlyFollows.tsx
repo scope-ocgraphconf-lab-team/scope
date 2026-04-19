@@ -73,17 +73,41 @@ export const toObjectTypeGroup = (
     // ── Event nodes: dagre center → ReactFlow top-left ───────────────────────
     const evNodes: Node[] = eventTypes.map((eventType) => {
         const { x, y } = g.node(eventType);
-        const diffStatus = diffInfo
-            ? (diffInfo.uniqueEvents.has(eventType) ? 'unique' : 'shared')
-            : undefined;
+        const diffStatus = diffInfo ? (diffInfo.uniqueEvents.has(eventType) ? 'unique' : 'shared') : undefined;
         const isStartEvent = abstraction.start_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
         const isEndEvent = abstraction.end_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
         const startDiffStatus = diffInfo
-            ? (diffInfo.uniqueStartEvents.has(eventType) ? 'unique' : 'shared')
+            ? diffInfo.uniqueStartEvents.has(eventType)
+                ? 'unique'
+                : 'shared'
             : undefined;
-        const endDiffStatus = diffInfo
-            ? (diffInfo.uniqueEndEvents.has(eventType) ? 'unique' : 'shared')
-            : undefined;
+        const endDiffStatus = diffInfo ? (diffInfo.uniqueEndEvents.has(eventType) ? 'unique' : 'shared') : undefined;
+
+        const isRelated = abstraction.related_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
+        const isOptional = abstraction.optional_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
+        const isDivergent = abstraction.divergent_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
+        const isDeficient = abstraction.deficient_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
+        const isConvergent = abstraction.convergent_ev_type_per_ob_type[objectType]?.includes(eventType) ?? false;
+
+        // LEFT  = ot → a  (driven by optional / divergent)
+        let left: string;
+        if (!isRelated) left = '0';
+        else if (!isOptional && !isDivergent) left = '1';
+        else if (!isOptional && isDivergent) left = '1..n';
+        else if (isOptional && !isDivergent) left = '0..1';
+        else left = '0..n';
+
+        // RIGHT = a → ot  (driven by deficient / convergent)
+        let right: string;
+        if (!isRelated) right = '0';
+        else if (!isDeficient && !isConvergent) right = '1';
+        else if (!isDeficient && isConvergent) right = '1..n';
+        else if (isDeficient && !isConvergent) right = '0..1';
+        else right = '0..n';
+
+        // Only show badge when it deviates from the trivial 1:1 case
+        const multiplicity = left !== '1' || right !== '1' ? `${left}:${right}` : undefined;
+
         return {
             id: `ev-${objectType}-${eventType}`,
             type: 'abstractionEvNode',
@@ -99,6 +123,7 @@ export const toObjectTypeGroup = (
                 isEndEvent,
                 startDiffStatus,
                 endDiffStatus,
+                multiplicity,
             },
         };
     });
@@ -106,9 +131,7 @@ export const toObjectTypeGroup = (
     // ── DF edges only ─────────────────────────────────────────────────────────
     const dfEdges: Edge<AbstractionDfEdgeData>[] = dfRelations.map(([from, to]) => {
         const edgeKey = `${from}|${to}`;
-        const diffStatus = diffInfo
-            ? (diffInfo.uniqueEdges.has(edgeKey) ? 'unique' : 'shared')
-            : undefined;
+        const diffStatus = diffInfo ? (diffInfo.uniqueEdges.has(edgeKey) ? 'unique' : 'shared') : undefined;
         return {
             id: `df-${objectType}-${from}-${to}`,
             source: `ev-${objectType}-${from}`,

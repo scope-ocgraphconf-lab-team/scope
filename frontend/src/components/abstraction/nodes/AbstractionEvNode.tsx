@@ -7,6 +7,7 @@ type AbstractionEvNodeProps = {
     color: string;
     isStartEvent: boolean;
     isEndEvent: boolean;
+    multiplicity?: string;
     diffStatus?: 'unique' | 'shared';
     startDiffStatus?: 'unique' | 'shared';
     endDiffStatus?: 'unique' | 'shared';
@@ -42,6 +43,15 @@ const AbstractionEvNode = memo(({ data, id }: NodeProps<Node<AbstractionEvNodePr
                 {/* Visible left handle for OtEv edges */}
                 <Handle type="target" id="otev-target" position={Position.Left} style={{ visibility: 'hidden' }} />
                 <p className="text-xs font-medium">{data.eventName}</p>
+
+                {data.multiplicity && (
+                    <div
+                        className="absolute -top-2.5 -right-2.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold text-black bg-white whitespace-nowrap z-10"
+                        style={{ border: `1.5px solid ${data.color}` }}
+                    >
+                        {data.multiplicity}
+                    </div>
+                )}
             </BaseNode>
 
             {data.isEndEvent && (
