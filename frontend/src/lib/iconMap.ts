@@ -14,6 +14,7 @@ import {
     type LucideProps,
     Network,
     Pickaxe,
+    ShieldCheck,
     TreePine,
     Waves,
     Workflow,
@@ -37,6 +38,7 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     chartBar: ChartBar,
     fileStack: FileStack,
     layers: Layers,
+    shieldCheck: ShieldCheck,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {

@@ -98,4 +98,13 @@ export const nodeRegistry = {
         allowedAssetTypes: ['ocelFile', 'ocelAsset', 'ocptFile', 'ocptAsset', 'identityOcptAsset'],
         sidebar: { label: 'Abstraction', icon: 'layers', group: 'miners' },
     },
+    conformanceMinerNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'],
+        inputs: [
+            { label: 'Input A', types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'] },
+            { label: 'Input B', types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'] },
+        ],
+        sidebar: { label: 'Conformance', icon: 'shieldCheck', group: 'miners' },
+    },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;

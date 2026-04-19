@@ -11,6 +11,7 @@ import OcptFileNode from '~/components/explore/file/OcptFileNode';
 import FileSelectionDialog from '~/components/explore/file/ui/FileSelectionDialog';
 import AbstractionFileNode from '~/components/explore/file/AbstractionFileNode';
 import AbstractionMinerNode from '~/components/explore/miner/AbstractionMinerNode';
+import ConformanceMinerNode from '~/components/explore/miner/ConformanceMinerNode';
 import CaseNotionMinerNode from '~/components/explore/miner/CaseNotionMinerNode';
 import ExtendWithIdentityNode from '~/components/explore/miner/ExtendWithIdentityNode';
 import FlowVisualizationNode from '~/components/explore/miner/FlowVisualizationNode';
@@ -35,6 +36,7 @@ const nodeTypes = {
     identityExtendMinerNode: ExtendWithIdentityNode,
     flowVisualizationNode: FlowVisualizationNode,
     abstractionMinerNode: AbstractionMinerNode,
+    conformanceMinerNode: ConformanceMinerNode,
     abstractionFileNode: AbstractionFileNode,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } satisfies Record<keyof typeof nodeRegistry, React.ComponentType<NodeProps<any>>>;

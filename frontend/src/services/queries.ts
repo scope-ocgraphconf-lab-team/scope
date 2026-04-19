@@ -6,6 +6,10 @@ import {
     getAbstractionById,
     getAdvancedCN,
     getCaseNotions,
+    getConformanceExtendedOcptAbstraction,
+    getConformanceExtendedOcptExtendedOcpt,
+    getConformanceExtendedOcptOcel,
+    getConformanceOcptAbstraction,
     getConformanceOcptOcel,
     getConformanceOcptOcpt,
     getConnectedComponentsCN,
@@ -117,6 +121,42 @@ export const useGetConformanceOcptOcpt = (ocptFileId1: string | null, ocptFileId
         queryKey: ['getConformanceOcptOcpt', ocptFileId1, ocptFileId2],
         queryFn: () => getConformanceOcptOcpt(ocptFileId1!, ocptFileId2!),
         enabled: Boolean(ocptFileId1) && Boolean(ocptFileId2),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceOcptAbstraction = (ocptId: string | null, abstractionId: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceOcptAbstraction', ocptId, abstractionId],
+        queryFn: () => getConformanceOcptAbstraction(ocptId!, abstractionId!),
+        enabled: Boolean(ocptId) && Boolean(abstractionId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceExtendedOcptAbstraction = (extendedOcptId: string | null, abstractionId: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceExtendedOcptAbstraction', extendedOcptId, abstractionId],
+        queryFn: () => getConformanceExtendedOcptAbstraction(extendedOcptId!, abstractionId!),
+        enabled: Boolean(extendedOcptId) && Boolean(abstractionId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceExtendedOcptOcel = (extendedOcptId: string | null, ocelId: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceExtendedOcptOcel', extendedOcptId, ocelId],
+        queryFn: () => getConformanceExtendedOcptOcel(extendedOcptId!, ocelId!),
+        enabled: Boolean(extendedOcptId) && Boolean(ocelId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceExtendedOcptExtendedOcpt = (extendedOcptId1: string | null, extendedOcptId2: string | null) => {
+    return useQuery({
+        queryKey: ['getConformanceExtendedOcptExtendedOcpt', extendedOcptId1, extendedOcptId2],
+        queryFn: () => getConformanceExtendedOcptExtendedOcpt(extendedOcptId1!, extendedOcptId2!),
+        enabled: Boolean(extendedOcptId1) && Boolean(extendedOcptId2),
         refetchOnWindowFocus: false,
     });
 };
