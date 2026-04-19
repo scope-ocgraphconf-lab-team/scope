@@ -24,7 +24,10 @@ pub async fn get_resource_miner(
     Path(file_id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     if file_id.trim().is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "file_id cannot be empty".to_string()));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "file_id cannot be empty".to_string(),
+        ));
     }
 
     let ocel = OCEL::import_from_path(&file_id).await?;
@@ -38,7 +41,8 @@ pub async fn get_resource_miner(
         })?;
 
     let all_activities: Vec<String> = ocel.event_types.iter().map(|ev| ev.name.clone()).collect();
-    let all_object_types: Vec<String> = ocel.object_types.iter().map(|ot| ot.name.clone()).collect();
+    let all_object_types: Vec<String> =
+        ocel.object_types.iter().map(|ot| ot.name.clone()).collect();
 
     // An object type is resource if is is divergent in every activity is is related to.
     let mut object_resource: FxHashSet<String> = FxHashSet::default();
