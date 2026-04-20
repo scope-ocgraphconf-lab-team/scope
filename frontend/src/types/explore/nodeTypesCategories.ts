@@ -8,6 +8,7 @@ export const minerNodeTypes = [
     'identityExtendMinerNode',
     'flowVisualizationNode',
     'abstractionMinerNode',
+    'resourceMinerNode'
 ] as const;
 export type ExploreMinerNodeType = (typeof minerNodeTypes)[number];
 
