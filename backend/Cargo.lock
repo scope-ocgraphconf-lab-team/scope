@@ -2087,6 +2087,7 @@ dependencies = [
 [[package]]
 name = "process_mining"
 version = "0.3.20"
+source = "git+https://github.com/erikwrede/ocgraphconf.git?branch=Paper_Main#22c9e993eae1e027df28ce5e0be5af19f6998a94"
 dependencies = [
  "chrono",
  "flate2",
