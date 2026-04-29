@@ -1,8 +1,10 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { Loader2 } from 'lucide-react';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
+import { useMinerOutput } from '~/hooks/explore/useMinerAssets';
+import { useExploreFlowStore } from '~/stores/exploreStore';
 import {
     useGetConformanceAbstractionAbstraction,
     useGetConformanceExtendedOcptAbstraction,
@@ -13,6 +15,7 @@ import {
     useGetConformanceOcptOcpt,
 } from '~/services/queries';
 import type { BaseExploreNodeAsset } from '~/types/explore/nodeData/baseNodeData';
+import type { ConformanceMode } from '~/types/explore/nodeData/minerNodeData';
 import { MinerNode } from '~/types/explore/nodes';
 import type { AssetType } from '~/types/files.types';
 
@@ -26,14 +29,6 @@ function assetKind(type: AssetType): AssetKind | null {
     return null;
 }
 
-type ConformanceMode =
-    | 'ocpt-ocel'
-    | 'ocpt-abstraction'
-    | 'ocpt-ocpt'
-    | 'extended-ocel'
-    | 'extended-abstraction'
-    | 'extended-extended'
-    | 'abstraction-abstraction';
 
 interface ConformanceInputs {
     mode: ConformanceMode;
@@ -121,6 +116,23 @@ const ConformanceMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const result = ocptOcelResult ?? ocptAbsResult ?? ocptOcptResult ?? extOcelResult ?? extAbsResult ?? extExtResult ?? absAbsResult;
     const isLoading = l1 || l2 || l3 || l4 || l5 || l6 || l7;
 
+    const updateNodeData = useExploreFlowStore((state) => state.updateNodeData);
+
+    useEffect(() => {
+        if (!result || !detected) return;
+        updateNodeData(node.id, () => ({
+            conformanceResult: {
+                fitness: result.fitness,
+                precision: result.precision,
+                mode: detected.mode,
+                inputA: { id: detected.a.id, type: detected.a.type },
+                inputB: { id: detected.b.id, type: detected.b.type },
+            },
+        }));
+    }, [result, detected, node.id, updateNodeData]);
+
+    useMinerOutput(node.id, result ? node.id : null, 'Conformance', 'conformanceAsset', 'conformanceFileNode');
+
     return (
         <BaseMinerNode
             {...node}
@@ -138,21 +150,14 @@ const ConformanceMinerNode = memo<NodeProps<MinerNode>>((node) => {
                 },
             ]}
             dropdownOptions={[]}
-            isLoading={false}
+            isLoading={isLoading}
         >
-            {primaryAsset && secondaryAsset && (
+            {primaryAsset && secondaryAsset && isLoading && (
                 <div className="mt-2 border-t pt-2">
-                    {isLoading ? (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Computing conformance...
-                        </div>
-                    ) : result ? (
-                        <div className="flex flex-col gap-1 text-xs">
-                            <span className="font-medium">Fitness: {(result.fitness * 100).toFixed(1)}%</span>
-                            <span className="font-medium">Precision: {(result.precision * 100).toFixed(1)}%</span>
-                        </div>
-                    ) : null}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Computing conformance...
+                    </div>
                 </div>
             )}
         </BaseMinerNode>

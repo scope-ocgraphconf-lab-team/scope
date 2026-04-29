@@ -58,6 +58,11 @@ export const nodeRegistry = {
         allowedAssetTypes: ['abstractionAsset'],
         sidebar: null,
     },
+    conformanceFileNode: {
+        category: 'file',
+        allowedAssetTypes: ['conformanceAsset'],
+        sidebar: null,
+    },
 
     // ── Miner nodes ────────────────────────────────────────────────────────────
     ocptMinerNode: {
