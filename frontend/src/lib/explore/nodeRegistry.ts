@@ -28,8 +28,8 @@ export interface NodeRegistryEntry {
 }
 
 export const sidebarGroups: Record<SidebarGroup, SidebarGroupMeta> = {
-    files: { label: 'File Input', icon: 'file', menuClassName: 'flex flex-row' },
-    miners: { label: 'Miner', icon: 'pickaxe', menuClassName: 'flex flex-row flex-wrap' },
+    files: { label: 'File Input', icon: 'file', menuClassName: 'grid grid-cols-2 gap-1 justify-items-center' },
+    miners: { label: 'Miner', icon: 'pickaxe', menuClassName: 'grid grid-cols-2 gap-1 justify-items-center' },
 };
 
 // satisfies ensures every file/miner node type has a registry entry.
