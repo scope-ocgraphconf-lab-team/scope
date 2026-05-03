@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Group } from '@visx/group';
 import { Circle, Line } from '@visx/shape';
 import { Text } from '@visx/text';
 import { Zoom } from '@visx/zoom';
-import { useGetActivityResource } from '~/services/queries';
+import { useGetActivityResource, usePostSpecialActivity } from '~/services/queries';
 
 type NodeType =
     | 'object_type_not_resource'
@@ -19,16 +19,36 @@ type GraphNode = {
     type: NodeType;
 };
 
-const ResourceGraphPage: React.FC = () => {
-    const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
 
-    const { data: resourceData, isLoading, error } = useGetActivityResource('9556a186-4429-4515-b116-58e10e155abe');
+type Props = {
+    fileId: string | null;
+    sourceType: string;
+};
+
+const ResourceGraphPage: React.FC<Props> = ({ fileId: initialFileId }) => {
+    const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+   const [fileId, setFileId] = useState<string | null>(initialFileId);
+     console.log('file');
+    console.log(fileId);
+useEffect(() => {
+    if (initialFileId) {
+        setFileId(initialFileId);
+    }
+}, [initialFileId]);
+    const { data: resourceData, isLoading, error } = useGetActivityResource(fileId);
+    
+
+    //cb06686f-78c6-437a-a5eb-9398ac57aa93
+    //9556a186-4429-4515-b116-58e10e155abe
+    const { mutate, isPending } = usePostSpecialActivity();
+   
 
     if (isLoading) return <div>Loading...</div>;
     if (error) return <div>Error loading data</div>;
     if (!resourceData) return <div>No data found</div>;
 
     const data = resourceData;
+    console.log(data);
 
     const maxNodes = Math.max(
         data.object_resource.length,
@@ -42,8 +62,6 @@ const ResourceGraphPage: React.FC = () => {
     const spacing = width / (maxNodes + 1);
 
     const nodes: GraphNode[] = [];
-    console.log('selectedActivities');
-    console.log(selectedActivities.length);
 
     data.object_resource.forEach((item: string, i: number) => {
         nodes.push({
@@ -92,23 +110,45 @@ const ResourceGraphPage: React.FC = () => {
     };
 
     const handleRun = async () => {
-        try {
-            const response = await fetch('/api/run-special-activities', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ activities: selectedActivities }),
-            });
+        if (!fileId) return;
 
-            if (!response.ok) throw new Error('Failed to run');
-
-            const result = await response.json();
-            console.log('Success:', result);
-
-            setSelectedActivities([]);
-        } catch (err) {
-            console.error(err);
-        }
+        mutate(
+            {
+                fileId: fileId,
+                activities: selectedActivities,
+            },
+            {
+                onSuccess: (data) => {
+                    console.log('Success:', data);
+                    console.log('newfileid:', data.new_file_id);
+                    setFileId(data.new_file_id);
+                    setSelectedActivities([]);
+                },
+                onError: (err) => {
+                    console.error('Error:', err);
+                },
+            }
+        );
     };
+
+    const wrapText = (text: string, maxCharsPerLine: number) => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    words.forEach((word) => {
+        if ((currentLine + word).length <= maxCharsPerLine) {
+            currentLine += (currentLine ? ' ' : '') + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    });
+
+    if (currentLine) lines.push(currentLine);
+
+    return lines;
+};
 
     return (
         <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
@@ -132,7 +172,25 @@ const ResourceGraphPage: React.FC = () => {
                                     boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
                                 }}
                             >
-                                <button onClick={handleRun}>Fix ({selectedActivities.length})</button>
+                                <button
+                                    onClick={handleRun}
+                                    disabled={isPending}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                                >
+                                    {isPending && (
+                                        <span
+                                            style={{
+                                                width: '14px',
+                                                height: '14px',
+                                                border: '2px solid #ccc',
+                                                borderTop: '2px solid #333',
+                                                borderRadius: '50%',
+                                                animation: 'spin 1s linear infinite',
+                                            }}
+                                        />
+                                    )}
+                                    {isPending ? 'Fixing...' : `Fix (${selectedActivities.length})`}
+                                </button>
                             </div>
                         )}
 

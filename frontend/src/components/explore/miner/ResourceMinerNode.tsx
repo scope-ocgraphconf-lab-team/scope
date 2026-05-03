@@ -15,14 +15,12 @@ const ResourceMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const { id, data: nodeData } = node;
     const { assets } = nodeData;
     const [inputFileId, setInputFileId] = useState<string | null>(null);
-    const { clearHistogramState } = useExploreFlowStore();
-    console.log('node data');
-    console.log(id);
-    console.log(nodeData);
+    // const { clearHistogramState } = useExploreFlowStore();
+   
     
 
 const fileId = assets?.[0]?.id;
-
+console.log('fileId 8765yhb');
 console.log(fileId);
 
     useEffect(() => {
@@ -47,16 +45,16 @@ console.log(fileId);
     const handleReset = useCallback(() => {
         // 1. Clear React Query Cache
         if (inputFileId) {
-            queryClient.cancelQueries({ queryKey: ['getHistogram', inputFileId] });
-            queryClient.removeQueries({ queryKey: ['getHistogram', inputFileId] });
+            // queryClient.cancelQueries({ queryKey: ['getHistogram', inputFileId] });
+            // queryClient.removeQueries({ queryKey: ['getHistogram', inputFileId] });
         }
 
         // 2. Clear Store State
-        clearHistogramState(id);
+        // clearHistogramState(id);
 
         // 3. Reset Local State
         setInputFileId(null);
-    }, [inputFileId, queryClient, clearHistogramState, id]);
+    }, [inputFileId, queryClient, id]);
 
     const renderActions = () => {
         if (!inputFileId) return null;
