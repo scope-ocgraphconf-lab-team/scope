@@ -73,6 +73,7 @@ pub fn case_ocel_to_case_graph(case: &OCEL) -> Result<CaseGraph, (StatusCode, St
     let mut next_edge_id = 1usize;
     let mut object_node_ids = BTreeMap::new();
 
+    // Stable node IDs make solver inputs and optional alignment details deterministic.
     for object in case
         .objects
         .iter()
@@ -103,6 +104,7 @@ pub fn case_ocel_to_case_graph(case: &OCEL) -> Result<CaseGraph, (StatusCode, St
     }
 
     let mut ordered_events = case.events.iter().collect::<Vec<_>>();
+    // Case graphs use event-time order; event ID is the tie-breaker for repeatable DF edges.
     ordered_events.sort_by(|left, right| match left.time.cmp(&right.time) {
         std::cmp::Ordering::Equal => left.id.cmp(&right.id),
         ordering => ordering,
@@ -144,6 +146,7 @@ pub fn case_ocel_to_case_graph(case: &OCEL) -> Result<CaseGraph, (StatusCode, St
     }
 
     for (event, event_node_id) in event_nodes {
+        // Multiple relationships to the same object collapse to one E2O edge for graph alignment.
         let object_ids: BTreeSet<String> = event
             .relationships
             .iter()

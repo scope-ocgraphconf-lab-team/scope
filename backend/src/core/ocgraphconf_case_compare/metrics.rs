@@ -21,6 +21,7 @@ pub fn build_response(
     let right_case_edges = right_graph.edges.len();
     let left_case_size = left_case_nodes + left_case_edges;
     let right_case_size = right_case_nodes + right_case_edges;
+    // Normalize by both graph sizes so the score remains bounded for asymmetric cases.
     let normalizer = (left_case_size + right_case_size).max(1) as f64;
     let fitness = (1.0 - (alignment.alignment_cost / normalizer)).max(0.0);
 

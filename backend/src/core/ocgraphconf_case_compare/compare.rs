@@ -31,6 +31,7 @@ pub fn compare_case_graphs(
 ) -> Result<AlignmentResult, (StatusCode, String)> {
     let solver_left = to_solver_case_graph(left);
     let solver_right = to_solver_case_graph(right);
+    // ocgraphconf may panic internally on solver/model issues; surface that as a normal 500 response.
     let assignment = catch_unwind(AssertUnwindSafe(|| {
         CaseAssignment::compute_assignment_mip(&solver_left, &solver_right)
     }))
@@ -61,6 +62,7 @@ pub fn compare_case_graphs(
     let mut matched_right_node_ids = BTreeSet::new();
     let mut matched_right_edge_ids = BTreeSet::new();
 
+    // The solver records left-side insertions directly; right-side misses are derived from unmatched IDs.
     for mapping in assignment.node_mapping.values() {
         match mapping {
             SolverNodeMapping::RealNode(left_node_id, right_node_id) => {
@@ -149,6 +151,7 @@ pub(crate) fn from_solver_case_graph(
 ) -> Result<CaseGraph, (StatusCode, String)> {
     let mut case_graph = CaseGraph::default();
 
+    // Model-case conformance returns a solver graph; rebuild local indexes for shared metric code.
     for node in solver_graph.nodes.values() {
         let (id, kind) = match node {
             SolverNode::EventNode(event) => (
