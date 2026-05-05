@@ -24,6 +24,7 @@ pub async fn load_selected_cases(
     right_case_index: usize,
 ) -> Result<SelectedCases, (StatusCode, String)> {
     let collection = OCELCollection::import_from_path(case_ocels_file_id).await?;
+    // Selection consumes the collection so the response can carry its metadata without extra clones.
     select_cases(collection, left_case_index, right_case_index)
 }
 

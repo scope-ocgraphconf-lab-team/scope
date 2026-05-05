@@ -9,6 +9,7 @@ use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 pub async fn post_conformance_case_ocels_ocgraphconf(
     Json(request): Json<OcgraphconfCaseCompareRequest>,
 ) -> impl IntoResponse {
+    // The core layer owns collection loading, graph conversion, solver execution, and metric shaping.
     match compare_cases_from_collection(&request).await {
         Ok(response) => (StatusCode::OK, Json(response)).into_response(),
         Err((status, message)) => (status, message).into_response(),
@@ -19,6 +20,7 @@ pub async fn post_conformance_ocpn_case_ocels_ocgraphconf(
     Path(ocpn_id): Path<String>,
     Json(request): Json<OcgraphconfModelCaseConformanceRequest>,
 ) -> impl IntoResponse {
+    // Keep handlers thin so OCPN and OCPT model-case endpoints share the same conformance path.
     match compare_model_to_case_from_collection(ModelKind::Ocpn, &ocpn_id, &request).await {
         Ok(response) => (StatusCode::OK, Json(response)).into_response(),
         Err((status, message)) => (status, message).into_response(),

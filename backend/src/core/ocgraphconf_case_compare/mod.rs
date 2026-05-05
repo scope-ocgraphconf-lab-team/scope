@@ -11,6 +11,7 @@ use axum::http::StatusCode;
 pub async fn compare_cases_from_collection(
     request: &OcgraphconfCaseCompareRequest,
 ) -> Result<OcgraphconfCaseCompareResponse, (StatusCode, String)> {
+    // Keep the endpoint pipeline explicit: load cases, build local graphs, solve, then aggregate metrics.
     let selected_cases = extract::load_selected_cases(
         &request.case_ocels_file_id,
         request.left_case_index,

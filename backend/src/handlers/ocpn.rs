@@ -13,6 +13,7 @@ pub async fn post_ocpn(mut multipart: Multipart) -> Response {
     let mut file_id: Option<String> = None;
     let mut file_bytes: Option<bytes::Bytes> = None;
 
+    // Uploads are stored under the caller-provided file_id so frontend state can reference them later.
     while let Some(field) = match multipart.next_field().await {
         Ok(field) => field,
         Err(err) => {
@@ -66,6 +67,7 @@ pub async fn post_ocpn(mut multipart: Multipart) -> Response {
                 .into_response();
         }
     };
+    // Normalize nested net markings before persisting so stored OCPNs share the canonical backend shape.
     let ocpn = ocpn.normalize();
 
     let path = format!("./temp/ocpn_{id}.json");
@@ -122,6 +124,7 @@ pub async fn get_ocpn_from_ocpt(
         ));
     }
 
+    // The converter rejects unsupported OCPT constructs and returns HTTP-safe errors through map_convert_error.
     let ocpn = convert_ocpt_to_ocpn(&ocpt).map_err(map_convert_error)?;
     let file_id = ocpn.export_to_path().await?;
     let payload = serde_json::json!({
@@ -142,6 +145,8 @@ pub async fn get_ocpn_as_ocgraphconf(
         ));
     }
 
+    // Return an ocgraphconf-compatible view without changing the stored backend OCPN.
+    // The converter flattens backend node refs and splits arcs into input_arcs/output_arcs.
     let payload = serde_json::json!({
         "file_id": file_id,
         "ocgraphconf_ocpn": backend_to_ocgraphconf(&ocpn),
@@ -163,11 +168,13 @@ pub async fn delete_ocpn(Path(file_id): Path<String>) -> impl IntoResponse {
 
 fn map_convert_error(error: ConvertOcptToOcpnError) -> (StatusCode, String) {
     match error {
+        // Input/model-contract problems should be actionable for the caller.
         ConvertOcptToOcpnError::InvalidOcpt
         | ConvertOcptToOcpnError::UnsupportedIdentityRelations
         | ConvertOcptToOcpnError::MalformedLoop { .. } => {
             (StatusCode::BAD_REQUEST, error.to_string())
         }
+        // These indicate the backend failed to produce a valid intermediate/result.
         ConvertOcptToOcpnError::InvalidProjectedProcessTree
         | ConvertOcptToOcpnError::InvalidGeneratedOcpn => {
             (StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
