@@ -28,8 +28,8 @@ export interface NodeRegistryEntry {
 }
 
 export const sidebarGroups: Record<SidebarGroup, SidebarGroupMeta> = {
-    files: { label: 'File Input', icon: 'file', menuClassName: 'flex flex-row' },
-    miners: { label: 'Miner', icon: 'pickaxe', menuClassName: 'flex flex-row flex-wrap' },
+    files: { label: 'File Input', icon: 'file', menuClassName: 'flex flex-row flex-wrap gap-1' },
+    miners: { label: 'Miner', icon: 'pickaxe', menuClassName: 'flex flex-row flex-wrap gap-1' },
 };
 
 // satisfies ensures every file/miner node type has a registry entry.
@@ -56,6 +56,11 @@ export const nodeRegistry = {
     abstractionFileNode: {
         category: 'file',
         allowedAssetTypes: ['abstractionAsset'],
+        sidebar: null,
+    },
+    conformanceFileNode: {
+        category: 'file',
+        allowedAssetTypes: ['conformanceAsset'],
         sidebar: null,
     },
 
@@ -97,5 +102,20 @@ export const nodeRegistry = {
         category: 'miner',
         allowedAssetTypes: ['ocelFile', 'ocelAsset', 'ocptFile', 'ocptAsset', 'identityOcptAsset'],
         sidebar: { label: 'Abstraction', icon: 'layers', group: 'miners' },
+    },
+    conformanceMinerNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'],
+        inputs: [
+            {
+                label: 'Input A',
+                types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'],
+            },
+            {
+                label: 'Input B',
+                types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelFile', 'ocelAsset', 'abstractionAsset'],
+            },
+        ],
+        sidebar: { label: 'Conformance', icon: 'radar', group: 'miners' },
     },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;
