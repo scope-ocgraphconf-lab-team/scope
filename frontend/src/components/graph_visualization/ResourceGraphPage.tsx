@@ -19,7 +19,6 @@ type GraphNode = {
     type: NodeType;
 };
 
-
 type Props = {
     fileId: string | null;
     sourceType: string;
@@ -27,21 +26,19 @@ type Props = {
 
 const ResourceGraphPage: React.FC<Props> = ({ fileId: initialFileId }) => {
     const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
-   const [fileId, setFileId] = useState<string | null>(initialFileId);
-     console.log('file');
+    const [fileId, setFileId] = useState<string | null>(initialFileId);
+    console.log('file');
     console.log(fileId);
-useEffect(() => {
-    if (initialFileId) {
-        setFileId(initialFileId);
-    }
-}, [initialFileId]);
+    useEffect(() => {
+        if (initialFileId) {
+            setFileId(initialFileId);
+        }
+    }, [initialFileId]);
     const { data: resourceData, isLoading, error } = useGetActivityResource(fileId);
-    
 
     //cb06686f-78c6-437a-a5eb-9398ac57aa93
     //9556a186-4429-4515-b116-58e10e155abe
     const { mutate, isPending } = usePostSpecialActivity();
-   
 
     if (isLoading) return <div>Loading...</div>;
     if (error) return <div>Error loading data</div>;
@@ -131,24 +128,7 @@ useEffect(() => {
         );
     };
 
-    const wrapText = (text: string, maxCharsPerLine: number) => {
-    const words = text.split(' ');
-    const lines: string[] = [];
-    let currentLine = '';
-
-    words.forEach((word) => {
-        if ((currentLine + word).length <= maxCharsPerLine) {
-            currentLine += (currentLine ? ' ' : '') + word;
-        } else {
-            lines.push(currentLine);
-            currentLine = word;
-        }
-    });
-
-    if (currentLine) lines.push(currentLine);
-
-    return lines;
-};
+   
 
     return (
         <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
@@ -211,7 +191,7 @@ useEffect(() => {
                                         id="arrow"
                                         markerWidth="10"
                                         markerHeight="10"
-                                        refX="10"
+                                        refX="8"
                                         refY="3"
                                         orient="auto"
                                     >
@@ -285,6 +265,16 @@ useEffect(() => {
                                                     >
                                                         {node.label}
                                                     </Text>
+                                                    {/* <Text
+                                                        x={node.x}
+                                                        y={node.y - 35} // rectangle height ~50 → half is 25 + spacing
+                                                        textAnchor="middle"
+                                                        verticalAnchor="end"
+                                                        fill="#333"
+                                                        fontSize={12}
+                                                    >
+                                                        {node.label}
+                                                    </Text> */}
                                                 </>
                                             ) : (
                                                 <>
@@ -296,12 +286,22 @@ useEffect(() => {
                                                         stroke="#333"
                                                         strokeWidth={2}
                                                     />
-                                                    <Text
+                                                    {/* <Text
                                                         x={node.x}
                                                         y={node.y}
                                                         textAnchor="middle"
                                                         verticalAnchor="middle"
                                                         fill="white"
+                                                        fontSize={12}
+                                                    >
+                                                        {node.label}
+                                                    </Text> */}
+                                                    <Text
+                                                        x={node.x}
+                                                        y={node.y - 40} // move above (circle radius ~30 → add extra spacing)
+                                                        textAnchor="middle"
+                                                        verticalAnchor="end"
+                                                        fill="#333"
                                                         fontSize={12}
                                                     >
                                                         {node.label}
