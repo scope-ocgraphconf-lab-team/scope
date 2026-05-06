@@ -14,6 +14,8 @@ import {
     type LucideProps,
     Network,
     Pickaxe,
+    Radar,
+    ShieldCheck,
     TreePine,
     Waves,
     Workflow,
@@ -37,6 +39,8 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     chartBar: ChartBar,
     fileStack: FileStack,
     layers: Layers,
+    radar: Radar,
+    shieldCheck: ShieldCheck,
 };
 
 export const getIconComponent = (iconName: string): ComponentType<LucideProps> => {
@@ -84,5 +88,10 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
         icon: Layers,
         color: 'text-purple-500',
         label: 'Abstraction',
+    },
+    conformanceAsset: {
+        icon: Radar,
+        color: 'text-blue-500',
+        label: 'Conformance',
     },
 };

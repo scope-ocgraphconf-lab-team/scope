@@ -54,7 +54,7 @@ useEffect(() => {
         data.object_resource.length,
         data.object_type_not_resource.length,
         data.non_special_event_types.length,
-        data.special_activity.length
+        data.special_activities.length
     );
 
     const width = Math.max(1100, maxNodes * 200);
@@ -93,7 +93,7 @@ useEffect(() => {
         });
     });
 
-    data.special_activity.forEach((item: string, i: number) => {
+    data.special_activities.forEach((item: string, i: number) => {
         nodes.push({
             id: item,
             label: item,

@@ -145,6 +145,46 @@ export const getConformanceOcptOcpt = async (
     return response.data;
 };
 
+export const getConformanceOcptAbstraction = async (
+    ocptId: string,
+    abstractionId: string
+): Promise<{ fitness: number; precision: number }> => {
+    const response = await api.get(`/v1/conformance/ocpt/${ocptId}/abstraction/${abstractionId}`);
+    return response.data;
+};
+
+export const getConformanceExtendedOcptAbstraction = async (
+    extendedOcptId: string,
+    abstractionId: string
+): Promise<{ fitness: number; precision: number }> => {
+    const response = await api.get(`/v1/conformance/extended_ocpt/${extendedOcptId}/abstraction/${abstractionId}`);
+    return response.data;
+};
+
+export const getConformanceExtendedOcptOcel = async (
+    extendedOcptId: string,
+    ocelId: string
+): Promise<{ fitness: number; precision: number }> => {
+    const response = await api.get(`/v1/conformance/extended_ocpt/${extendedOcptId}/ocel/${ocelId}`);
+    return response.data;
+};
+
+export const getConformanceExtendedOcptExtendedOcpt = async (
+    extendedOcptId1: string,
+    extendedOcptId2: string
+): Promise<{ fitness: number; precision: number }> => {
+    const response = await api.get(`/v1/conformance/extended_ocpt_1/${extendedOcptId1}/extended_ocpt_2/${extendedOcptId2}`);
+    return response.data;
+};
+
+export const getConformanceAbstractionAbstraction = async (
+    abstractionId1: string,
+    abstractionId2: string
+): Promise<{ fitness: number; precision: number }> => {
+    const response = await api.get(`/v1/conformance/abstraction_1/${abstractionId1}/abstraction_2/${abstractionId2}`);
+    return response.data;
+};
+
 export const getOcelObjectTypes = async (fileId: string): Promise<CaseNotionApiResponse> => {
     const response = await api.get(`v1/objects/ocel/types/${fileId}`);
     return response.data;
