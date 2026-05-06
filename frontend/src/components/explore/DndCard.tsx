@@ -20,7 +20,7 @@ const DndCard: React.FC<DndCardProps> = ({ title, Icon, nodeType }) => {
         <div
             onDragStart={(event) => onDragStart(event, nodeType)}
             draggable
-            className="flex flex-col items-center justify-center space-y-1 w-24 h-24 rounded-lg border-[1px] border-gray-400 p-1"
+            className="flex flex-col items-center w-16 h-16 rounded-lg border-[1px] border-gray-400 p-2"
         >
             <p className="w-full text-[12px] font-bold text-center leading-tight">{title}</p>
             <Icon className="h-4 w-4" />
