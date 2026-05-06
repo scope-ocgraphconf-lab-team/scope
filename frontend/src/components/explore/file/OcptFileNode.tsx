@@ -16,7 +16,7 @@ import {
 import AssetTypeList from '~/components/explore/AssetTypeList';
 import BaseFileNode from '~/components/explore/file/BaseFileNode';
 import { useExploreFlowStore } from '~/stores/exploreStore';
-import { useGetConformanceOcptOcel, useGetConformanceOcptOcpt, useGetOcpt } from '~/services/queries';
+import { useGetConformanceOcptOcel, useGetConformanceOcptOcpt, useGetIdentityOcpt, useGetOcpt } from '~/services/queries';
 import { generateColorMap, getDeterministicColor } from '~/lib/colors';
 import { propagateMapDownstream, syncMatchingColorsGlobally } from '~/lib/explore/flowActions';
 import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
@@ -24,7 +24,6 @@ import { FileNode } from '~/types/explore/nodes';
 
 const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
     const [fileId, setFileId] = useState<null | string>(null);
-    const { data } = useGetOcpt(fileId, true);
     const navigate = useNavigate();
     const { updateNodeData, initializeDataState } = useExploreFlowStore();
     const { id, data: nodeData } = props;
@@ -55,6 +54,20 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
         const ocptAsset = assets.find((a) => a.io === 'input' && (a.type === 'ocptFile' || a.type === 'ocptAsset'));
         return ocptAsset?.id ?? null;
     }, [assets]);
+
+    const ocptAsset = useMemo(
+        () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset' || a.type === 'identityOcptAsset')),
+        [assets]
+    );
+    const isIdentityAsset = ocptAsset?.type === 'identityOcptAsset';
+
+    useMemo(() => {
+        setFileId(ocptAsset?.id ?? null);
+    }, [ocptAsset]);
+
+    const { data: regularOcptData } = useGetOcpt(isIdentityAsset ? null : fileId, true);
+    const { data: identityOcptData } = useGetIdentityOcpt(isIdentityAsset ? fileId : null, true);
+    const data = isIdentityAsset ? identityOcptData : regularOcptData;
 
     const conformanceMode = ocelFileId ? 'ocpt-ocel' : ocptInputFileId ? 'ocpt-ocpt' : null;
     const { data: conformanceOcelResult, isLoading: isOcelLoading } = useGetConformanceOcptOcel(
@@ -119,15 +132,6 @@ const OcptFileNode = memo<NodeProps<FileNode>>((props) => {
     const visualize = (filter?: string) => {
         navigate(`/data/pipeline/explore/ocpt/${id}${filter ? `?filter=${filter}` : ''}`);
     };
-
-    const ocptAsset = useMemo(
-        () => assets.find((a) => a.io === 'output' && (a.type === 'ocptFile' || a.type === 'ocptAsset')),
-        [assets]
-    );
-
-    useMemo(() => {
-        setFileId(ocptAsset?.id ?? null);
-    }, [ocptAsset]);
 
     useEffect(() => {
         if (data) {
@@ -292,7 +296,7 @@ export default OcptFileNode;
 // } from '~/components/ui/dropdown-menu';
 // import BaseFileNode from '~/components/explore/file/BaseFileNode';
 // import { useExploreFlowStore } from '~/stores/exploreStore';
-// import { useGetConformanceOcptOcel, useGetConformanceOcptOcpt, useGetOcpt } from '~/services/queries';
+// import { useGetConformanceOcptOcel, useGetConformanceOcptOcpt, useGetIdentityOcpt, useGetOcpt } from '~/services/queries';
 // import { generateColorMap, getDeterministicColor } from '~/lib/colors';
 // import { FileExploreNodeData } from '~/types/explore/nodeData/fileNodeData';
 // import { FileNode } from '~/types/explore/nodes';
