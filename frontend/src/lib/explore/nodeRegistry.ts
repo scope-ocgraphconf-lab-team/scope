@@ -106,7 +106,7 @@ export const nodeRegistry = {
     resourceMinerNode: {
         category: 'miner',
         allowedAssetTypes: ['ocelFile'],
-        sidebar: { label: 'Activity Miner', icon: 'waves', group: 'miners' },
+        sidebar: { label: 'Resource Miner', icon: 'waves', group: 'miners' },
         },
     conformanceMinerNode: {
         category: 'miner',

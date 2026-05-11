@@ -36,8 +36,6 @@ const ResourceGraphPage: React.FC<Props> = ({ fileId: initialFileId }) => {
     }, [initialFileId]);
     const { data: resourceData, isLoading, error } = useGetActivityResource(fileId);
 
-    //cb06686f-78c6-437a-a5eb-9398ac57aa93
-    //9556a186-4429-4515-b116-58e10e155abe
     const { mutate, isPending } = usePostSpecialActivity();
 
     if (isLoading) return <div>Loading...</div>;
@@ -127,8 +125,6 @@ const ResourceGraphPage: React.FC<Props> = ({ fileId: initialFileId }) => {
             }
         );
     };
-
-   
 
     return (
         <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
@@ -265,16 +261,6 @@ const ResourceGraphPage: React.FC<Props> = ({ fileId: initialFileId }) => {
                                                     >
                                                         {node.label}
                                                     </Text>
-                                                    {/* <Text
-                                                        x={node.x}
-                                                        y={node.y - 35} // rectangle height ~50 → half is 25 + spacing
-                                                        textAnchor="middle"
-                                                        verticalAnchor="end"
-                                                        fill="#333"
-                                                        fontSize={12}
-                                                    >
-                                                        {node.label}
-                                                    </Text> */}
                                                 </>
                                             ) : (
                                                 <>
@@ -286,19 +272,10 @@ const ResourceGraphPage: React.FC<Props> = ({ fileId: initialFileId }) => {
                                                         stroke="#333"
                                                         strokeWidth={2}
                                                     />
-                                                    {/* <Text
-                                                        x={node.x}
-                                                        y={node.y}
-                                                        textAnchor="middle"
-                                                        verticalAnchor="middle"
-                                                        fill="white"
-                                                        fontSize={12}
-                                                    >
-                                                        {node.label}
-                                                    </Text> */}
+
                                                     <Text
                                                         x={node.x}
-                                                        y={node.y - 40} // move above (circle radius ~30 → add extra spacing)
+                                                        y={node.y - 40}
                                                         textAnchor="middle"
                                                         verticalAnchor="end"
                                                         fill="#333"

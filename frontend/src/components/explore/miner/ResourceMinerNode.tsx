@@ -15,13 +15,8 @@ const ResourceMinerNode = memo<NodeProps<MinerNode>>((node) => {
     const { id, data: nodeData } = node;
     const { assets } = nodeData;
     const [inputFileId, setInputFileId] = useState<string | null>(null);
-    // const { clearHistogramState } = useExploreFlowStore();
-   
-    
 
-const fileId = assets?.[0]?.id;
-console.log('fileId 8765yhb');
-console.log(fileId);
+    const fileId = assets?.[0]?.id;
 
     useEffect(() => {
         const inputAsset = assets.find((a) => a.io === 'input' && a.type === 'ocelFile');
@@ -34,25 +29,16 @@ console.log(fileId);
 
     const openResourceInterface = () => {
         if (inputFileId) {
-            navigate(`/data/pipeline/explore/resource_graph/${id}`,
-                {
-                state: { fileId: inputFileId }
-            }
-            );
+            navigate(`/data/pipeline/explore/resource_graph/${id}`, {
+                state: { fileId: inputFileId },
+            });
         }
     };
 
     const handleReset = useCallback(() => {
-        // 1. Clear React Query Cache
         if (inputFileId) {
-            // queryClient.cancelQueries({ queryKey: ['getHistogram', inputFileId] });
-            // queryClient.removeQueries({ queryKey: ['getHistogram', inputFileId] });
         }
 
-        // 2. Clear Store State
-        // clearHistogramState(id);
-
-        // 3. Reset Local State
         setInputFileId(null);
     }, [inputFileId, queryClient, id]);
 
@@ -75,7 +61,7 @@ console.log(fileId);
     return (
         <BaseMinerNode
             {...node}
-            title="Activity Miner"
+            title="Resource Miner"
             iconName="chartBar"
             handleOptions={[
                 { id: 'target', position: Position.Left, type: 'target' as const },
