@@ -1,5 +1,6 @@
 pub mod abstractions;
 pub mod case_notion;
+pub mod clustering;
 pub mod collection_ocels;
 pub mod conformance;
 pub mod conformance_ocgraphconf;
