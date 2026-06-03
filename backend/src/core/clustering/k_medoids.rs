@@ -3,7 +3,7 @@
 use chrono::DateTime;
 use rand::seq::SliceRandom;
 use rand::{SeedableRng, rngs::StdRng};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::fs::OpenOptions;
@@ -27,7 +27,7 @@ pub enum DistanceMetric {
 
 // RunResult für Sweep / JSON
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RunResult {
     pub k: usize,
     pub seed: u64,
@@ -232,6 +232,115 @@ fn compute_event_counts_per_cluster(
             items
         })
         .collect()
+}
+
+pub fn summarize_cluster_assignments(
+    prepared: &mut PreparedClusteringInput,
+    assignments: &[usize],
+    k: usize,
+    seed: u64,
+    iterations: usize,
+    total_runtime_seconds: f64,
+) -> RunResult {
+    let n = prepared.case_ocels.len();
+    if n == 0 || k == 0 {
+        return RunResult {
+            k: 0,
+            seed,
+            iterations: 0,
+            num_cases: 0,
+            avg_cluster_size: 0.0,
+            total_runtime_seconds: 0.0,
+            runtime_per_case_seconds: 0.0,
+            cluster_event_counts: vec![],
+            between_mean: 0.0,
+            between_std: 0.0,
+            within_mean: vec![],
+            within_std: vec![],
+        };
+    }
+
+    let dist_stats = compute_within_between_distance_stats(assignments, k, |a, b| {
+        prepared_distance(prepared, a, b)
+    });
+    summarize_cluster_assignments_from_stats(
+        &prepared.case_ocels,
+        assignments,
+        k,
+        seed,
+        iterations,
+        total_runtime_seconds,
+        dist_stats,
+    )
+}
+
+pub fn summarize_cluster_assignments_with_distance(
+    case_ocels: &[Value],
+    assignments: &[usize],
+    k: usize,
+    seed: u64,
+    iterations: usize,
+    total_runtime_seconds: f64,
+    distance: impl FnMut(usize, usize) -> f64,
+) -> RunResult {
+    let n = case_ocels.len();
+    if n == 0 || k == 0 {
+        return RunResult {
+            k: 0,
+            seed,
+            iterations: 0,
+            num_cases: 0,
+            avg_cluster_size: 0.0,
+            total_runtime_seconds: 0.0,
+            runtime_per_case_seconds: 0.0,
+            cluster_event_counts: vec![],
+            between_mean: 0.0,
+            between_std: 0.0,
+            within_mean: vec![],
+            within_std: vec![],
+        };
+    }
+
+    let dist_stats = compute_within_between_distance_stats(assignments, k, distance);
+    summarize_cluster_assignments_from_stats(
+        case_ocels,
+        assignments,
+        k,
+        seed,
+        iterations,
+        total_runtime_seconds,
+        dist_stats,
+    )
+}
+
+fn summarize_cluster_assignments_from_stats(
+    case_ocels: &[Value],
+    assignments: &[usize],
+    k: usize,
+    seed: u64,
+    iterations: usize,
+    total_runtime_seconds: f64,
+    dist_stats: ClusterDistanceStats,
+) -> RunResult {
+    let n = case_ocels.len();
+    let cluster_event_counts = compute_event_counts_per_cluster(case_ocels, assignments, k);
+    let within_mean: Vec<f64> = (0..k).map(|c| dist_stats.within[c].mean()).collect();
+    let within_std: Vec<f64> = (0..k).map(|c| dist_stats.within[c].std_pop()).collect();
+
+    RunResult {
+        k,
+        seed,
+        iterations,
+        num_cases: n,
+        avg_cluster_size: n as f64 / k as f64,
+        total_runtime_seconds,
+        runtime_per_case_seconds: total_runtime_seconds / n as f64,
+        cluster_event_counts,
+        between_mean: dist_stats.between_global.mean(),
+        between_std: dist_stats.between_global.std_pop(),
+        within_mean,
+        within_std,
+    }
 }
 
 // OC: Views = alle objectTypes global
@@ -677,7 +786,7 @@ pub fn prepare_clustering_input(
 
 // Distanz auf vorbereiteten Daten mit persistentem Cache
 
-fn prepared_distance(prepared: &mut PreparedClusteringInput, i: usize, j: usize) -> f64 {
+pub(crate) fn prepared_distance(prepared: &mut PreparedClusteringInput, i: usize, j: usize) -> f64 {
     if let Some(d) = prepared.dist_cache[i][j] {
         return d;
     }
@@ -702,6 +811,21 @@ fn prepared_distance(prepared: &mut PreparedClusteringInput, i: usize, j: usize)
     prepared.dist_cache[j][i] = Some(d);
 
     d
+}
+
+pub fn compute_pairwise_distance_matrix(prepared: &mut PreparedClusteringInput) -> Vec<Vec<f64>> {
+    let n = prepared.case_ocels.len();
+    let mut distances = vec![vec![0.0; n]; n];
+
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let distance = prepared_distance(prepared, i, j);
+            distances[i][j] = distance;
+            distances[j][i] = distance;
+        }
+    }
+
+    distances
 }
 
 // Main Clustering auf vorbereiteten Daten
@@ -897,6 +1021,28 @@ pub fn cluster_ocels_with_metric_seeded(
     };
 
     (assignments, rr)
+}
+
+pub fn cluster_ocels_with_metric_seeded_and_distances(
+    case_ocels: &[Value],
+    k: usize,
+    metric: DistanceMetric,
+    seed: u64,
+) -> (Vec<usize>, RunResult, Vec<Vec<f64>>) {
+    let total_timer = Instant::now();
+
+    let mut prepared = prepare_clustering_input(case_ocels, metric);
+    let (assignments, mut rr) = cluster_prepared_with_metric_seeded(&mut prepared, k, seed);
+    let distances = compute_pairwise_distance_matrix(&mut prepared);
+
+    rr.total_runtime_seconds = total_timer.elapsed().as_secs_f64();
+    rr.runtime_per_case_seconds = if rr.num_cases > 0 {
+        rr.total_runtime_seconds / rr.num_cases as f64
+    } else {
+        0.0
+    };
+
+    (assignments, rr, distances)
 }
 
 // Compatibility wrapper: deterministic seed = 53
