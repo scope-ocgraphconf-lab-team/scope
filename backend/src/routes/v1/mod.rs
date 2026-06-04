@@ -4,6 +4,7 @@ pub mod clustering;
 pub mod conformance;
 pub mod df2;
 pub mod event_object_frequencies;
+pub mod export;
 pub mod extended_ocpt;
 pub mod log_graphs;
 pub mod objects;
@@ -23,6 +24,7 @@ pub fn router() -> Router {
             "/event_object_frequencies",
             event_object_frequencies::router(),
         )
+        .nest("/export", export::router())
         .nest("/case_notion", case_notion::router())
         .nest("/clustering", clustering::router())
         .nest("/log_graphs", log_graphs::router())
