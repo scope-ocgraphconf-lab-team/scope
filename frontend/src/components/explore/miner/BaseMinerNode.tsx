@@ -244,17 +244,21 @@ const BaseMinerNode = memo<MinerNodeProps>((props) => {
                     (a) => a.io === 'input' && a.inputHandle === handle.id
                 );
                 return (
-                    <div key={handle.id} className="relative mt-2 border-t pt-2">
+                    <div key={handle.id} className="relative">
                         <Handle
                             id={handle.id}
                             type="target"
                             position={Position.Left}
                             style={{ left: '-0.75rem' }}
                         />
-                        <p className="text-xs font-semibold text-gray-500 mb-2">{handle.label}</p>
-                        {connectedAsset
-                            ? <AssetBadge asset={connectedAsset} />
-                            : <AssetTypeList types={handle.hintTypes} />}
+                        {!isLoading && (
+                            <div className="mt-2 border-t pt-2">
+                                <p className="text-xs font-semibold text-gray-500 mb-2">{handle.label}</p>
+                                {connectedAsset
+                                    ? <AssetBadge asset={connectedAsset} />
+                                    : <AssetTypeList types={handle.hintTypes} />}
+                            </div>
+                        )}
                     </div>
                 );
             })}
