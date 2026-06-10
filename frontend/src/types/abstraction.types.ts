@@ -1,10 +1,13 @@
 export type DirectlyFollowsRelation = [from: string, to: string];
 
+import type { IdentityRelationKind } from '~/types/ocpt/ocpt.types';
+
 export interface AbstractionIdentityRelation {
     id: string;
     left: string[];
     right: string[];
-    kind: 'sync' | 'impConcurrent' | 'tempImp';
+    kind: IdentityRelationKind;
+    batchSize?: number;
     activities: string[];
 }
 

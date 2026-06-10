@@ -21,14 +21,26 @@ export interface IdentityRelationViewerProps {
 
 const KIND_LABELS: Record<IdentityRelationKind, string> = {
     sync: 'Synchronization',
+    subsetSync: 'Subset Synchronization',
+    subsetSyncPartition: 'Subset Sync (Partition)',
+    subsetSyncOverlap: 'Subset Sync (Overlap)',
     impConcurrent: 'Implicit Concurrency',
-    tempImp: 'Temporal Implication',
+    impOrdered: 'Implicit Ordering',
+    impBatch: 'Batch Implication',
+    objectSplit: 'Object Split',
+    objectMerge: 'Object Merge',
 };
 
 const KIND_SYMBOLS: Record<IdentityRelationKind, string> = {
     sync: '=',
-    impConcurrent: '⇒‖',
-    tempImp: '⇒→',
+    subsetSync: '⊆',
+    subsetSyncPartition: '⊂',
+    subsetSyncOverlap: '⊆~',
+    impConcurrent: '‖',
+    impOrdered: '[→]',
+    impBatch: '×k',
+    objectSplit: '÷',
+    objectMerge: '⊕',
 };
 
 const nodeTypes = { otNode: IdentityRelationOtNode, hubNode: IdentityRelationHubNode };

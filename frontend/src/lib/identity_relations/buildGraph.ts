@@ -10,6 +10,7 @@ export interface IdentityRelationItem {
     left: string[];
     right: string[];
     kind: IdentityRelationKind;
+    batchSize?: number;
     activities?: string[];
 }
 
@@ -75,9 +76,9 @@ export function buildFlowGraph(
             source: sourceId,
             target: targetId,
             type: 'identityRelEdge' as const,
-            data: { kind: rel.kind, activities: rel.activities },
+            data: { kind: rel.kind, batchSize: rel.batchSize, activities: rel.activities },
             markerEnd: ARROW_MARKER,
-            markerStart: rel.kind === 'sync' ? ARROW_MARKER : undefined,
+            markerStart: ['sync', 'subsetSync', 'subsetSyncPartition', 'subsetSyncOverlap'].includes(rel.kind) ? ARROW_MARKER : undefined,
         });
     });
 
