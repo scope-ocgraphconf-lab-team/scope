@@ -243,11 +243,12 @@ export const useExtendOcptWithIdentity = (
     nodeId: string,
     ocptFileId: string | null,
     ocelFileId: string | null,
+    noiseThreshold: number,
     shouldFetch: boolean
 ) => {
     return useQuery({
-        queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId],
-        queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!),
+        queryKey: ['extendOcptWithIdentity', nodeId, ocptFileId, ocelFileId, noiseThreshold],
+        queryFn: () => extendOcptWithIdentity(ocptFileId!, ocelFileId!, noiseThreshold),
         enabled: Boolean(ocptFileId) && Boolean(ocelFileId) && shouldFetch,
         refetchOnWindowFocus: false,
     });
