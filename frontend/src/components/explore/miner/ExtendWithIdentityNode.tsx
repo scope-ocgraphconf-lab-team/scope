@@ -6,14 +6,16 @@ import { Input } from '~/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip';
 import BaseMinerNode from '~/components/explore/miner/BaseMinerNode';
 import { useInputAsset, useMinerOutput } from '~/hooks/explore/useMinerAssets';
+import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useExtendOcptWithIdentity } from '~/services/queries';
 import { MinerNode } from '~/types/explore/nodes';
 
 const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
     const queryClient = useQueryClient();
+    const { updateNodeData } = useExploreFlowStore();
 
-    const [noiseThreshold, setNoiseThreshold] = useState<number>((node.data.noiseThreshold as number) ?? 0.0);
-    const [noiseInput, setNoiseInput] = useState<string>(String((node.data.noiseThreshold as number) ?? 0.0));
+    const [noiseThreshold, setNoiseThreshold] = useState<number>(node.data.noiseThreshold ?? 0.8);
+    const [noiseInput, setNoiseInput] = useState<string>(String(node.data.noiseThreshold ?? 0.8));
 
     const hasMinedAsset = useMemo(() => {
         return node.data.assets.some((asset) => asset.io === 'output');
@@ -52,11 +54,13 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
                         <div className="flex flex-col gap-0.5">
                             <div className="flex items-baseline gap-1.5">
                                 <span className="font-mono font-bold">0</span>
-                                <span className="text-muted-foreground">Keeps all identity relations</span>
+                                <span className="text-muted-foreground">Keeps all identity relations.</span>
                             </div>
                             <div className="flex items-baseline gap-1.5">
                                 <span className="font-mono font-bold">1</span>
-                                <span className="text-muted-foreground">Removes all but the strongest relations</span>
+                                <span className="text-muted-foreground">
+                                    Removes all but the most frequent relations.
+                                </span>
                             </div>
                         </div>
                     </TooltipContent>
@@ -73,6 +77,7 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
                     const clamped = Math.min(1, Math.max(0, parseFloat(noiseInput) || 0));
                     setNoiseInput(String(clamped));
                     setNoiseThreshold(clamped);
+                    updateNodeData(node.id, { noiseThreshold: clamped });
                 }}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
@@ -88,7 +93,7 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
             title="Extend with Identity"
             iconName="scanEye"
             handleOptions={[
-                { id: 'ocptTarget', position: Position.Left, type: 'target' as const },
+                { id: 'target', position: Position.Left, type: 'target' as const },
                 { id: 'source', position: Position.Right, type: 'source' as const },
             ]}
             secondaryHandles={[{ id: 'ocelTarget', label: 'OCEL Input', hintTypes: ['ocelAsset', 'ocelFile'] }]}
