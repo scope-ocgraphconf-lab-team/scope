@@ -12,12 +12,14 @@ type IdentityRelationOtNodeProps = {
 };
 
 const IdentityRelationOtNode = memo(({ data, id }: NodeProps<Node<IdentityRelationOtNodeProps>>) => (
-    <BaseNode id={id} className="px-3 py-2" style={{ borderColor: data.color }}>
+    <BaseNode id={id} className="px-3 py-2">
         <Handle type="target" position={Position.Left} style={{ opacity: 0, pointerEvents: 'none' }} />
         <Handle type="source" position={Position.Right} style={{ opacity: 0, pointerEvents: 'none' }} />
-        <p className="text-xs font-medium" style={{ color: data.color }}>{data.objectType}</p>
+        <div className="flex flex-col items-center gap-1">
+            <p className="text-xs font-medium text-foreground">{data.objectType}</p>
+            <span className="" style={{ width: 8, height: 8, background: data.color }} />
+        </div>
     </BaseNode>
 ));
-IdentityRelationOtNode.displayName = 'IdentityRelationOtNode';
 
 export default IdentityRelationOtNode;

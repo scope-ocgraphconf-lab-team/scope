@@ -87,7 +87,7 @@ export const nodeRegistry = {
             { label: 'Primary', types: ['ocptAsset', 'ocptFile'] },
             { label: 'Secondary', types: ['ocelAsset', 'ocelFile'] },
         ],
-        sidebar: { label: 'Extend Identity', icon: 'fingerprint', group: 'miners' },
+        sidebar: { label: 'Extend Identity', icon: 'scanEye', group: 'miners' },
     },
     flowVisualizationNode: {
         category: 'miner',

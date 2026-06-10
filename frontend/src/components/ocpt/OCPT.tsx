@@ -6,8 +6,8 @@ import { ParentSize } from '@visx/responsive';
 import { Zoom } from '@visx/zoom';
 import type { ProvidedZoom, TransformMatrix } from '@visx/zoom/lib/types';
 import { ScaleOrdinal } from 'd3';
-import { RenderTree } from '~/components/ocpt/OcptRendering';
 import IdentityRelationViewer from '~/components/identity_relations/IdentityRelationViewer';
+import { RenderTree } from '~/components/ocpt/OcptRendering';
 import NodeTooltip from '~/components/ocpt/ui/NodeTooltip';
 import ZoomButtons from '~/components/ocpt/ui/ZoomButtons';
 import { isExtendedProcessTreeOperatorNode, isIdentityOperatorApi } from '~/lib/ocpt/ocptGuards';
@@ -63,23 +63,37 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
 
         const otsFromRelations = (relations: { left: string[]; right: string[] }[]) => {
             const s = new Set<string>();
-            relations.forEach((r) => { r.left.forEach((ot) => s.add(ot)); r.right.forEach((ot) => s.add(ot)); });
+            relations.forEach((r) => {
+                r.left.forEach((ot) => s.add(ot));
+                r.right.forEach((ot) => s.add(ot));
+            });
             return s;
         };
 
         const operatorLabel: Record<string, string> = {
-            sequence: 'Sequence (→)', parallel: 'Parallel (∧)', loop: 'Loop (↺)', xor: 'XOR (×)',
+            sequence: 'Sequence',
+            parallel: 'Parallel',
+            loop: 'Loop',
+            xor: 'XOR',
         };
 
         if (isExtendedProcessTreeOperatorNode(value)) {
             const relations = value.identity ?? [];
             const otSet = otsFromRelations(relations);
             value.ots.forEach((ot) => otSet.add(ot.ot));
-            return { title: operatorLabel[value.operator] ?? value.operator, objectTypes: Array.from(otSet), relations };
+            return {
+                title: operatorLabel[value.operator] ?? value.operator,
+                objectTypes: Array.from(otSet),
+                relations,
+            };
         }
         if (isIdentityOperatorApi(value)) {
             const relations = value.identity ?? [];
-            return { title: operatorLabel[value.operator] ?? value.operator, objectTypes: Array.from(otsFromRelations(relations)), relations };
+            return {
+                title: operatorLabel[value.operator] ?? value.operator,
+                objectTypes: Array.from(otsFromRelations(relations)),
+                relations,
+            };
         }
         return null;
     }, [clickedNode]);
@@ -215,7 +229,9 @@ const OCPTContent: React.FC<OCPTContentProps> = ({
                             <ZoomButtons zoom={zoom} />
                             <IdentityRelationViewer
                                 open={clickedNode !== null}
-                                onOpenChange={(open) => { if (!open) setClickedNode(null); }}
+                                onOpenChange={(open) => {
+                                    if (!open) setClickedNode(null);
+                                }}
                                 title={identityData?.title}
                                 objectTypes={identityData?.objectTypes ?? []}
                                 relations={identityData?.relations ?? []}

@@ -35,7 +35,7 @@ const ExtendWithIdentityNode = memo<NodeProps<MinerNode>>((node) => {
         <BaseMinerNode
             {...node}
             title="Extend with Identity"
-            iconName="fingerprint"
+            iconName="scanEye"
             handleOptions={[
                 { id: 'ocptTarget', position: Position.Left, type: 'target' as const },
                 { id: 'source', position: Position.Right, type: 'source' as const },

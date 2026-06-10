@@ -15,6 +15,7 @@ import {
     Network,
     Pickaxe,
     Radar,
+    ScanEye,
     ShieldCheck,
     TreePine,
     Waves,
@@ -40,6 +41,7 @@ export const iconMap: Record<string, ComponentType<LucideProps>> = {
     fileStack: FileStack,
     layers: Layers,
     radar: Radar,
+    scanEye: ScanEye,
     shieldCheck: ShieldCheck,
 };
 

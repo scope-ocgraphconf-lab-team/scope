@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Network } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ScanEye } from 'lucide-react';
 import { Checkbox } from '~/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 
@@ -195,7 +195,7 @@ const AbstractionSidebar: React.FC<AbstractionSidebarProps> = ({
                             onClick={onOpenIdentityRelations}
                             className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border hover:bg-muted transition-colors"
                         >
-                            <Network className="h-4 w-4 shrink-0" />
+                            <ScanEye className="h-4 w-4 shrink-0" />
                             <span>Identity Relations</span>
                             <span className="ml-auto text-xs text-muted-foreground">{identityRelationCount}</span>
                         </button>
