@@ -31,26 +31,59 @@ const ConformanceFileNode = memo<NodeProps<FileNode>>((props) => {
         >
             {conformanceResult && (
                 <div className="mt-2 border-t pt-2 flex flex-col gap-2">
-                    <div className="flex flex-col gap-1 text-xs">
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Fitness</span>
-                            <span className="font-semibold">{(conformanceResult.fitness * 100).toFixed(1)}%</span>
+                   {conformanceResult.ocgraphconf ? (
+                        <div className="flex flex-col gap-1 text-xs">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Alignment cost</span>
+                                <span className="font-semibold">{conformanceResult.ocgraphconf.alignment_cost}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Fitness</span>
+                                <span className="font-semibold">{(conformanceResult.fitness * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="mt-1 flex justify-between">
+                                <span className="text-gray-500">Nodes (matched / ins / rem)</span>
+                                <span className="font-semibold">
+                                    {conformanceResult.ocgraphconf.matched_node_count} /{' '}
+                                    {conformanceResult.ocgraphconf.case_unmatched_node_count} /{' '}
+                                    {conformanceResult.ocgraphconf.model_case_unmatched_node_count}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Edges (matched / ins / rem)</span>
+                                <span className="font-semibold">
+                                    {conformanceResult.ocgraphconf.matched_edge_count} /{' '}
+                                    {conformanceResult.ocgraphconf.case_unmatched_edge_count} /{' '}
+                                    {conformanceResult.ocgraphconf.model_case_unmatched_edge_count}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-500">Precision</span>
-                            <span className="font-semibold">{(conformanceResult.precision * 100).toFixed(1)}%</span>
+                    ) : (
+                        <div className="flex flex-col gap-1 text-xs">
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Fitness</span>
+                                <span className="font-semibold">{(conformanceResult.fitness * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Precision</span>
+                                <span className="font-semibold">
+                                    {conformanceResult.precision != null
+                                        ? `${(conformanceResult.precision * 100).toFixed(1)}%`
+                                        : '—'}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-start h-7 px-2 text-xs"
-                        onClick={() => navigate(`/data/pipeline/explore/deviations/${props.id}`)}
-                    >
-                        <Radar className="h-3.5 w-3.5 text-blue-500" />
-                        View Deviations
-                    </Button>
-                </div>
+                    )}
+        <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start h-7 px-2 text-xs"
+            onClick={() => navigate(`/data/pipeline/explore/deviations/${props.id}`)}
+        >
+            <Radar className="h-3.5 w-3.5 text-blue-500" />
+            View Deviations
+        </Button>
+    </div>
             )}
         </BaseFileNode>
     );

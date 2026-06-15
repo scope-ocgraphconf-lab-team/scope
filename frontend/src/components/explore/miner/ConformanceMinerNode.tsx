@@ -135,9 +135,12 @@ const ConformanceMinerNode = memo<NodeProps<MinerNode>>((node) => {
                 mode: detected.mode,
                 inputA: { id: detected.a.id, type: detected.a.type },
                 inputB: { id: detected.b.id, type: detected.b.type },
+                 ...(detected.mode === 'ocpt-case-ocels' && ocptCaseOcelsResult
+                ? { ocgraphconf: ocptCaseOcelsResult }
+                : {}),
             },
         }));
-    }, [result, detected, node.id, updateNodeData]);
+    }, [result, detected, node.id, updateNodeData, ocptCaseOcelsResult]);
 
     useMinerOutput(node.id, result ? node.id : null, 'Conformance', 'conformanceAsset', 'conformanceFileNode');
 
