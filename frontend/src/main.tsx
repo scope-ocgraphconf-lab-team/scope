@@ -1,3 +1,4 @@
+import TestAlignment from '~/routes/TestAlignment';
 import { StrictMode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -98,6 +99,10 @@ const router = createBrowserRouter([
             </RedirectErrorBoundary>
         ),
     },
+    {
+        path: '/test-alignment',
+        element: <TestAlignment />,
+    }
 ]);
 
 createRoot(document.getElementById('root')!).render(
