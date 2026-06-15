@@ -26,6 +26,7 @@ import {
     mineOcpt,
     getActivityResource,
     postSpecialActivities,
+    getConformanceOcptCaseOcelsOcgraphconf,
 } from '~/services/api';
 import { getOcel } from '~/services/api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
@@ -273,6 +274,20 @@ export const useGetAbstraction = (
         queryKey: ['getAbstraction', nodeId, fileId, sourceKind],
         queryFn: () => getAbstraction(fileId!, sourceKind!),
         enabled: Boolean(fileId) && Boolean(sourceKind) && shouldFetch,
+        refetchOnWindowFocus: false,
+    });
+};
+
+// ocgraphconf conformance
+export const useGetConformanceOcptCaseOcelsOcgraphconf = (
+    ocptFileId: string | null,
+    caseOcelsFileId: string | null,
+    caseIndex = 0
+) => {
+    return useQuery({
+        queryKey: ['getConformanceOcptCaseOcelsOcgraphconf', ocptFileId, caseOcelsFileId, caseIndex],
+        queryFn: () => getConformanceOcptCaseOcelsOcgraphconf(ocptFileId!, caseOcelsFileId!, caseIndex),
+        enabled: Boolean(ocptFileId) && Boolean(caseOcelsFileId),
         refetchOnWindowFocus: false,
     });
 };

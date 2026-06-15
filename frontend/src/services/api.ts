@@ -257,3 +257,58 @@ export const getOcelCollection = async (ocelCollectionFileId: string): Promise<C
     const response = await api.get(`v1/objects/ocel_collection/${ocelCollectionFileId}`);
     return response.data;
 };
+
+// Add POST function for ocgraphconformance
+export interface OcgraphconfAlignmentDetails {
+    matched_nodes: { left_node_id: number; right_node_id: number }[];
+    matched_edges: { left_edge_id: number; right_edge_id: number }[];
+    left_unmatched_node_ids: number[];
+    right_unmatched_node_ids: number[];
+    left_unmatched_edge_ids: number[];
+    right_unmatched_edge_ids: number[];
+}
+
+export interface OcgraphconfResult {
+    model_kind: string;
+    model_file_id: string;
+    case_ocels_file_id: string;
+    case_index: number;
+    origin_file_id_ocel: string;
+    case_notion_type: string;
+    object_type: string;
+    case_notion_file_id: string;
+    alignment_cost: number;
+    fitness: number;
+    precision: number | null;
+    case_nodes: number;
+    case_edges: number;
+    model_case_nodes: number;
+    model_case_edges: number;
+    case_size: number;
+    model_case_size: number;
+    matched_node_count: number;
+    matched_edge_count: number;
+    case_unmatched_node_count: number;
+    model_case_unmatched_node_count: number;
+    case_unmatched_edge_count: number;
+    model_case_unmatched_edge_count: number;
+    void_node_count: number;
+    void_edge_count: number;
+    alignment_details: OcgraphconfAlignmentDetails | null;
+}
+
+export const getConformanceOcptCaseOcelsOcgraphconf = async (
+    ocptFileId: string,
+    caseOcelsFileId: string,
+    caseIndex = 0
+): Promise<OcgraphconfResult> => {
+    const response = await api.post(
+        `/v1/conformance/ocpt/${ocptFileId}/case_ocels/ocgraphconf`,
+        {
+            case_ocels_file_id: caseOcelsFileId,
+            case_index: caseIndex,
+            include_alignment_details: true,
+        }
+    );
+    return response.data;
+};

@@ -8,7 +8,8 @@ export type ConformanceMode =
     | 'extended-ocel'
     | 'extended-abstraction'
     | 'extended-extended'
-    | 'abstraction-abstraction';
+    | 'abstraction-abstraction'
+    | 'ocpt-case-ocels';   // NEW
 
 export interface ConformanceInput {
     id: string;
