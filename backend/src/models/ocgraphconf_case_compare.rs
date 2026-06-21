@@ -43,14 +43,32 @@ pub struct OcgraphconfCaseCompareResponse {
     pub alignment_details: Option<CaseAlignmentDetails>,
 }
 
+//define new Node and Edge
+#[derive(Debug, Clone, Serialize)]
+pub struct UnmatchedNodeDetail {
+    pub id: usize,
+    pub label: String,
+    pub element_type: String, //"event" OR "object"
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UnmatchedEdgeDetail {
+    pub id: usize,
+    pub source_id: usize,
+    pub target_id: usize,
+    pub label: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CaseAlignmentDetails {
     pub matched_nodes: Vec<NodeMatch>,
     pub matched_edges: Vec<EdgeMatch>,
-    pub left_unmatched_node_ids: Vec<usize>,
-    pub right_unmatched_node_ids: Vec<usize>,
-    pub left_unmatched_edge_ids: Vec<usize>,
-    pub right_unmatched_edge_ids: Vec<usize>,
+    
+    // use the new difined Node and Edge
+    pub left_unmatched_nodes: Vec<UnmatchedNodeDetail>,
+    pub right_unmatched_nodes: Vec<UnmatchedNodeDetail>,
+    pub left_unmatched_edges: Vec<UnmatchedEdgeDetail>,
+    pub right_unmatched_edges: Vec<UnmatchedEdgeDetail>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
