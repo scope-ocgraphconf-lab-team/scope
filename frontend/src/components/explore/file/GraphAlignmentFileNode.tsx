@@ -1,6 +1,4 @@
 // ============================================================================
-// NEW FILE: src/components/explore/file/GraphAlignmentFileNode.tsx
-// ============================================================================
 // The result node for OCGraph Conformance. Reads graphAlignmentResult from the
 // upstream miner node (same fileNode -> outputAsset -> minerNode resolution as
 // ConformanceFileNode) and shows the meaningful ocgraphconf metrics, plus a

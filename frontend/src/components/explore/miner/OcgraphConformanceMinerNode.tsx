@@ -1,6 +1,4 @@
 // ============================================================================
-// NEW FILE: src/components/explore/miner/OcgraphConformanceMinerNode.tsx
-// ============================================================================
 // A dedicated node for object-centric GRAPH-based conformance (ocgraphconf).
 // Separate from the existing ConformanceMinerNode so there is no ambiguity
 // between abstraction-based and graph-based conformance: placing THIS node is
@@ -13,7 +11,7 @@
 //                  No OCPN file type in the frontend yet — slot left ready.
 // ============================================================================
 
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { Loader2 } from 'lucide-react';

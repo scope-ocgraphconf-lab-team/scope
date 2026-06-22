@@ -17,6 +17,7 @@ import ResourceViewer from '~/routes/ResourceViewer';
 import OcptViewer from '~/routes/OcptViewer';
 import Pipeline from '~/routes/Pipeline';
 import Upload from '~/routes/Upload';
+import AlignmentViewer from '~/routes/AlignmentViewer';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -95,6 +96,14 @@ const router = createBrowserRouter([
         element: (
              <RedirectErrorBoundary>
                 <ResourceViewer />
+            </RedirectErrorBoundary>
+        ),
+    },
+     {
+        path: '/data/pipeline/explore/alignment/:nodeId',
+        element: (
+            <RedirectErrorBoundary>
+                <AlignmentViewer />
             </RedirectErrorBoundary>
         ),
     },

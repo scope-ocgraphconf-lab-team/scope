@@ -9,8 +9,7 @@ export type ConformanceMode =
     | 'extended-ocel'
     | 'extended-abstraction'
     | 'extended-extended'
-    | 'abstraction-abstraction'
-    | 'ocpt-case-ocels';   // NEW
+    | 'abstraction-abstraction';
 
 export interface ConformanceInput {
     id: string;
@@ -19,11 +18,10 @@ export interface ConformanceInput {
 
 export interface ConformanceResult {
     fitness: number;
-    precision: number | null;   // ocgraphconf returns null for precision, but we want to keep it in the type for consistency
+    precision: number;
     mode: ConformanceMode;
     inputA: ConformanceInput;
     inputB: ConformanceInput;
-    //ocgraphconf?: OcgraphconfResult;   // NEW — full result for ocpt-case-ocels mode
 }
 
 export type OcgraphMode = 'ocpt-case-ocels' | 'case-case';
@@ -33,9 +31,6 @@ export interface GraphAlignmentResult {
     ocgraphconf: OcgraphconfResult;
     inputA: ConformanceInput;
     inputB: ConformanceInput;
-    caseIndex: number;
-    leftCaseIndex: number;
-    rightCaseIndex: number;
 }
 
 export interface MinerExploreNodeData extends BaseExploreNodeData {
