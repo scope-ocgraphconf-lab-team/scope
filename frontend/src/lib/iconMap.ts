@@ -9,6 +9,7 @@ import {
     FileStack,
     FileText,
     Fingerprint,
+    GitCompare,
     Grip,
     Layers,
     type LucideProps,
@@ -95,5 +96,10 @@ export const ASSET_TYPE_VISUALS: Record<AssetType, AssetTypeVisual> = {
         icon: Radar,
         color: 'text-blue-500',
         label: 'Conformance',
+    },
+    graphAlignmentAsset: {
+    icon: GitCompare,
+    color: 'text-blue-500',
+    label: 'Graph Alignment',
     },
 };

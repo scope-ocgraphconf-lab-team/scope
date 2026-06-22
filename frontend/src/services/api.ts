@@ -1,6 +1,5 @@
 import axios, { type AxiosResponse } from 'axios';
-import { GetCaseNotionsResponse } from '~/services/response.types';
-import { CaseOcelResponse } from '~/types/api/ocel_collection.api';
+import { GetCaseNotionsResponse, CaseOcelResponse } from '~/services/response.types';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
 import { ExtendedFile } from '~/types/files.types';
 import { OcptSchemaApi } from '~/types/ocpt/ocpt.types';
@@ -25,6 +24,8 @@ export const uploadFile = async (file: ExtendedFile) => {
         case 'ocptFile':
             response = await api.post<any, AxiosResponse<any, any>, any>('/v1/upload/ocpt', formData);
             break;
+             default:
+        throw new Error(`Unsupported file type: ${file.fileType}`);
     }
 
     return response.data;
@@ -259,13 +260,26 @@ export const getOcelCollection = async (ocelCollectionFileId: string): Promise<C
 };
 
 // Add POST function for ocgraphconformance
+export interface UnmatchedNodeDetail {
+    id: number;
+    label: string;
+    element_type: string; // "event" | "object" | "unknown"
+}
+
+export interface UnmatchedEdgeDetail {
+    id: number;
+    source_id: number;
+    target_id: number;
+    label: string; // "DF" / "E2O" (model-case path) or "DF (Directly Follows)" / "E2O (Event to Object)" (case-compare path)
+}
+
 export interface OcgraphconfAlignmentDetails {
     matched_nodes: { left_node_id: number; right_node_id: number }[];
     matched_edges: { left_edge_id: number; right_edge_id: number }[];
-    left_unmatched_node_ids: number[];
-    right_unmatched_node_ids: number[];
-    left_unmatched_edge_ids: number[];
-    right_unmatched_edge_ids: number[];
+    left_unmatched_nodes: UnmatchedNodeDetail[];
+    right_unmatched_nodes: UnmatchedNodeDetail[];
+    left_unmatched_edges: UnmatchedEdgeDetail[];
+    right_unmatched_edges: UnmatchedEdgeDetail[];
 }
 
 export interface OcgraphconfResult {
@@ -307,6 +321,23 @@ export const getConformanceOcptCaseOcelsOcgraphconf = async (
         {
             case_ocels_file_id: caseOcelsFileId,
             case_index: caseIndex,
+            include_alignment_details: true,
+        }
+    );
+    return response.data;
+};
+
+export const getConformanceCaseCaseOcgraphconf = async (
+    caseOcelsFileId: string,
+    leftCaseIndex: number,
+    rightCaseIndex: number
+): Promise<OcgraphconfResult> => {
+    const response = await api.post(
+        `/v1/conformance/case_ocels/ocgraphconf`,
+        {
+            case_ocels_file_id: caseOcelsFileId,
+            left_case_index: leftCaseIndex,
+            right_case_index: rightCaseIndex,
             include_alignment_details: true,
         }
     );

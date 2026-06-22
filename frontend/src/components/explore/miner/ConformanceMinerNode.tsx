@@ -27,7 +27,7 @@ function assetKind(type: AssetType): AssetKind | null {
     if (type === 'identityOcptAsset') return 'extended_ocpt';
     if (type === 'ocelFile' || type === 'ocelAsset') return 'ocel';
     if (type === 'abstractionAsset') return 'abstraction';
-    if (type === 'ocelCollectionFile') return 'case_ocels';   // NEW ocel collection type for ocgraphconf
+    //if (type === 'ocelCollectionFile') return 'case_ocels';   // NEW ocel collection type for ocgraphconf
     return null;
 }
 
@@ -56,7 +56,7 @@ function detectConformance(
         if (lk === 'ocel') return { mode: 'ocpt-ocel', a: model, b: log };
         if (lk === 'abstraction') return { mode: 'ocpt-abstraction', a: model, b: log };
         if (lk === 'ocpt') return { mode: 'ocpt-ocpt', a: model, b: log };
-        if (lk === 'case_ocels') return { mode: 'ocpt-case-ocels', a: model, b: log };  // NEW ocgraphconf mode
+        //if (lk === 'case_ocels') return { mode: 'ocpt-case-ocels', a: model, b: log };  // NEW ocgraphconf mode
     }
     if (mk === 'extended_ocpt') {
         if (lk === 'ocel') return { mode: 'extended-ocel', a: model, b: log };
@@ -116,13 +116,13 @@ const ConformanceMinerNode = memo<NodeProps<MinerNode>>((node) => {
         detected?.mode === 'abstraction-abstraction' ? detected.b.id : null
     );
 
-    const { data: ocptCaseOcelsResult, isLoading: l8 } = useGetConformanceOcptCaseOcelsOcgraphconf(
+    /*const { data: ocptCaseOcelsResult, isLoading: l8 } = useGetConformanceOcptCaseOcelsOcgraphconf(
         detected?.mode === 'ocpt-case-ocels' ? detected.a.id : null,
         detected?.mode === 'ocpt-case-ocels' ? detected.b.id : null
-    );
+    );*/
 
-    const result = ocptOcelResult ?? ocptAbsResult ?? ocptOcptResult ?? extOcelResult ?? extAbsResult ?? extExtResult ?? absAbsResult ?? ocptCaseOcelsResult;
-    const isLoading = l1 || l2 || l3 || l4 || l5 || l6 || l7 || l8;
+    const result = ocptOcelResult ?? ocptAbsResult ?? ocptOcptResult ?? extOcelResult ?? extAbsResult ?? extExtResult ?? absAbsResult ; //?? ocptCaseOcelsResult
+    const isLoading = l1 || l2 || l3 || l4 || l5 || l6 || l7 ; //|| l8
 
     const updateNodeData = useExploreFlowStore((state) => state.updateNodeData);
 
@@ -135,12 +135,9 @@ const ConformanceMinerNode = memo<NodeProps<MinerNode>>((node) => {
                 mode: detected.mode,
                 inputA: { id: detected.a.id, type: detected.a.type },
                 inputB: { id: detected.b.id, type: detected.b.type },
-                 ...(detected.mode === 'ocpt-case-ocels' && ocptCaseOcelsResult
-                ? { ocgraphconf: ocptCaseOcelsResult }
-                : {}),
             },
         }));
-    }, [result, detected, node.id, updateNodeData, ocptCaseOcelsResult]);
+    }, [result, detected, node.id, updateNodeData]);
 
     useMinerOutput(node.id, result ? node.id : null, 'Conformance', 'conformanceAsset', 'conformanceFileNode');
 

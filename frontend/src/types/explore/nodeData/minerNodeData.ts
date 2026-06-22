@@ -23,11 +23,24 @@ export interface ConformanceResult {
     mode: ConformanceMode;
     inputA: ConformanceInput;
     inputB: ConformanceInput;
-     ocgraphconf?: OcgraphconfResult;   // NEW — full result for ocpt-case-ocels mode
+    //ocgraphconf?: OcgraphconfResult;   // NEW — full result for ocpt-case-ocels mode
+}
+
+export type OcgraphMode = 'ocpt-case-ocels' | 'case-case';
+
+export interface GraphAlignmentResult {
+    mode: OcgraphMode;
+    ocgraphconf: OcgraphconfResult;
+    inputA: ConformanceInput;
+    inputB: ConformanceInput;
+    caseIndex: number;
+    leftCaseIndex: number;
+    rightCaseIndex: number;
 }
 
 export interface MinerExploreNodeData extends BaseExploreNodeData {
     algorithm?: string;
     noiseThreshold?: number;
     conformanceResult?: ConformanceResult;
+    graphAlignmentResult?: GraphAlignmentResult;
 }

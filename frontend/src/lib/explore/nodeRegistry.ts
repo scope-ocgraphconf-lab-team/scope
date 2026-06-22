@@ -63,6 +63,11 @@ export const nodeRegistry = {
         allowedAssetTypes: ['conformanceAsset'],
         sidebar: null,
     },
+    graphAlignmentFileNode: {
+    category: 'file',
+    allowedAssetTypes: ['graphAlignmentAsset'],
+    sidebar: null,
+},
 
     // ── Miner nodes ────────────────────────────────────────────────────────────
     ocptMinerNode: {
@@ -122,5 +127,20 @@ export const nodeRegistry = {
             },
         ],
         sidebar: { label: 'Conformance', icon: 'radar', group: 'miners' },
+    },
+    ocgraphConformanceMinerNode: {
+        category: 'miner',
+        allowedAssetTypes: ['ocptAsset','ocptFile','identityOcptAsset','ocelCollectionFile'],
+        inputs: [
+            {
+                label: 'Model / Left',
+                types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelCollectionFile'],
+            },
+            {
+                label: 'Case collection',
+                types: ['ocelCollectionFile'],
+            },
+        ],
+        sidebar: { label: 'OCGraph Conformance', icon: 'gitCompare', group: 'miners' },
     },
 } satisfies Record<RegistrableNodeType, NodeRegistryEntry>;

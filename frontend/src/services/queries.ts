@@ -4,7 +4,7 @@ import {
     extendOcptWithIdentity,
     getAbstraction,
     getAbstractionById,
-    getAdvancedCN,
+    //getAdvancedCN,
     getCaseNotions,
     getConformanceAbstractionAbstraction,
     getConformanceExtendedOcptAbstraction,
@@ -13,7 +13,7 @@ import {
     getConformanceOcptAbstraction,
     getConformanceOcptOcel,
     getConformanceOcptOcpt,
-    getConnectedComponentsCN,
+    //getConnectedComponentsCN,
     getHistogramEventPersp,
     getHistogramObjectPersp,
     getLogGraphs,
@@ -21,12 +21,13 @@ import {
     getOcelObjectTypes,
     getIdentityOcpt,
     getOcpt,
-    getTraditionalCN,
+    //getTraditionalCN,
     mineIdentityOcpt,
     mineOcpt,
     getActivityResource,
     postSpecialActivities,
     getConformanceOcptCaseOcelsOcgraphconf,
+    getConformanceCaseCaseOcgraphconf,
 } from '~/services/api';
 import { getOcel } from '~/services/api';
 import { CaseNotionApiResponse } from '~/types/case_notion.types';
@@ -288,6 +289,32 @@ export const useGetConformanceOcptCaseOcelsOcgraphconf = (
         queryKey: ['getConformanceOcptCaseOcelsOcgraphconf', ocptFileId, caseOcelsFileId, caseIndex],
         queryFn: () => getConformanceOcptCaseOcelsOcgraphconf(ocptFileId!, caseOcelsFileId!, caseIndex),
         enabled: Boolean(ocptFileId) && Boolean(caseOcelsFileId),
+        refetchOnWindowFocus: false,
+    });
+};
+
+export const useGetConformanceCaseCaseOcgraphconf = (
+    caseOcelsFileId: string | null,
+    leftCaseIndex: number | null,
+    rightCaseIndex: number | null
+) => {
+    return useQuery({
+        queryKey: [
+            'getConformanceCaseCaseOcgraphconf',
+            caseOcelsFileId,
+            leftCaseIndex,
+            rightCaseIndex,
+        ],
+        queryFn: () =>
+            getConformanceCaseCaseOcgraphconf(
+                caseOcelsFileId!,
+                leftCaseIndex!,
+                rightCaseIndex!
+            ),
+        enabled:
+            Boolean(caseOcelsFileId) &&
+            leftCaseIndex != null &&
+            rightCaseIndex != null,
         refetchOnWindowFocus: false,
     });
 };

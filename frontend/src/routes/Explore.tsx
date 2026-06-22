@@ -27,6 +27,8 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import { useFileDialogStore } from '~/stores/store';
 import { nodeRegistry } from '~/lib/explore/nodeRegistry';
 import { logger } from '~/lib/logger';
+import OcgraphConformanceMinerNode from '~/components/explore/miner/OcgraphConformanceMinerNode';
+import GraphAlignmentFileNode from '~/components/explore/file/GraphAlignmentFileNode';
 
 const nodeTypes = {
     ocptFileNode: OcptFileNode,
@@ -42,6 +44,8 @@ const nodeTypes = {
     abstractionFileNode: AbstractionFileNode,
     resourceMinerNode: ResourceMinerNode,
     conformanceFileNode: ConformanceFileNode,
+    ocgraphConformanceMinerNode: OcgraphConformanceMinerNode,
+    graphAlignmentFileNode: GraphAlignmentFileNode,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } satisfies Record<keyof typeof nodeRegistry, React.ComponentType<NodeProps<any>>>;
 

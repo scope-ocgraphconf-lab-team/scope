@@ -1,4 +1,4 @@
-export const fileNodeTypes = ['ocptFileNode', 'ocelFileNode', 'ocelCollectionNode', 'abstractionFileNode', 'conformanceFileNode'] as const;
+export const fileNodeTypes = ['ocptFileNode', 'ocelFileNode', 'ocelCollectionNode', 'abstractionFileNode', 'conformanceFileNode', 'graphAlignmentFileNode'] as const;
 export type ExploreFileNodeType = (typeof fileNodeTypes)[number];
 
 export const minerNodeTypes = [
@@ -10,6 +10,7 @@ export const minerNodeTypes = [
     'abstractionMinerNode',
     'resourceMinerNode',
     'conformanceMinerNode',
+    'ocgraphConformanceMinerNode',
 ] as const;
 export type ExploreMinerNodeType = (typeof minerNodeTypes)[number];
 
