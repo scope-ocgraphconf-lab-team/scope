@@ -1,0 +1,266 @@
+{
+  "case_ocels_file_id": "coffee-exp-01",
+  "left_case_index": 0,
+  "right_case_index": 1,
+  "alignment_cost": 8.0,
+  "fitness": 0.5555555555555556,
+  "precision": null,
+  "left_case_nodes": 4,
+  "left_case_edges": 5,
+  "right_case_nodes": 4,
+  "right_case_edges": 5,
+  "left_case_size": 9,
+  "right_case_size": 9,
+  "matched_node_count": 3,
+  "matched_edge_count": 2,
+  "left_unmatched_node_count": 1,
+  "right_unmatched_node_count": 1,
+  "left_unmatched_edge_count": 3,
+  "right_unmatched_edge_count": 3,
+  "void_node_count": 2,
+  "void_edge_count": 6,
+  "alignment_details": {
+    "matched_nodes": [
+      {
+        "left_node_id": 1,
+        "right_node_id": 1
+      },
+      {
+        "left_node_id": 2,
+        "right_node_id": 2
+      },
+      {
+        "left_node_id": 4,
+        "right_node_id": 4
+      }
+    ],
+    "matched_edges": [
+      {
+        "left_edge_id": 3,
+        "right_edge_id": 3
+      },
+      {
+        "left_edge_id": 5,
+        "right_edge_id": 5
+      }
+    ],
+    "left_unmatched_nodes": [
+      {
+        "id": 3,
+        "label": "Apologize",
+        "element_type": "event"
+      }
+    ],
+    "right_unmatched_nodes": [
+      {
+        "id": 3,
+        "label": "Pay",
+        "element_type": "event"
+      }
+    ],
+    "left_unmatched_edges": [
+      {
+        "id": 1,
+        "source_id": 2,
+        "target_id": 3,
+        "label": "DF (Directly Follows)"
+      },
+      {
+        "id": 2,
+        "source_id": 3,
+        "target_id": 4,
+        "label": "DF (Directly Follows)"
+      },
+      {
+        "id": 4,
+        "source_id": 3,
+        "target_id": 1,
+        "label": "E2O (Event to Object)"
+      }
+    ],
+    "right_unmatched_edges": [
+      {
+        "id": 1,
+        "source_id": 2,
+        "target_id": 3,
+        "label": "DF (Directly Follows)"
+      },
+      {
+        "id": 2,
+        "source_id": 3,
+        "target_id": 4,
+        "label": "DF (Directly Follows)"
+      },
+      {
+        "id": 4,
+        "source_id": 3,
+        "target_id": 1,
+        "label": "E2O (Event to Object)"
+      }
+    ]
+  },
+  "left_graph": {
+    "nodes": {
+      "1": {
+        "id": 1,
+        "kind": {
+          "Object": {
+            "object_type": "case",
+            "source_object_id": "o1"
+          }
+        }
+      },
+      "2": {
+        "id": 2,
+        "kind": {
+          "Event": {
+            "event_type": "Order",
+            "source_event_id": "e1"
+          }
+        }
+      },
+      "3": {
+        "id": 3,
+        "kind": {
+          "Event": {
+            "event_type": "Apologize",
+            "source_event_id": "e2"
+          }
+        }
+      },
+      "4": {
+        "id": 4,
+        "kind": {
+          "Event": {
+            "event_type": "Serve",
+            "source_event_id": "e3"
+          }
+        }
+      }
+    },
+    "edges": {
+      "1": {
+        "id": 1,
+        "from": 2,
+        "to": 3,
+        "edge_type": "DF"
+      },
+      "2": {
+        "id": 2,
+        "from": 3,
+        "to": 4,
+        "edge_type": "DF"
+      },
+      "3": {
+        "id": 3,
+        "from": 2,
+        "to": 1,
+        "edge_type": "E2O"
+      },
+      "4": {
+        "id": 4,
+        "from": 3,
+        "to": 1,
+        "edge_type": "E2O"
+      },
+      "5": {
+        "id": 5,
+        "from": 4,
+        "to": 1,
+        "edge_type": "E2O"
+      }
+    },
+    "ordered_event_ids": [
+      2,
+      3,
+      4
+    ],
+    "object_ids_by_type": {
+      "case": [
+        1
+      ]
+    }
+  },
+  "right_graph": {
+    "nodes": {
+      "1": {
+        "id": 1,
+        "kind": {
+          "Object": {
+            "object_type": "case",
+            "source_object_id": "o1"
+          }
+        }
+      },
+      "2": {
+        "id": 2,
+        "kind": {
+          "Event": {
+            "event_type": "Order",
+            "source_event_id": "e1"
+          }
+        }
+      },
+      "3": {
+        "id": 3,
+        "kind": {
+          "Event": {
+            "event_type": "Pay",
+            "source_event_id": "e2"
+          }
+        }
+      },
+      "4": {
+        "id": 4,
+        "kind": {
+          "Event": {
+            "event_type": "Serve",
+            "source_event_id": "e3"
+          }
+        }
+      }
+    },
+    "edges": {
+      "1": {
+        "id": 1,
+        "from": 2,
+        "to": 3,
+        "edge_type": "DF"
+      },
+      "2": {
+        "id": 2,
+        "from": 3,
+        "to": 4,
+        "edge_type": "DF"
+      },
+      "3": {
+        "id": 3,
+        "from": 2,
+        "to": 1,
+        "edge_type": "E2O"
+      },
+      "4": {
+        "id": 4,
+        "from": 3,
+        "to": 1,
+        "edge_type": "E2O"
+      },
+      "5": {
+        "id": 5,
+        "from": 4,
+        "to": 1,
+        "edge_type": "E2O"
+      }
+    },
+    "ordered_event_ids": [
+      2,
+      3,
+      4
+    ],
+    "object_ids_by_type": {
+      "case": [
+        1
+      ]
+    }
+  }
+}

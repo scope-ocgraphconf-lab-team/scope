@@ -61,6 +61,8 @@ pub fn build_response(
         case_ocels_file_id: request.case_ocels_file_id.clone(),
         left_case_index: request.left_case_index,
         right_case_index: request.right_case_index,
+        left_graph: left_graph.clone(),
+        right_graph: right_graph.clone(),
         origin_file_id_ocel: attr_string(&selected_cases.attributes, "origin_file_id_ocel"),
         case_notion_type: attr_string(&selected_cases.attributes, "case_notion_type"),
         object_type: attr_string(&selected_cases.attributes, "object_type"),

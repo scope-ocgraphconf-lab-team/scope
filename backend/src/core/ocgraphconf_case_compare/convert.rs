@@ -1,8 +1,9 @@
 use crate::models::ocel::OCEL;
 use axum::http::StatusCode;
+use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum CaseNodeKind {
     Event {
         event_type: String,
@@ -14,19 +15,19 @@ pub enum CaseNodeKind {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct CaseNode {
     pub id: usize,
     pub kind: CaseNodeKind,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub enum CaseEdgeType {
     DF,
     E2O,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct CaseEdge {
     pub id: usize,
     pub from: usize,
@@ -34,14 +35,17 @@ pub struct CaseEdge {
     pub edge_type: CaseEdgeType,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct CaseGraph {
     pub nodes: BTreeMap<usize, CaseNode>,
     pub edges: BTreeMap<usize, CaseEdge>,
     pub ordered_event_ids: Vec<usize>,
     pub object_ids_by_type: BTreeMap<String, Vec<usize>>,
+    #[serde(skip)]
     pub incident_events_by_object: BTreeMap<usize, BTreeSet<usize>>,
+    #[serde(skip)]
     pub df_edge_ids: BTreeMap<(usize, usize), usize>,
+    #[serde(skip)]
     pub e2o_edge_ids: BTreeMap<(usize, usize), usize>,
 }
 

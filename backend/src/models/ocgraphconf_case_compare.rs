@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::core::ocgraphconf_case_compare::convert::CaseGraph;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct OcgraphconfCaseCompareRequest {
@@ -41,6 +42,8 @@ pub struct OcgraphconfCaseCompareResponse {
     pub void_edge_count: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alignment_details: Option<CaseAlignmentDetails>,
+    pub left_graph: CaseGraph,
+    pub right_graph: CaseGraph,
 }
 
 //define new Node and Edge

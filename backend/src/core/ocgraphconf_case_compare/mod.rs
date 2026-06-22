@@ -156,4 +156,42 @@ mod tests {
         assert!((response.fitness - (2.0 / 3.0)).abs() < f64::EPSILON);
         assert!(response.void_node_count > 0 || response.void_edge_count > 0);
     }
+
+    //A small test in coffe shop
+    #[test]
+    fn test_coffee_shop_alignment_export() {
+        let left_case = sample_case(&["Order", "Apologize", "Serve"]);
+        let right_case = sample_case(&["Order", "Pay", "Serve"]);
+
+        let left_graph = convert::case_ocel_to_case_graph(&left_case).unwrap();
+        let right_graph = convert::case_ocel_to_case_graph(&right_case).unwrap();
+
+        let assignment = compare::compare_case_graphs(&left_graph, &right_graph).unwrap();
+
+        let request = OcgraphconfCaseCompareRequest {
+            case_ocels_file_id: "coffee-exp-01".to_string(),
+            left_case_index: 0,
+            right_case_index: 1,
+            include_alignment_details: true,
+        };
+
+        let selected_cases = extract::SelectedCases {
+            left_case,
+            right_case,
+            attributes: Default::default(),
+        };
+
+        let response = metrics::build_response(
+            &request,
+            &selected_cases,
+            &left_graph,
+            &right_graph,
+            &assignment,
+        ).unwrap();
+
+        //output the json
+        let output_json = serde_json::to_string_pretty(&response).unwrap();
+        std::fs::write("./coffee_test_output.json", output_json)
+            .expect("Cannot write test output");
+    }
 }
