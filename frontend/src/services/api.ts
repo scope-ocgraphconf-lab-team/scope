@@ -259,29 +259,42 @@ export const getOcelCollection = async (ocelCollectionFileId: string): Promise<C
     return response.data;
 };
 
-// Add POST function for ocgraphconformance
-export interface UnmatchedNodeDetail {
+export interface NodeDetail {
     id: number;
     label: string;
-    element_type: string; // "event" | "object" | "unknown"
+    element_type: 'event' | 'object';
 }
 
-export interface UnmatchedEdgeDetail {
+export interface EdgeDetail {
     id: number;
     source_id: number;
     target_id: number;
-    label: string; // "DF" / "E2O" (model-case path) or "DF (Directly Follows)" / "E2O (Event to Object)" (case-compare path)
+    element_type: 'df' | 'e2o';   // drives DF/E2O styling without parsing the label
+    label: string;
+}
+
+export interface NodeMatch {
+    left_node_id: number;
+    right_node_id: number;
+}
+
+export interface EdgeMatch {
+    left_edge_id: number;
+    right_edge_id: number;
 }
 
 export interface OcgraphconfAlignmentDetails {
-    matched_nodes: { left_node_id: number; right_node_id: number }[];
-    matched_edges: { left_edge_id: number; right_edge_id: number }[];
-    left_unmatched_nodes: UnmatchedNodeDetail[];
-    right_unmatched_nodes: UnmatchedNodeDetail[];
-    left_unmatched_edges: UnmatchedEdgeDetail[];
-    right_unmatched_edges: UnmatchedEdgeDetail[];
+    matched_nodes: NodeMatch[];
+    matched_edges: EdgeMatch[];
+    left_graph_nodes: NodeDetail[];
+    left_graph_edges: EdgeDetail[];
+    right_graph_nodes: NodeDetail[];
+    right_graph_edges: EdgeDetail[];
+    left_unmatched_node_ids: number[];
+    right_unmatched_node_ids: number[];
+    left_unmatched_edge_ids: number[];
+    right_unmatched_edge_ids: number[];
 }
-
 export interface OcgraphconfResult {
     model_kind: string;
     model_file_id: string;

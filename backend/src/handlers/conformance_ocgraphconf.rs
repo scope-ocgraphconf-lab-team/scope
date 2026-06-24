@@ -6,6 +6,7 @@ use crate::models::ocgraphconf_case_compare::OcgraphconfCaseCompareRequest;
 use crate::models::ocgraphconf_model_case_conformance::OcgraphconfModelCaseConformanceRequest;
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 
+#[axum::debug_handler]
 pub async fn post_conformance_case_ocels_ocgraphconf(
     Json(request): Json<OcgraphconfCaseCompareRequest>,
 ) -> impl IntoResponse {

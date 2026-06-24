@@ -6,6 +6,7 @@ import {
     Controls,
     Handle,
     Position,
+    useNodesState,
     type Node,
     type Edge,
 } from '@xyflow/react';
@@ -16,8 +17,6 @@ import { useExploreFlowStore } from '~/stores/exploreStore';
 import type { MinerExploreNodeData } from '~/types/explore/nodeData/minerNodeData';
 import type {
     OcgraphconfResult,
-    UnmatchedNodeDetail,
-    UnmatchedEdgeDetail,
 } from '~/services/api';
 
 const COLORS = {
@@ -28,6 +27,10 @@ const COLORS = {
     removal: '#9ca3af',
     object: '#f59e0b',
 };
+
+// Node box size — kept in one place so the renderer and the dagre layout agree.
+const NODE_W = 120;
+const NODE_H = 60;
 
 interface GraphNodeData extends Record<string, unknown> {
     label: string;
@@ -57,7 +60,12 @@ function GraphNodeCmp({ data }: { data: GraphNodeData }) {
                 borderRadius: isObject ? 18 : 6,
                 border: `2px ${borderStyle} ${border}`,
                 background: bg,
-                minWidth: 70,
+                width: NODE_W,
+                minHeight: NODE_H,
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
                 textAlign: 'center',
                 fontSize: 12,
                 fontWeight: 500,
@@ -74,67 +82,77 @@ function GraphNodeCmp({ data }: { data: GraphNodeData }) {
 
 const nodeTypes = { graphNode: GraphNodeCmp };
 
+// Edge carries isDF so the layout can rank on DF edges only (E2O edges shouldn't influence left-to-right order, otherwise object nodes get pulled into the event row).
+type BuiltEdge = Edge & { data: { isDF: boolean } };
+
 function buildGraph(
     side: 'left' | 'right',
     details: OcgraphconfResult['alignment_details']
-): { nodes: Node[]; edges: Edge[] } {
+): { nodes: Node[]; edges: BuiltEdge[] } {
     if (!details) return { nodes: [], edges: [] };
 
-    const matchedKey = side === 'left' ? 'left_node_id' : 'right_node_id';
-    const matched = details.matched_nodes.map((m) => ({
-        id: String(m[matchedKey]),
-        status: 'matched' as const,
-        label: `#${m[matchedKey]}`,
-        kind: '',
-    }));
+    const graphNodes = side === 'left' ? details.left_graph_nodes : details.right_graph_nodes;
+    const graphEdges = side === 'left' ? details.left_graph_edges : details.right_graph_edges;
+    const unmatchedNodeIds = new Set(
+        side === 'left' ? details.left_unmatched_node_ids : details.right_unmatched_node_ids
+    );
+    const unmatchedEdgeIds = new Set(
+        side === 'left' ? details.left_unmatched_edge_ids : details.right_unmatched_edge_ids
+    );
 
-    const unmatchedNodes: UnmatchedNodeDetail[] =
-        side === 'left' ? details.left_unmatched_nodes : details.right_unmatched_nodes;
-    const unmatched = unmatchedNodes.map((n) => ({
+    // Every node now carries a real label + kind; status comes from id-set membership.
+    const nodes: Node[] = graphNodes.map((n) => ({
         id: String(n.id),
-        status: (side === 'left' ? 'insertion' : 'removal') as 'insertion' | 'removal',
-        label: n.label,
-        kind: n.element_type,
-    }));
-
-    const nodes: Node[] = [...matched, ...unmatched].map((n) => ({
-        id: n.id,
         type: 'graphNode',
         position: { x: 0, y: 0 },
-        data: { label: n.label, kind: n.kind, status: n.status },
+        data: {
+            label: n.label,
+            kind: n.element_type,
+            status: unmatchedNodeIds.has(n.id)
+                ? (side === 'left' ? 'insertion' : 'removal')
+                : 'matched',
+        },
     }));
 
-    const unmatchedEdges: UnmatchedEdgeDetail[] =
-        side === 'left' ? details.left_unmatched_edges : details.right_unmatched_edges;
-    const edges: Edge[] = unmatchedEdges.map((e) => {
-        const isE2O = e.label.startsWith('E2O');
+    // All edges drawn now — matched edges included. Style by element_type, not label parsing.
+    const edges: BuiltEdge[] = graphEdges.map((e) => {
+        const isE2O = e.element_type === 'e2o';
+        const isUnmatched = unmatchedEdgeIds.has(e.id);
+        const deviationColor = side === 'left' ? COLORS.insertion : COLORS.removal;
         return {
             id: `${side}-e${e.id}`,
             source: String(e.source_id),
             target: String(e.target_id),
             label: e.label,
+            data: { isDF: !isE2O },
             style: {
-                stroke: isE2O ? COLORS.object : COLORS.insertion,
+                stroke: isUnmatched ? deviationColor : (isE2O ? COLORS.object : COLORS.matchedBorder),
                 strokeWidth: 2,
-                strokeDasharray: isE2O ? '4 3' : undefined,
+                strokeDasharray: side === 'right' && isUnmatched ? '4 3' : (isE2O ? '4 3' : undefined),
             },
             labelStyle: { fontSize: 10, fill: '#6b7280' },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
+            labelBgPadding: [2, 2] as [number, number],
         };
     });
 
     return { nodes, edges };
 }
 
-function layoutNodes(nodes: Node[], edges: Edge[]): Node[] {
+function layoutNodes(nodes: Node[], edges: BuiltEdge[]): Node[] {
     const g = new dagre.graphlib.Graph();
-    g.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 70 });
+    // Generous separation so the long edge labels ("E2O (Event to Object)") don't collide.
+    g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 180, edgesep: 40 });
     g.setDefaultEdgeLabel(() => ({}));
-    nodes.forEach((n) => g.setNode(n.id, { width: 90, height: 50 }));
-    edges.forEach((e) => g.setEdge(e.source, e.target));
+    nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));
+    // Only DF edges define rank order; E2O edges just render between placed endpoints.
+    edges.filter((e) => e.data.isDF).forEach((e) => g.setEdge(e.source, e.target));
     dagre.layout(g);
     return nodes.map((n) => {
         const p = g.node(n.id);
-        return { ...n, position: { x: p.x - 45, y: p.y - 25 } };
+        // Fall back to origin if a node has no DF edges and dagre didn't place it.
+        if (!p) return { ...n, position: { x: 0, y: 0 } };
+        return { ...n, position: { x: p.x - NODE_W / 2, y: p.y - NODE_H / 2 } };
     });
 }
 
@@ -149,10 +167,13 @@ function Panel({
     side: 'left' | 'right';
     details: OcgraphconfResult['alignment_details'];
 }) {
-    const { nodes, edges } = useMemo(() => {
+    const initial = useMemo(() => {
         const built = buildGraph(side, details);
         return { nodes: layoutNodes(built.nodes, built.edges), edges: built.edges };
     }, [side, details]);
+
+    // useNodesState makes drags persist; onNodesChange feeds position updates back in.
+    const [nodes, , onNodesChange] = useNodesState(initial.nodes);
 
     return (
         <div
@@ -165,7 +186,8 @@ function Panel({
             <div className="flex-1 min-h-0">
                 <ReactFlow
                     nodes={nodes}
-                    edges={edges}
+                    edges={initial.edges}
+                    onNodesChange={onNodesChange}
                     nodeTypes={nodeTypes}
                     fitView
                     fitViewOptions={{ padding: 0.3 }}
@@ -186,7 +208,7 @@ const AlignmentViewer: React.FC = () => {
     const graphAlignmentResult = useMemo(() => {
         if (!nodeId) return null;
         const fileNode = getNode(nodeId);
-        const minerNodeId = fileNode?.data.assets.find((a) => a.io === 'output')?.id;
+        const minerNodeId = fileNode?.data?.assets?.find((a) => a.io === 'output')?.id;
         if (!minerNodeId) return null;
         return (
             (getNode(minerNodeId)?.data as MinerExploreNodeData | undefined)?.graphAlignmentResult ?? null
@@ -226,17 +248,13 @@ const AlignmentViewer: React.FC = () => {
                         <LegendItem color={COLORS.matchedBorder} bg={COLORS.matchedBg} text="matched" />
                         <LegendItem color={COLORS.insertion} bg={COLORS.insertionBg} text="insertion (in log)" />
                         <LegendItem color={COLORS.removal} bg="#fff" dashed text="removal (in model)" />
+                        <LegendLine color={COLORS.matchedBorder} text="DF (sequence)" />
+                        <LegendLine color={COLORS.object} dashed text="E2O (event→object)" />
                     </div>
 
                     <div className="flex flex-1 min-h-0">
                         <Panel title="G_L — log case" accent="#3b82f6" side="left" details={details} />
                         <Panel title="G_M — model case" accent="#f97316" side="right" details={details} />
-                    </div>
-
-                    <div className="px-4 py-2 border-t text-[11px]" style={{ color: '#92400e', background: '#fffbeb' }}>
-                        Matched nodes show only their id; matched edges are not drawn. The backend returns
-                        matched elements as bare id pairs without labels — both resolve once full-graph
-                        metadata is added.
                     </div>
                 </div>
             )}
@@ -257,6 +275,15 @@ function LegendItem({ color, bg, text, dashed }: { color: string; bg: string; te
                     display: 'inline-block',
                 }}
             />
+            {text}
+        </span>
+    );
+}
+
+function LegendLine({ color, dashed, text }: { color: string; dashed?: boolean; text: string }) {
+    return (
+        <span className="inline-flex items-center gap-1.5">
+            <span style={{ width: 20, height: 0, borderTop: `2px ${dashed ? 'dashed' : 'solid'} ${color}`, display: 'inline-block' }} />
             {text}
         </span>
     );

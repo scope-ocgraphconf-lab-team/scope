@@ -1,39 +1,13 @@
 use crate::core::ocgraphconf_case_compare::compare::AlignmentResult;
-use crate::core::ocgraphconf_case_compare::convert::{CaseGraph, CaseNodeKind, CaseEdgeType};
 use crate::core::ocgraphconf_case_compare::extract::SelectedCases;
 use crate::models::ocgraphconf_case_compare::{
     CaseAlignmentDetails, OcgraphconfCaseCompareRequest, OcgraphconfCaseCompareResponse,
-    UnmatchedNodeDetail, UnmatchedEdgeDetail,
+    NodeDetail, EdgeDetail,
 };
 use axum::http::StatusCode;
 use serde_json::Value;
 use std::collections::HashMap;
-
-//Find the Node detail using id
-fn get_node_detail(graph: &CaseGraph, id: usize) -> UnmatchedNodeDetail {
-    if let Some(node) = graph.nodes.get(&id) {
-        let (label, element_type) = match &node.kind {
-            CaseNodeKind::Event { event_type, .. } => (event_type.clone(), "event".to_string()),
-            CaseNodeKind::Object { object_type, .. } => (object_type.clone(), "object".to_string()),
-        };
-        UnmatchedNodeDetail { id, label, element_type }
-    } else {
-        UnmatchedNodeDetail { id, label: format!("Node {id}"), element_type: "unknown".to_string() }
-    }
-}
-
-//Find the Edge detail using id
-fn get_edge_detail(graph: &CaseGraph, id: usize) -> UnmatchedEdgeDetail {
-    if let Some(edge) = graph.edges.get(&id) {
-        let label = match edge.edge_type {
-            CaseEdgeType::DF => "DF (Directly Follows)".to_string(),
-            CaseEdgeType::E2O => "E2O (Event to Object)".to_string(),
-        };
-        UnmatchedEdgeDetail { id, source_id: edge.from, target_id: edge.to, label }
-    } else {
-        UnmatchedEdgeDetail { id, source_id: 0, target_id: 0, label: format!("Edge {id}") }
-    }
-}
+use crate::core::ocgraphconf_case_compare::convert::CaseGraph;
 
 pub fn build_response(
     request: &OcgraphconfCaseCompareRequest,
@@ -51,18 +25,10 @@ pub fn build_response(
     let normalizer = (left_case_size + right_case_size).max(1) as f64;
     let fitness = (1.0 - (alignment.alignment_cost / normalizer)).max(0.0);
 
-    //Using the new defined Node and Edge to build the alignment details
-    let left_unmatched_nodes = alignment.left_unmatched_node_ids.iter().map(|&id| get_node_detail(left_graph, id)).collect();
-    let right_unmatched_nodes = alignment.right_unmatched_node_ids.iter().map(|&id| get_node_detail(right_graph, id)).collect();
-    let left_unmatched_edges = alignment.left_unmatched_edge_ids.iter().map(|&id| get_edge_detail(left_graph, id)).collect();
-    let right_unmatched_edges = alignment.right_unmatched_edge_ids.iter().map(|&id| get_edge_detail(right_graph, id)).collect();
-
     Ok(OcgraphconfCaseCompareResponse {
         case_ocels_file_id: request.case_ocels_file_id.clone(),
         left_case_index: request.left_case_index,
         right_case_index: request.right_case_index,
-        left_graph: left_graph.clone(),
-        right_graph: right_graph.clone(),
         origin_file_id_ocel: attr_string(&selected_cases.attributes, "origin_file_id_ocel"),
         case_notion_type: attr_string(&selected_cases.attributes, "case_notion_type"),
         object_type: attr_string(&selected_cases.attributes, "object_type"),
@@ -85,16 +51,35 @@ pub fn build_response(
         void_node_count: alignment.left_unmatched_node_ids.len() + alignment.right_unmatched_node_ids.len(),
         void_edge_count: alignment.left_unmatched_edge_ids.len() + alignment.right_unmatched_edge_ids.len(),
         alignment_details: request.include_alignment_details.then_some(CaseAlignmentDetails {
-            matched_nodes: alignment.matched_nodes.clone(),
-            matched_edges: alignment.matched_edges.clone(),
-            left_unmatched_nodes,
-            right_unmatched_nodes,
-            left_unmatched_edges,
-            right_unmatched_edges,
+        matched_nodes: alignment.matched_nodes.clone(),
+        matched_edges: alignment.matched_edges.clone(),
+
+        left_graph_nodes: all_node_details(left_graph),
+        left_graph_edges: all_edge_details(left_graph),
+        right_graph_nodes: all_node_details(right_graph),
+        right_graph_edges: all_edge_details(right_graph),
+
+        left_unmatched_node_ids: alignment.left_unmatched_node_ids.clone(),
+        right_unmatched_node_ids: alignment.right_unmatched_node_ids.clone(),
+        left_unmatched_edge_ids: alignment.left_unmatched_edge_ids.clone(),
+        right_unmatched_edge_ids: alignment.right_unmatched_edge_ids.clone(),
         }),
     })
 }
 
 fn attr_string(attributes: &HashMap<String, Value>, key: &str) -> Option<String> {
     attributes.get(key).and_then(Value::as_str).map(ToOwned::to_owned)
+}
+
+// Full-graph descriptor arrays: every node/edge, matched or not.
+pub(crate) fn all_node_details(graph: &CaseGraph) -> Vec<NodeDetail> {
+    let mut v: Vec<NodeDetail> = graph.nodes.values().map(NodeDetail::from).collect();
+    v.sort_by_key(|n| n.id);
+    v
+}
+
+pub(crate) fn all_edge_details(graph: &CaseGraph) -> Vec<EdgeDetail> {
+    let mut v: Vec<EdgeDetail> = graph.edges.values().map(EdgeDetail::from).collect();
+    v.sort_by_key(|e| e.id);
+    v
 }

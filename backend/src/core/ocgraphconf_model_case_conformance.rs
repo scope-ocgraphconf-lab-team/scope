@@ -6,8 +6,9 @@ use crate::core::ocgraphconf_case_compare::{
 use crate::core::ocpn_conversion::{ConvertOcptToOcpnError, convert_ocpt_to_ocpn};
 use crate::core::struct_converters::ocpn_ocgraphconf::backend_to_ocgraphconf;
 use crate::models::ocgraphconf_case_compare::{
-    CaseAlignmentDetails, UnmatchedNodeDetail, UnmatchedEdgeDetail,
+    CaseAlignmentDetails
 };
+use crate::core::ocgraphconf_case_compare::metrics::{all_node_details, all_edge_details};
 use crate::models::ocgraphconf_model_case_conformance::{
     OcgraphconfModelCaseConformanceRequest, OcgraphconfModelCaseConformanceResponse,
 };
@@ -186,30 +187,6 @@ async fn load_backend_ocpn(
     }
 }
 
-fn get_node_detail(graph: &CaseGraph, id: usize) -> UnmatchedNodeDetail {
-    if let Some(node) = graph.nodes.get(&id) {
-        let (label, element_type) = match &node.kind {
-            convert::CaseNodeKind::Event { event_type, .. } => (event_type.clone(), "event".to_string()),
-            convert::CaseNodeKind::Object { object_type, .. } => (object_type.clone(), "object".to_string()),
-        };
-        UnmatchedNodeDetail { id, label, element_type }
-    } else {
-        UnmatchedNodeDetail { id, label: format!("Node {id}"), element_type: "unknown".to_string() }
-    }
-}
-
-fn get_edge_detail(graph: &CaseGraph, id: usize) -> UnmatchedEdgeDetail {
-    if let Some(edge) = graph.edges.get(&id) {
-        let label = match edge.edge_type {
-            convert::CaseEdgeType::DF => "DF".to_string(),
-            convert::CaseEdgeType::E2O => "E2O".to_string(),
-        };
-        UnmatchedEdgeDetail { id, source_id: edge.from, target_id: edge.to, label }
-    } else {
-        UnmatchedEdgeDetail { id, source_id: 0, target_id: 0, label: format!("Edge {id}") }
-    }
-}
-
 fn build_response(
     model_kind: ModelKind,
     model_file_id: &str,
@@ -227,11 +204,6 @@ fn build_response(
     let model_case_size = model_case_nodes + model_case_edges;
     let normalizer = (case_size + model_case_size).max(1) as f64;
     let fitness = (1.0 - (alignment.alignment_cost / normalizer)).max(0.0);
-
-    let left_unmatched_nodes = alignment.left_unmatched_node_ids.iter().map(|&id| get_node_detail(case_graph, id)).collect();
-    let right_unmatched_nodes = alignment.right_unmatched_node_ids.iter().map(|&id| get_node_detail(model_case_graph, id)).collect();
-    let left_unmatched_edges = alignment.left_unmatched_edge_ids.iter().map(|&id| get_edge_detail(case_graph, id)).collect();
-    let right_unmatched_edges = alignment.right_unmatched_edge_ids.iter().map(|&id| get_edge_detail(model_case_graph, id)).collect();
 
     Ok(OcgraphconfModelCaseConformanceResponse {
         model_kind: model_kind.as_str().to_string(),
@@ -261,16 +233,20 @@ fn build_response(
             + alignment.right_unmatched_node_ids.len(),
         void_edge_count: alignment.left_unmatched_edge_ids.len()
             + alignment.right_unmatched_edge_ids.len(),
-        alignment_details: request
-            .include_alignment_details
-            .then_some(CaseAlignmentDetails {
-                matched_nodes: alignment.matched_nodes.clone(),
-                matched_edges: alignment.matched_edges.clone(),
-                left_unmatched_nodes,
-                right_unmatched_nodes,
-                left_unmatched_edges,
-                right_unmatched_edges,
-            }),
+        alignment_details: request.include_alignment_details.then_some(CaseAlignmentDetails {
+        matched_nodes: alignment.matched_nodes.clone(),
+        matched_edges: alignment.matched_edges.clone(),
+
+        left_graph_nodes: all_node_details(case_graph),
+        left_graph_edges: all_edge_details(case_graph),
+        right_graph_nodes: all_node_details(model_case_graph),
+        right_graph_edges: all_edge_details(model_case_graph),
+
+        left_unmatched_node_ids: alignment.left_unmatched_node_ids.clone(),
+        right_unmatched_node_ids: alignment.right_unmatched_node_ids.clone(),
+        left_unmatched_edge_ids: alignment.left_unmatched_edge_ids.clone(),
+        right_unmatched_edge_ids: alignment.right_unmatched_edge_ids.clone(),
+        }),
     })
 }
 

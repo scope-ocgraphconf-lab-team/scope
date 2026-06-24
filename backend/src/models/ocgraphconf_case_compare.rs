@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::core::ocgraphconf_case_compare::convert::CaseGraph;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OcgraphconfCaseCompareRequest {
     pub case_ocels_file_id: String,
     pub left_case_index: usize,
@@ -10,7 +9,7 @@ pub struct OcgraphconfCaseCompareRequest {
     pub include_alignment_details: bool,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OcgraphconfCaseCompareResponse {
     pub case_ocels_file_id: String,
     pub left_case_index: usize,
@@ -42,45 +41,50 @@ pub struct OcgraphconfCaseCompareResponse {
     pub void_edge_count: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alignment_details: Option<CaseAlignmentDetails>,
-    pub left_graph: CaseGraph,
-    pub right_graph: CaseGraph,
 }
 
 //define new Node and Edge
-#[derive(Debug, Clone, Serialize)]
-pub struct UnmatchedNodeDetail {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NodeDetail {
     pub id: usize,
     pub label: String,
-    pub element_type: String, //"event" OR "object"
+    pub element_type: String, // "event" | "object"
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct UnmatchedEdgeDetail {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EdgeDetail {
     pub id: usize,
     pub source_id: usize,
     pub target_id: usize,
+    pub element_type: String, // "df" | "e2o"
     pub label: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaseAlignmentDetails {
     pub matched_nodes: Vec<NodeMatch>,
     pub matched_edges: Vec<EdgeMatch>,
-    
-    // use the new difined Node and Edge
-    pub left_unmatched_nodes: Vec<UnmatchedNodeDetail>,
-    pub right_unmatched_nodes: Vec<UnmatchedNodeDetail>,
-    pub left_unmatched_edges: Vec<UnmatchedEdgeDetail>,
-    pub right_unmatched_edges: Vec<UnmatchedEdgeDetail>,
+
+    // Full-graph arrays — every node/edge, matched or not (Option 1, uniform)
+    pub left_graph_nodes: Vec<NodeDetail>,
+    pub left_graph_edges: Vec<EdgeDetail>,
+    pub right_graph_nodes: Vec<NodeDetail>,
+    pub right_graph_edges: Vec<EdgeDetail>,
+
+    // Unmatched = id lists only; details are looked up in the full arrays
+    pub left_unmatched_node_ids: Vec<usize>,
+    pub right_unmatched_node_ids: Vec<usize>,
+    pub left_unmatched_edge_ids: Vec<usize>,
+    pub right_unmatched_edge_ids: Vec<usize>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NodeMatch {
     pub left_node_id: usize,
     pub right_node_id: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EdgeMatch {
     pub left_edge_id: usize,
     pub right_edge_id: usize,

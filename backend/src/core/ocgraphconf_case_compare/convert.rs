@@ -210,3 +210,43 @@ where
         items
     }
 }
+
+use crate::models::ocgraphconf_case_compare::{NodeDetail, EdgeDetail};
+
+impl CaseEdgeType {
+    // Single definition of the long-form display label — can't diverge across paths.
+    pub fn display_label(&self) -> &'static str {
+        match self {
+            CaseEdgeType::DF => "DF (Directly Follows)",
+            CaseEdgeType::E2O => "E2O (Event to Object)",
+        }
+    }
+    pub fn element_type(&self) -> &'static str {
+        match self {
+            CaseEdgeType::DF => "df",
+            CaseEdgeType::E2O => "e2o",
+        }
+    }
+}
+
+impl From<&CaseNode> for NodeDetail {
+    fn from(node: &CaseNode) -> Self {
+        let (label, element_type) = match &node.kind {
+            CaseNodeKind::Event { event_type, .. } => (event_type.clone(), "event"),
+            CaseNodeKind::Object { object_type, .. } => (object_type.clone(), "object"),
+        };
+        NodeDetail { id: node.id, label, element_type: element_type.to_string() }
+    }
+}
+
+impl From<&CaseEdge> for EdgeDetail {
+    fn from(edge: &CaseEdge) -> Self {
+        EdgeDetail {
+            id: edge.id,
+            source_id: edge.from,
+            target_id: edge.to,
+            element_type: edge.edge_type.element_type().to_string(),
+            label: edge.edge_type.display_label().to_string(),
+        }
+    }
+}
