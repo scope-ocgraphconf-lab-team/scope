@@ -1,0 +1,45 @@
+{
+  "objectTypes": [
+    { "name": "Orders", "attributes": [] },
+    { "name": "Items", "attributes": [] }
+  ],
+  "eventTypes": [
+    { "name": "A", "attributes": [] },
+    { "name": "B", "attributes": [] }
+  ],
+  "objects": [
+    {
+      "id": "o-1",
+      "type": "Orders",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "i-1", "qualifier": "comprises" },
+        { "objectId": "i-2", "qualifier": "comprises" }
+      ]
+    },
+    { "id": "i-1", "type": "Items", "attributes": [], "relationships": [] },
+    { "id": "i-2", "type": "Items", "attributes": [], "relationships": [] }
+  ],
+  "events": [
+    {
+      "id": "A_o-1",
+      "type": "A",
+      "time": "2024-01-01T08:00:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "o-1", "qualifier": "order" },
+        { "objectId": "i-1", "qualifier": "item" },
+        { "objectId": "i-2", "qualifier": "item" }
+      ]
+    },
+    {
+      "id": "B_o-1",
+      "type": "B",
+      "time": "2024-01-01T09:00:00.000Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "o-1", "qualifier": "order" }
+      ]
+    }
+  ]
+}
