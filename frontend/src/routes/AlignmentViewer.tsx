@@ -20,8 +20,8 @@ import type {
 } from '~/services/api';
 
 const COLORS = {
-    matchedBorder: '#6b7280',
-    matchedBg: '#f3f4f6',
+    matchedBorder: '#d97706',
+    matchedBg: '#fef9c3',
     insertion: '#16a34a',
     insertionBg: '#dcfce7',
     removal: '#9ca3af',
