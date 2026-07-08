@@ -7,6 +7,7 @@ import {
     Handle,
     Position,
     useNodesState,
+    MarkerType,
     type Node,
     type Edge,
 } from '@xyflow/react';
@@ -129,6 +130,10 @@ function buildGraph(
                 stroke: isUnmatched ? deviationColor : (isE2O ? COLORS.object : COLORS.matchedBorder),
                 strokeWidth: 2,
                 strokeDasharray: side === 'right' && isUnmatched ? '4 3' : (isE2O ? '4 3' : undefined),
+            },
+            markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: isUnmatched ? deviationColor : (isE2O ? COLORS.object : COLORS.matchedBorder),
             },
             labelStyle: { fontSize: 10, fill: '#6b7280' },
             labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
