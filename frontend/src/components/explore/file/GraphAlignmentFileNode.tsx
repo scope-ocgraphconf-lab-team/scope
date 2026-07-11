@@ -24,6 +24,21 @@ const GraphAlignmentFileNode = (props: NodeProps<FileNode>) => {
         : undefined;
 
     const r = graphAlignmentResult?.ocgraphconf;
+    // Model-case and case-case responses name the same counts differently; pick
+    // the right field per mode so neither path renders "undefined".
+    const isCaseCase = graphAlignmentResult?.mode === 'case-case';
+    const nodeIns = isCaseCase ? r?.left_unmatched_node_count : r?.case_unmatched_node_count;
+    const nodeRem = isCaseCase ? r?.right_unmatched_node_count : r?.model_case_unmatched_node_count;
+    const edgeIns = isCaseCase ? r?.left_unmatched_edge_count : r?.case_unmatched_edge_count;
+    const edgeRem = isCaseCase ? r?.right_unmatched_edge_count : r?.model_case_unmatched_edge_count;
+
+    // A short description of what this alignment compares, so the user knows
+    // what "View alignment" will open. Cases shown 1-based to match the selector.
+    const comparedLabel = !r
+        ? null
+        : isCaseCase
+          ? `Case ${(r.left_case_index ?? 0) + 1} vs Case ${(r.right_case_index ?? 0) + 1}`
+          : `Case ${(r.case_index ?? 0) + 1} vs model`;
 
     return (
         <BaseFileNode
@@ -36,6 +51,12 @@ const GraphAlignmentFileNode = (props: NodeProps<FileNode>) => {
             {r && (
                 <div className="mt-2 border-t pt-2 flex flex-col gap-2">
                     <div className="flex flex-col gap-1 text-xs">
+                        {comparedLabel && (
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Compared</span>
+                                <span className="font-semibold">{comparedLabel}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between">
                             <span className="text-gray-500">Alignment cost</span>
                             <span className="font-semibold">{r.alignment_cost}</span>
@@ -47,15 +68,13 @@ const GraphAlignmentFileNode = (props: NodeProps<FileNode>) => {
                         <div className="mt-1 flex justify-between">
                             <span className="text-gray-500">Nodes (matched / ins / rem)</span>
                             <span className="font-semibold">
-                                {r.matched_node_count} / {r.case_unmatched_node_count} /{' '}
-                                {r.model_case_unmatched_node_count}
+                                {r.matched_node_count} / {nodeIns ?? 0} / {nodeRem ?? 0}
                             </span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500">Edges (matched / ins / rem)</span>
                             <span className="font-semibold">
-                                {r.matched_edge_count} / {r.case_unmatched_edge_count} /{' '}
-                                {r.model_case_unmatched_edge_count}
+                                {r.matched_edge_count} / {edgeIns ?? 0} / {edgeRem ?? 0}
                             </span>
                         </div>
                     </div>

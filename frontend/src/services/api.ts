@@ -300,6 +300,8 @@ export interface OcgraphconfResult {
     model_file_id: string;
     case_ocels_file_id: string;
     case_index: number;
+    left_case_index?: number;
+    right_case_index?: number;
     origin_file_id_ocel: string;
     case_notion_type: string;
     object_type: string;
@@ -319,6 +321,14 @@ export interface OcgraphconfResult {
     model_case_unmatched_node_count: number;
     case_unmatched_edge_count: number;
     model_case_unmatched_edge_count: number;
+    left_case_nodes?: number;
+    left_case_edges?: number;
+    right_case_nodes?: number;
+    right_case_edges?: number;
+    left_unmatched_node_count?: number;
+    right_unmatched_node_count?: number;
+    left_unmatched_edge_count?: number;
+    right_unmatched_edge_count?: number;
     void_node_count: number;
     void_edge_count: number;
     alignment_details: OcgraphconfAlignmentDetails | null;

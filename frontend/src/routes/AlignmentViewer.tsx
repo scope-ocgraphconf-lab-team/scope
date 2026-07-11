@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
     ReactFlow,
@@ -13,12 +13,17 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from '@dagrejs/dagre';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import BreadcrumbNav from '~/components/BreadcrumbNav';
+import { CaseSelector } from '~/components/CaseSelector';
 import { useExploreFlowStore } from '~/stores/exploreStore';
+import {
+    useGetConformanceOcptCaseOcelsOcgraphconf,
+    useGetConformanceCaseCaseOcgraphconf,
+    useGetOcelCollection,
+} from '~/services/queries';
 import type { MinerExploreNodeData } from '~/types/explore/nodeData/minerNodeData';
-import type {
-    OcgraphconfResult,
-} from '~/services/api';
+import type { OcgraphconfResult } from '~/services/api';
 
 const COLORS = {
     matchedBorder: '#d97706',
@@ -178,7 +183,13 @@ function Panel({
     }, [side, details]);
 
     // useNodesState makes drags persist; onNodesChange feeds position updates back in.
-    const [nodes, , onNodesChange] = useNodesState(initial.nodes);
+    const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
+
+    // When the alignment result changes (e.g. the user picked a different case),
+    // reset the nodes to the freshly laid-out graph instead of keeping stale drags.
+    useEffect(() => {
+        setNodes(initial.nodes);
+    }, [initial.nodes, setNodes]);
 
     return (
         <div
@@ -206,11 +217,175 @@ function Panel({
     );
 }
 
+// ── Sidebar ────────────────────────────────────────────────────────────────
+// Cost / fitness / precision plus the node/edge deviation breakdown, and the
+// case-index selector(s) that let the user re-run the alignment against a
+// different case. Visual language matches DeviationSidebar (collapsible right
+// panel, muted uppercase section headers).
+
+function StatRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+    return (
+        <div className="flex items-baseline justify-between text-xs">
+            <span className="text-muted-foreground">{label}</span>
+            <span className="font-semibold" style={valueColor ? { color: valueColor } : undefined}>
+                {value}
+            </span>
+        </div>
+    );
+}
+
+function AlignmentSidebar({
+    open,
+    onToggle,
+    mode,
+    result,
+    isFetching,
+    caseCount,
+    leftIndex,
+    rightIndex,
+    onSelectLeft,
+    onSelectRight,
+}: {
+    open: boolean;
+    onToggle: () => void;
+    mode: 'ocpt-case-ocels' | 'case-case';
+    result: OcgraphconfResult;
+    isFetching: boolean;
+    caseCount: number;
+    leftIndex: number;
+    rightIndex: number;
+    onSelectLeft: (i: number) => void;
+    onSelectRight: (i: number) => void;
+}) {
+    const fitnessPct = `${(result.fitness * 100).toFixed(1)}%`;
+    // Precision is still null on the backend; hide the row entirely rather than
+    // showing a permanent placeholder. It reappears once the field is populated.
+    const hasPrecision = result.precision != null;
+
+    // The two backend paths name the same quantities differently: model-case
+    // uses case_/model_case_, case-case uses left_/right_. Normalize here so the
+    // rows below always read defined numbers regardless of mode.
+    const isCaseCase = mode === 'case-case';
+    const nodeInsertions = isCaseCase ? result.left_unmatched_node_count : result.case_unmatched_node_count;
+    const nodeRemovals = isCaseCase ? result.right_unmatched_node_count : result.model_case_unmatched_node_count;
+    const edgeInsertions = isCaseCase ? result.left_unmatched_edge_count : result.case_unmatched_edge_count;
+    const edgeRemovals = isCaseCase ? result.right_unmatched_edge_count : result.model_case_unmatched_edge_count;
+    const leftNodes = isCaseCase ? result.left_case_nodes : result.case_nodes;
+    const rightNodes = isCaseCase ? result.right_case_nodes : result.model_case_nodes;
+    const leftEdges = isCaseCase ? result.left_case_edges : result.case_edges;
+    const rightEdges = isCaseCase ? result.right_case_edges : result.model_case_edges;
+
+    return (
+        <div
+            className={`absolute right-0 top-0 h-full flex z-10 transition-transform duration-200 ease-in-out ${
+                open ? 'translate-x-0' : 'translate-x-72'
+            }`}
+        >
+            <button
+                onClick={onToggle}
+                className="self-start mt-4 flex items-center justify-center w-6 h-8 rounded-l-md border border-r-0 bg-background shadow-md hover:bg-muted transition-colors"
+                title={open ? 'Collapse panel' : 'Expand panel'}
+            >
+                {open ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+            </button>
+
+            <div className="w-72 h-full bg-background border-l shadow-lg flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-4">
+                    {/* Case selection */}
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                {mode === 'case-case' ? 'Cases Compared' : 'Case Checked'}
+                            </p>
+                            {isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                        </div>
+
+                        {mode === 'case-case' ? (
+                            <>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs text-muted-foreground">Left case (G_L)</span>
+                                    <CaseSelector
+                                        caseCount={caseCount}
+                                        selectedCaseIndex={leftIndex}
+                                        onSelect={onSelectLeft}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs text-muted-foreground">Right case (G_M)</span>
+                                    <CaseSelector
+                                        caseCount={caseCount}
+                                        selectedCaseIndex={rightIndex}
+                                        onSelect={onSelectRight}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col gap-1">
+                                <span className="text-xs text-muted-foreground">
+                                    Case compared against the model
+                                </span>
+                                <CaseSelector
+                                    caseCount={caseCount}
+                                    selectedCaseIndex={leftIndex}
+                                    onSelect={onSelectLeft}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Alignment metrics */}
+                    <div className="flex flex-col gap-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Alignment
+                        </p>
+                        <StatRow label="GED cost" value={String(result.alignment_cost)} />
+                        <StatRow label="Fitness" value={fitnessPct} />
+                         {hasPrecision && (
+                            <StatRow label="Precision" value={`${(result.precision! * 100).toFixed(1)}%`} />
+                        )}
+                    </div>
+
+                    {/* Node breakdown */}
+                    <div className="flex flex-col gap-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Nodes
+                        </p>
+                        <StatRow label="Matched" value={String(result.matched_node_count)} valueColor={COLORS.matchedBorder} />
+                        <StatRow label={isCaseCase ? 'Only in left' : 'Insertions (log)'} value={String(nodeInsertions ?? 0)} valueColor={COLORS.insertion} />
+                        <StatRow label={isCaseCase ? 'Only in right' : 'Removals (model)'} value={String(nodeRemovals ?? 0)} valueColor={COLORS.removal} />
+                        <div className="border-t pt-1 flex justify-between text-xs">
+                            <span className="text-muted-foreground">G_L / G_M total</span>
+                            <span className="font-semibold">{leftNodes ?? 0} / {rightNodes ?? 0}</span>
+                        </div>
+                    </div>
+
+                    {/* Edge breakdown */}
+                    <div className="flex flex-col gap-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Edges
+                        </p>
+                        <StatRow label="Matched" value={String(result.matched_edge_count)} valueColor={COLORS.matchedBorder} />
+                        <StatRow label={isCaseCase ? 'Only in left' : 'Insertions (log)'} value={String(edgeInsertions ?? 0)} valueColor={COLORS.insertion} />
+                        <StatRow label={isCaseCase ? 'Only in right' : 'Removals (model)'} value={String(edgeRemovals ?? 0)} valueColor={COLORS.removal} />
+                        <div className="border-t pt-1 flex justify-between text-xs">
+                            <span className="text-muted-foreground">G_L / G_M total</span>
+                            <span className="font-semibold">{leftEdges ?? 0} / {rightEdges ?? 0}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 const AlignmentViewer: React.FC = () => {
     const { nodeId } = useParams<{ nodeId: string }>();
     const getNode = useExploreFlowStore((s) => s.getNode);
 
-    const graphAlignmentResult = useMemo(() => {
+    // The miner node computed an initial alignment and stashed it (with the
+    // input ids and mode) in the store. We seed from that, then let the viewer
+    // own the case indices and re-fetch as they change.
+    const stored = useMemo(() => {
         if (!nodeId) return null;
         const fileNode = getNode(nodeId);
         const minerNodeId = fileNode?.data?.assets?.find((a) => a.io === 'output')?.id;
@@ -220,49 +395,86 @@ const AlignmentViewer: React.FC = () => {
         );
     }, [nodeId, getNode]);
 
-    const r = graphAlignmentResult?.ocgraphconf ?? null;
+    const mode = stored?.mode ?? null;
+    const collectionId = stored?.inputA.id ?? null;
+    const modelId = stored?.mode === 'ocpt-case-ocels' ? stored.inputA.id : null;
+    // For ocpt-case the collection is inputB; for case-case it's inputA.
+    const caseCollectionId =
+        stored?.mode === 'ocpt-case-ocels' ? stored?.inputB.id ?? null : collectionId;
+
+    // Indices, seeded from whatever the miner originally computed.
+    const [leftIndex, setLeftIndex] = useState<number>(stored?.ocgraphconf.case_index ?? 0);
+    const [rightIndex, setRightIndex] = useState<number>(1);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+
+    // How many cases the collection holds — bounds the selector.
+    const { data: collection } = useGetOcelCollection(caseCollectionId);
+    const caseCount = collection?.case_ocels.length ?? 0;
+
+    // Viewer-owned fetches. Only the hook matching the current mode is enabled.
+    const ocptQuery = useGetConformanceOcptCaseOcelsOcgraphconf(
+        mode === 'ocpt-case-ocels' ? modelId : null,
+        mode === 'ocpt-case-ocels' ? caseCollectionId : null,
+        leftIndex
+    );
+    const caseQuery = useGetConformanceCaseCaseOcgraphconf(
+        mode === 'case-case' ? caseCollectionId : null,
+        mode === 'case-case' ? leftIndex : null,
+        mode === 'case-case' ? rightIndex : null
+    );
+
+    // Prefer the live query result; fall back to the miner's stored result on
+    // first paint before the viewer's own fetch resolves.
+    const liveResult = mode === 'ocpt-case-ocels' ? ocptQuery.data : caseQuery.data;
+    const isFetching = mode === 'ocpt-case-ocels' ? ocptQuery.isFetching : caseQuery.isFetching;
+    const r = liveResult ?? stored?.ocgraphconf ?? null;
     const details = r?.alignment_details ?? null;
+
+    if (!stored || !r || !mode) {
+        return (
+            <div className="flex flex-col h-screen w-full">
+                <BreadcrumbNav />
+                <div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
+                    No alignment result. Run the OCGraph Conformance node first.
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-screen w-full">
             <BreadcrumbNav />
 
-            {!r ? (
-                <div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
-                    No alignment result. Run the OCGraph Conformance node first.
+            <div className="flex flex-col flex-1 min-h-0 relative">
+                <div className="flex gap-4 px-4 py-1.5 border-b text-[11px] text-gray-500 items-center flex-wrap">
+                    <LegendItem color={COLORS.matchedBorder} bg={COLORS.matchedBg} text="matched" />
+                    <LegendItem color={COLORS.insertion} bg={COLORS.insertionBg} text="insertion (in log)" />
+                    <LegendItem color={COLORS.removal} bg="#fff" dashed text="removal (in model)" />
+                    <LegendLine color={COLORS.matchedBorder} text="DF (sequence)" />
+                    <LegendLine color={COLORS.object} dashed text="E2O (event→object)" />
                 </div>
-            ) : (
-                <div className="flex flex-col flex-1 min-h-0">
-                    <div className="flex gap-6 px-4 py-2.5 border-b text-xs items-center flex-wrap">
-                        <strong className="text-sm">Alignment</strong>
-                        <span>Cost <b>{r.alignment_cost}</b></span>
-                        <span>Fitness <b>{(r.fitness * 100).toFixed(1)}%</b></span>
-                        <span>
-                            Nodes <b>{r.matched_node_count}</b> matched /{' '}
-                            <b style={{ color: COLORS.insertion }}>{r.case_unmatched_node_count}</b> ins /{' '}
-                            <b>{r.model_case_unmatched_node_count}</b> rem
-                        </span>
-                        <span>
-                            Edges <b>{r.matched_edge_count}</b> matched /{' '}
-                            <b style={{ color: COLORS.insertion }}>{r.case_unmatched_edge_count}</b> ins /{' '}
-                            <b>{r.model_case_unmatched_edge_count}</b> rem
-                        </span>
-                    </div>
 
-                    <div className="flex gap-4 px-4 py-1.5 border-b text-[11px] text-gray-500 items-center flex-wrap">
-                        <LegendItem color={COLORS.matchedBorder} bg={COLORS.matchedBg} text="matched" />
-                        <LegendItem color={COLORS.insertion} bg={COLORS.insertionBg} text="insertion (in log)" />
-                        <LegendItem color={COLORS.removal} bg="#fff" dashed text="removal (in model)" />
-                        <LegendLine color={COLORS.matchedBorder} text="DF (sequence)" />
-                        <LegendLine color={COLORS.object} dashed text="E2O (event→object)" />
-                    </div>
-
-                    <div className="flex flex-1 min-h-0">
+                <div className="flex flex-1 min-h-0">
+                    {/* Right padding so graphs aren't hidden behind the open sidebar. */}
+                    <div className={`flex flex-1 min-h-0 transition-all duration-200 ${sidebarOpen ? 'mr-72' : 'mr-0'}`}>
                         <Panel title="G_L — log case" accent="#3b82f6" side="left" details={details} />
                         <Panel title="G_M — model case" accent="#f97316" side="right" details={details} />
                     </div>
+
+                    <AlignmentSidebar
+                        open={sidebarOpen}
+                        onToggle={() => setSidebarOpen((o) => !o)}
+                        mode={mode}
+                        result={r}
+                        isFetching={isFetching}
+                        caseCount={caseCount}
+                        leftIndex={leftIndex}
+                        rightIndex={rightIndex}
+                        onSelectLeft={setLeftIndex}
+                        onSelectRight={setRightIndex}
+                    />
                 </div>
-            )}
+            </div>
         </div>
     );
 };
