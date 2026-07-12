@@ -34,7 +34,6 @@ const COLORS = {
     object: '#f59e0b',
 };
 
-// Node box size — kept in one place so the renderer and the dagre layout agree.
 const NODE_W = 120;
 const NODE_H = 60;
 
@@ -88,7 +87,6 @@ function GraphNodeCmp({ data }: { data: GraphNodeData }) {
 
 const nodeTypes = { graphNode: GraphNodeCmp };
 
-// Edge carries isDF so the layout can rank on DF edges only (E2O edges shouldn't influence left-to-right order, otherwise object nodes get pulled into the event row).
 type BuiltEdge = Edge & { data: { isDF: boolean } };
 
 function buildGraph(
@@ -106,7 +104,6 @@ function buildGraph(
         side === 'left' ? details.left_unmatched_edge_ids : details.right_unmatched_edge_ids
     );
 
-    // Every node now carries a real label + kind; status comes from id-set membership.
     const nodes: Node[] = graphNodes.map((n) => ({
         id: String(n.id),
         type: 'graphNode',
@@ -120,7 +117,6 @@ function buildGraph(
         },
     }));
 
-    // All edges drawn now — matched edges included. Style by element_type, not label parsing.
     const edges: BuiltEdge[] = graphEdges.map((e) => {
         const isE2O = e.element_type === 'e2o';
         const isUnmatched = unmatchedEdgeIds.has(e.id);
@@ -149,21 +145,150 @@ function buildGraph(
     return { nodes, edges };
 }
 
+function buildMergedGraph(
+    details: OcgraphconfResult['alignment_details']
+): { nodes: Node[]; edges: BuiltEdge[] } {
+    if (!details) return { nodes: [], edges: [] };
+
+    const leftUnmatched = new Set(details.left_unmatched_node_ids);
+    const rightUnmatched = new Set(details.right_unmatched_node_ids);
+    const leftEdgeUnmatched = new Set(details.left_unmatched_edge_ids);
+    const rightEdgeUnmatched = new Set(details.right_unmatched_edge_ids);
+
+    const matchedNodes: Node[] = details.left_graph_nodes
+        .filter((n) => !leftUnmatched.has(n.id))
+        .map((n) => ({
+            id: `m-${n.id}`,
+            type: 'graphNode',
+            position: { x: 0, y: 0 },
+            data: { label: n.label, kind: n.element_type, status: 'matched' as const },
+        }));
+
+    const leftNodes: Node[] = details.left_graph_nodes
+        .filter((n) => leftUnmatched.has(n.id))
+        .map((n) => ({
+            id: `l-${n.id}`,
+            type: 'graphNode',
+            position: { x: 0, y: 0 },
+            data: { label: n.label, kind: n.element_type, status: 'insertion' as const },
+        }));
+
+    const rightNodes: Node[] = details.right_graph_nodes
+        .filter((n) => rightUnmatched.has(n.id))
+        .map((n) => ({
+            id: `r-${n.id}`,
+            type: 'graphNode',
+            position: { x: 0, y: 0 },
+            data: { label: n.label, kind: n.element_type, status: 'removal' as const },
+        }));
+
+    const nodes = [...matchedNodes, ...leftNodes, ...rightNodes];
+
+    const resolveId = (id: number, isLeft: boolean, unmatchedSet: Set<number>) => {
+        if (unmatchedSet.has(id)) return isLeft ? `l-${id}` : `r-${id}`;
+        return `m-${id}`;
+    };
+
+    const matchedEdges: BuiltEdge[] = details.left_graph_edges
+        .filter((e) => !leftEdgeUnmatched.has(e.id))
+        .map((e) => ({
+            id: `me-${e.id}`,
+            source: resolveId(e.source_id, true, leftUnmatched),
+            target: resolveId(e.target_id, true, leftUnmatched),
+            label: e.label,
+            data: { isDF: e.element_type !== 'e2o' },
+            style: {
+                stroke: e.element_type === 'e2o' ? COLORS.object : COLORS.matchedBorder,
+                strokeWidth: 2,
+                strokeDasharray: e.element_type === 'e2o' ? '4 3' : undefined,
+            },
+            markerEnd: { type: MarkerType.ArrowClosed, color: e.element_type === 'e2o' ? COLORS.object : COLORS.matchedBorder },
+            labelStyle: { fontSize: 10, fill: '#6b7280' },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
+            labelBgPadding: [2, 2] as [number, number],
+        }));
+
+    const leftEdges: BuiltEdge[] = details.left_graph_edges
+        .filter((e) => leftEdgeUnmatched.has(e.id))
+        .map((e) => ({
+            id: `le-${e.id}`,
+            source: resolveId(e.source_id, true, leftUnmatched),
+            target: resolveId(e.target_id, true, leftUnmatched),
+            label: e.label,
+            data: { isDF: e.element_type !== 'e2o' },
+            style: { stroke: COLORS.insertion, strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.insertion },
+            labelStyle: { fontSize: 10, fill: '#6b7280' },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
+            labelBgPadding: [2, 2] as [number, number],
+        }));
+
+    const rightEdges: BuiltEdge[] = details.right_graph_edges
+        .filter((e) => rightEdgeUnmatched.has(e.id))
+        .map((e) => ({
+            id: `re-${e.id}`,
+            source: resolveId(e.source_id, false, rightUnmatched),
+            target: resolveId(e.target_id, false, rightUnmatched),
+            label: e.label,
+            data: { isDF: e.element_type !== 'e2o' },
+            style: { stroke: COLORS.removal, strokeWidth: 2, strokeDasharray: '4 3' },
+            markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.removal },
+            labelStyle: { fontSize: 10, fill: '#6b7280' },
+            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
+            labelBgPadding: [2, 2] as [number, number],
+        }));
+
+    const edges = [...matchedEdges, ...leftEdges, ...rightEdges];
+    return { nodes, edges };
+}
+
 function layoutNodes(nodes: Node[], edges: BuiltEdge[]): Node[] {
     const g = new dagre.graphlib.Graph();
-    // Generous separation so the long edge labels ("E2O (Event to Object)") don't collide.
     g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 180, edgesep: 40 });
     g.setDefaultEdgeLabel(() => ({}));
     nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));
-    // Only DF edges define rank order; E2O edges just render between placed endpoints.
     edges.filter((e) => e.data.isDF).forEach((e) => g.setEdge(e.source, e.target));
     dagre.layout(g);
     return nodes.map((n) => {
         const p = g.node(n.id);
-        // Fall back to origin if a node has no DF edges and dagre didn't place it.
         if (!p) return { ...n, position: { x: 0, y: 0 } };
         return { ...n, position: { x: p.x - NODE_W / 2, y: p.y - NODE_H / 2 } };
     });
+}
+
+function MergedPanel({ details }: { details: OcgraphconfResult['alignment_details'] }) {
+    const initial = useMemo(() => {
+        const built = buildMergedGraph(details);
+        return { nodes: layoutNodes(built.nodes, built.edges), edges: built.edges };
+    }, [details]);
+
+    const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
+
+    useEffect(() => {
+        setNodes(initial.nodes);
+    }, [initial.nodes, setNodes]);
+
+    return (
+        <div className="flex flex-col flex-1 min-h-0">
+            <div className="px-3 py-1.5 text-xs font-semibold border-b shrink-0" style={{ color: '#6b7280' }}>
+                Merged alignment graph
+            </div>
+            <div className="flex-1 min-h-0">
+                <ReactFlow
+                    nodes={nodes}
+                    edges={initial.edges}
+                    onNodesChange={onNodesChange}
+                    nodeTypes={nodeTypes}
+                    fitView
+                    fitViewOptions={{ padding: 0.3 }}
+                    proOptions={{ hideAttribution: true }}
+                >
+                    <Background gap={16} color="#f1f5f9" />
+                    <Controls showInteractive={false} />
+                </ReactFlow>
+            </div>
+        </div>
+    );
 }
 
 function Panel({
@@ -182,11 +307,8 @@ function Panel({
         return { nodes: layoutNodes(built.nodes, built.edges), edges: built.edges };
     }, [side, details]);
 
-    // useNodesState makes drags persist; onNodesChange feeds position updates back in.
     const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
 
-    // When the alignment result changes (e.g. the user picked a different case),
-    // reset the nodes to the freshly laid-out graph instead of keeping stale drags.
     useEffect(() => {
         setNodes(initial.nodes);
     }, [initial.nodes, setNodes]);
@@ -216,12 +338,6 @@ function Panel({
         </div>
     );
 }
-
-// ── Sidebar ────────────────────────────────────────────────────────────────
-// Cost / fitness / precision plus the node/edge deviation breakdown, and the
-// case-index selector(s) that let the user re-run the alignment against a
-// different case. Visual language matches DeviationSidebar (collapsible right
-// panel, muted uppercase section headers).
 
 function StatRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
     return (
@@ -258,13 +374,7 @@ function AlignmentSidebar({
     onSelectRight: (i: number) => void;
 }) {
     const fitnessPct = `${(result.fitness * 100).toFixed(1)}%`;
-    // Precision is still null on the backend; hide the row entirely rather than
-    // showing a permanent placeholder. It reappears once the field is populated.
     const hasPrecision = result.precision != null;
-
-    // The two backend paths name the same quantities differently: model-case
-    // uses case_/model_case_, case-case uses left_/right_. Normalize here so the
-    // rows below always read defined numbers regardless of mode.
     const isCaseCase = mode === 'case-case';
     const nodeInsertions = isCaseCase ? result.left_unmatched_node_count : result.case_unmatched_node_count;
     const nodeRemovals = isCaseCase ? result.right_unmatched_node_count : result.model_case_unmatched_node_count;
@@ -291,7 +401,6 @@ function AlignmentSidebar({
 
             <div className="w-72 h-full bg-background border-l shadow-lg flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-4">
-                    {/* Case selection */}
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -299,57 +408,36 @@ function AlignmentSidebar({
                             </p>
                             {isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
                         </div>
-
                         {mode === 'case-case' ? (
                             <>
                                 <div className="flex flex-col gap-1">
                                     <span className="text-xs text-muted-foreground">Left case (G_L)</span>
-                                    <CaseSelector
-                                        caseCount={caseCount}
-                                        selectedCaseIndex={leftIndex}
-                                        onSelect={onSelectLeft}
-                                    />
+                                    <CaseSelector caseCount={caseCount} selectedCaseIndex={leftIndex} onSelect={onSelectLeft} />
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <span className="text-xs text-muted-foreground">Right case (G_M)</span>
-                                    <CaseSelector
-                                        caseCount={caseCount}
-                                        selectedCaseIndex={rightIndex}
-                                        onSelect={onSelectRight}
-                                    />
+                                    <CaseSelector caseCount={caseCount} selectedCaseIndex={rightIndex} onSelect={onSelectRight} />
                                 </div>
                             </>
                         ) : (
                             <div className="flex flex-col gap-1">
-                                <span className="text-xs text-muted-foreground">
-                                    Case compared against the model
-                                </span>
-                                <CaseSelector
-                                    caseCount={caseCount}
-                                    selectedCaseIndex={leftIndex}
-                                    onSelect={onSelectLeft}
-                                />
+                                <span className="text-xs text-muted-foreground">Case compared against the model</span>
+                                <CaseSelector caseCount={caseCount} selectedCaseIndex={leftIndex} onSelect={onSelectLeft} />
                             </div>
                         )}
                     </div>
 
-                    {/* Alignment metrics */}
                     <div className="flex flex-col gap-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            Alignment
-                        </p>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Alignment</p>
                         <StatRow label="GED cost" value={String(result.alignment_cost)} />
                         <StatRow label="Fitness" value={fitnessPct} />
-                         {hasPrecision && (
+                        {hasPrecision && (
                             <StatRow label="Precision" value={`${(result.precision! * 100).toFixed(1)}%`} />
                         )}
                     </div>
 
-                    {/* Node breakdown */}
                     <div className="flex flex-col gap-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            Nodes
-                        </p>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nodes</p>
                         <StatRow label="Matched" value={String(result.matched_node_count)} valueColor={COLORS.matchedBorder} />
                         <StatRow label={isCaseCase ? 'Only in left' : 'Insertions (log)'} value={String(nodeInsertions ?? 0)} valueColor={COLORS.insertion} />
                         <StatRow label={isCaseCase ? 'Only in right' : 'Removals (model)'} value={String(nodeRemovals ?? 0)} valueColor={COLORS.removal} />
@@ -359,11 +447,8 @@ function AlignmentSidebar({
                         </div>
                     </div>
 
-                    {/* Edge breakdown */}
                     <div className="flex flex-col gap-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            Edges
-                        </p>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Edges</p>
                         <StatRow label="Matched" value={String(result.matched_edge_count)} valueColor={COLORS.matchedBorder} />
                         <StatRow label={isCaseCase ? 'Only in left' : 'Insertions (log)'} value={String(edgeInsertions ?? 0)} valueColor={COLORS.insertion} />
                         <StatRow label={isCaseCase ? 'Only in right' : 'Removals (model)'} value={String(edgeRemovals ?? 0)} valueColor={COLORS.removal} />
@@ -382,9 +467,6 @@ const AlignmentViewer: React.FC = () => {
     const { nodeId } = useParams<{ nodeId: string }>();
     const getNode = useExploreFlowStore((s) => s.getNode);
 
-    // The miner node computed an initial alignment and stashed it (with the
-    // input ids and mode) in the store. We seed from that, then let the viewer
-    // own the case indices and re-fetch as they change.
     const stored = useMemo(() => {
         if (!nodeId) return null;
         const fileNode = getNode(nodeId);
@@ -398,20 +480,17 @@ const AlignmentViewer: React.FC = () => {
     const mode = stored?.mode ?? null;
     const collectionId = stored?.inputA.id ?? null;
     const modelId = stored?.mode === 'ocpt-case-ocels' ? stored.inputA.id : null;
-    // For ocpt-case the collection is inputB; for case-case it's inputA.
     const caseCollectionId =
         stored?.mode === 'ocpt-case-ocels' ? stored?.inputB.id ?? null : collectionId;
 
-    // Indices, seeded from whatever the miner originally computed.
     const [leftIndex, setLeftIndex] = useState<number>(stored?.ocgraphconf.case_index ?? 0);
     const [rightIndex, setRightIndex] = useState<number>(1);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [showMerged, setShowMerged] = useState(false);
 
-    // How many cases the collection holds — bounds the selector.
     const { data: collection } = useGetOcelCollection(caseCollectionId);
     const caseCount = collection?.case_ocels.length ?? 0;
 
-    // Viewer-owned fetches. Only the hook matching the current mode is enabled.
     const ocptQuery = useGetConformanceOcptCaseOcelsOcgraphconf(
         mode === 'ocpt-case-ocels' ? modelId : null,
         mode === 'ocpt-case-ocels' ? caseCollectionId : null,
@@ -423,8 +502,6 @@ const AlignmentViewer: React.FC = () => {
         mode === 'case-case' ? rightIndex : null
     );
 
-    // Prefer the live query result; fall back to the miner's stored result on
-    // first paint before the viewer's own fetch resolves.
     const liveResult = mode === 'ocpt-case-ocels' ? ocptQuery.data : caseQuery.data;
     const isFetching = mode === 'ocpt-case-ocels' ? ocptQuery.isFetching : caseQuery.isFetching;
     const r = liveResult ?? stored?.ocgraphconf ?? null;
@@ -444,7 +521,6 @@ const AlignmentViewer: React.FC = () => {
     return (
         <div className="flex flex-col h-screen w-full">
             <BreadcrumbNav />
-
             <div className="flex flex-col flex-1 min-h-0 relative">
                 <div className="flex gap-4 px-4 py-1.5 border-b text-[11px] text-gray-500 items-center flex-wrap">
                     <LegendItem color={COLORS.matchedBorder} bg={COLORS.matchedBg} text="matched" />
@@ -452,15 +528,33 @@ const AlignmentViewer: React.FC = () => {
                     <LegendItem color={COLORS.removal} bg="#fff" dashed text="removal (in model)" />
                     <LegendLine color={COLORS.matchedBorder} text="DF (sequence)" />
                     <LegendLine color={COLORS.object} dashed text="E2O (event→object)" />
+                    <button
+                        onClick={() => setShowMerged((v) => !v)}
+                        style={{
+                            marginLeft: 'auto',
+                            fontSize: 11,
+                            padding: '2px 10px',
+                            borderRadius: 4,
+                            border: '1px solid #e5e7eb',
+                            background: showMerged ? '#fef9c3' : '#fff',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        {showMerged ? 'Show split view' : 'Show merged view'}
+                    </button>
                 </div>
 
                 <div className="flex flex-1 min-h-0">
-                    {/* Right padding so graphs aren't hidden behind the open sidebar. */}
                     <div className={`flex flex-1 min-h-0 transition-all duration-200 ${sidebarOpen ? 'mr-72' : 'mr-0'}`}>
-                        <Panel title="G_L — log case" accent="#3b82f6" side="left" details={details} />
-                        <Panel title="G_M — model case" accent="#f97316" side="right" details={details} />
+                        {showMerged ? (
+                            <MergedPanel details={details} />
+                        ) : (
+                            <>
+                                <Panel title="G_L — log case" accent="#3b82f6" side="left" details={details} />
+                                <Panel title="G_M — model case" accent="#f97316" side="right" details={details} />
+                            </>
+                        )}
                     </div>
-
                     <AlignmentSidebar
                         open={sidebarOpen}
                         onToggle={() => setSidebarOpen((o) => !o)}
