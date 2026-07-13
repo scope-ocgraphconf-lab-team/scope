@@ -196,13 +196,13 @@ fn build_response(
     model_case_graph: &CaseGraph,
     alignment: &AlignmentResult,
 ) -> Result<OcgraphconfModelCaseConformanceResponse, (StatusCode, String)> {
-    let case_nodes = case_graph.nodes.len();
-    let case_edges = case_graph.edges.len();
-    let model_case_nodes = model_case_graph.nodes.len();
-    let model_case_edges = model_case_graph.edges.len();
-    let case_size = case_nodes + case_edges;
-    let model_case_size = model_case_nodes + model_case_edges;
-    let normalizer = (case_size + model_case_size).max(1) as f64;
+    let left_nodes = case_graph.nodes.len();
+    let left_edges = case_graph.edges.len();
+    let right_nodes = model_case_graph.nodes.len();
+    let right_edges = model_case_graph.edges.len();
+    let left_size = left_nodes + left_edges;
+    let right_size = right_nodes + right_edges;
+    let normalizer = (left_size + right_size).max(1) as f64;
     let fitness = (1.0 - (alignment.alignment_cost / normalizer)).max(0.0);
 
     Ok(OcgraphconfModelCaseConformanceResponse {
@@ -217,35 +217,38 @@ fn build_response(
         alignment_cost: alignment.alignment_cost,
         fitness,
         precision: None,
-        case_nodes,
-        case_edges,
-        model_case_nodes,
-        model_case_edges,
-        case_size,
-        model_case_size,
+        
+        left_nodes,
+        left_edges,
+        right_nodes,
+        right_edges,
+        left_size,
+        right_size,
         matched_node_count: alignment.matched_nodes.len(),
         matched_edge_count: alignment.matched_edges.len(),
-        case_unmatched_node_count: alignment.left_unmatched_node_ids.len(),
-        model_case_unmatched_node_count: alignment.right_unmatched_node_ids.len(),
-        case_unmatched_edge_count: alignment.left_unmatched_edge_ids.len(),
-        model_case_unmatched_edge_count: alignment.right_unmatched_edge_ids.len(),
+        left_unmatched_node_count: alignment.left_unmatched_node_ids.len(),
+        right_unmatched_node_count: alignment.right_unmatched_node_ids.len(),
+        left_unmatched_edge_count: alignment.left_unmatched_edge_ids.len(),
+        right_unmatched_edge_count: alignment.right_unmatched_edge_ids.len(),
+        
         void_node_count: alignment.left_unmatched_node_ids.len()
             + alignment.right_unmatched_node_ids.len(),
         void_edge_count: alignment.left_unmatched_edge_ids.len()
             + alignment.right_unmatched_edge_ids.len(),
+            
         alignment_details: request.include_alignment_details.then_some(CaseAlignmentDetails {
-        matched_nodes: alignment.matched_nodes.clone(),
-        matched_edges: alignment.matched_edges.clone(),
+            matched_nodes: alignment.matched_nodes.clone(),
+            matched_edges: alignment.matched_edges.clone(),
 
-        left_graph_nodes: all_node_details(case_graph),
-        left_graph_edges: all_edge_details(case_graph),
-        right_graph_nodes: all_node_details(model_case_graph),
-        right_graph_edges: all_edge_details(model_case_graph),
+            left_graph_nodes: all_node_details(case_graph),
+            left_graph_edges: all_edge_details(case_graph),
+            right_graph_nodes: all_node_details(model_case_graph),
+            right_graph_edges: all_edge_details(model_case_graph),
 
-        left_unmatched_node_ids: alignment.left_unmatched_node_ids.clone(),
-        right_unmatched_node_ids: alignment.right_unmatched_node_ids.clone(),
-        left_unmatched_edge_ids: alignment.left_unmatched_edge_ids.clone(),
-        right_unmatched_edge_ids: alignment.right_unmatched_edge_ids.clone(),
+            left_unmatched_node_ids: alignment.left_unmatched_node_ids.clone(),
+            right_unmatched_node_ids: alignment.right_unmatched_node_ids.clone(),
+            left_unmatched_edge_ids: alignment.left_unmatched_edge_ids.clone(),
+            right_unmatched_edge_ids: alignment.right_unmatched_edge_ids.clone(),
         }),
     })
 }

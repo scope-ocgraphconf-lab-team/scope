@@ -296,10 +296,10 @@ export interface OcgraphconfAlignmentDetails {
     right_unmatched_edge_ids: number[];
 }
 export interface OcgraphconfResult {
-    model_kind: string;
-    model_file_id: string;
+    model_kind?: string;
+    model_file_id?: string;
     case_ocels_file_id: string;
-    case_index: number;
+    case_index?: number;
     left_case_index?: number;
     right_case_index?: number;
     origin_file_id_ocel: string;
@@ -309,26 +309,20 @@ export interface OcgraphconfResult {
     alignment_cost: number;
     fitness: number;
     precision: number | null;
-    case_nodes: number;
-    case_edges: number;
-    model_case_nodes: number;
-    model_case_edges: number;
-    case_size: number;
-    model_case_size: number;
+    
+    left_case_nodes: number;
+    left_case_edges: number;
+    right_case_nodes: number;
+    right_case_edges: number;
+    left_case_size: number;
+    right_case_size: number;
     matched_node_count: number;
     matched_edge_count: number;
-    case_unmatched_node_count: number;
-    model_case_unmatched_node_count: number;
-    case_unmatched_edge_count: number;
-    model_case_unmatched_edge_count: number;
-    left_case_nodes?: number;
-    left_case_edges?: number;
-    right_case_nodes?: number;
-    right_case_edges?: number;
-    left_unmatched_node_count?: number;
-    right_unmatched_node_count?: number;
-    left_unmatched_edge_count?: number;
-    right_unmatched_edge_count?: number;
+    left_unmatched_node_count: number;
+    right_unmatched_node_count: number;
+    left_unmatched_edge_count: number;
+    right_unmatched_edge_count: number;
+    
     void_node_count: number;
     void_edge_count: number;
     alignment_details: OcgraphconfAlignmentDetails | null;

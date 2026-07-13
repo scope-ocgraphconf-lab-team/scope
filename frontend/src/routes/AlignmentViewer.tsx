@@ -376,15 +376,16 @@ function AlignmentSidebar({
     const fitnessPct = `${(result.fitness * 100).toFixed(1)}%`;
     const hasPrecision = result.precision != null;
     const isCaseCase = mode === 'case-case';
-    const nodeInsertions = isCaseCase ? result.left_unmatched_node_count : result.case_unmatched_node_count;
-    const nodeRemovals = isCaseCase ? result.right_unmatched_node_count : result.model_case_unmatched_node_count;
-    const edgeInsertions = isCaseCase ? result.left_unmatched_edge_count : result.case_unmatched_edge_count;
-    const edgeRemovals = isCaseCase ? result.right_unmatched_edge_count : result.model_case_unmatched_edge_count;
-    const leftNodes = isCaseCase ? result.left_case_nodes : result.case_nodes;
-    const rightNodes = isCaseCase ? result.right_case_nodes : result.model_case_nodes;
-    const leftEdges = isCaseCase ? result.left_case_edges : result.case_edges;
-    const rightEdges = isCaseCase ? result.right_case_edges : result.model_case_edges;
-
+    const nodeInsertions = result.left_unmatched_node_count;
+    const nodeRemovals = result.right_unmatched_node_count;
+    const edgeInsertions = result.left_unmatched_edge_count;
+    const edgeRemovals = result.right_unmatched_edge_count;
+    
+    const leftNodes = result.left_case_nodes;
+    const rightNodes = result.right_case_nodes;
+    const leftEdges = result.left_case_edges;
+    const rightEdges = result.right_case_edges;
+    
     return (
         <div
             className={`absolute right-0 top-0 h-full flex z-10 transition-transform duration-200 ease-in-out ${
