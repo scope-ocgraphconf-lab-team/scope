@@ -416,7 +416,7 @@ function AlignmentSidebar({
                                     <CaseSelector caseCount={caseCount} selectedCaseIndex={leftIndex} onSelect={onSelectLeft} />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-xs text-muted-foreground">Right case (G_M)</span>
+                                    <span className="text-xs text-muted-foreground">Right case (G_R)</span>
                                     <CaseSelector caseCount={caseCount} selectedCaseIndex={rightIndex} onSelect={onSelectRight} />
                                 </div>
                             </>
@@ -443,7 +443,8 @@ function AlignmentSidebar({
                         <StatRow label={isCaseCase ? 'Only in left' : 'Insertions (log)'} value={String(nodeInsertions ?? 0)} valueColor={COLORS.insertion} />
                         <StatRow label={isCaseCase ? 'Only in right' : 'Removals (model)'} value={String(nodeRemovals ?? 0)} valueColor={COLORS.removal} />
                         <div className="border-t pt-1 flex justify-between text-xs">
-                            <span className="text-muted-foreground">G_L / G_M total</span>
+                            {/* <span className="text-muted-foreground">G_L / G_M total</span> */}
+                            <span className="text-muted-foreground">{isCaseCase ? 'G_L / G_R total' : 'G_L / G_M total'}</span>
                             <span className="font-semibold">{leftNodes ?? 0} / {rightNodes ?? 0}</span>
                         </div>
                     </div>
@@ -454,7 +455,8 @@ function AlignmentSidebar({
                         <StatRow label={isCaseCase ? 'Only in left' : 'Insertions (log)'} value={String(edgeInsertions ?? 0)} valueColor={COLORS.insertion} />
                         <StatRow label={isCaseCase ? 'Only in right' : 'Removals (model)'} value={String(edgeRemovals ?? 0)} valueColor={COLORS.removal} />
                         <div className="border-t pt-1 flex justify-between text-xs">
-                            <span className="text-muted-foreground">G_L / G_M total</span>
+                            {/* <span className="text-muted-foreground">G_L / G_M total</span> */}
+                            <span className="text-muted-foreground">{isCaseCase ? 'G_L / G_R total' : 'G_L / G_M total'}</span>
                             <span className="font-semibold">{leftEdges ?? 0} / {rightEdges ?? 0}</span>
                         </div>
                     </div>
@@ -529,7 +531,7 @@ const AlignmentViewer: React.FC = () => {
                     <LegendItem color={COLORS.removal} bg="#fff" dashed text="removal (in model)" />
                     <LegendLine color={COLORS.matchedBorder} text="DF (sequence)" />
                     <LegendLine color={COLORS.object} dashed text="E2O (event→object)" />
-                    <button
+                    {/* <button
                         onClick={() => setShowMerged((v) => !v)}
                         style={{
                             marginLeft: 'auto',
@@ -542,17 +544,34 @@ const AlignmentViewer: React.FC = () => {
                         }}
                     >
                         {showMerged ? 'Show split view' : 'Show merged view'}
-                    </button>
+                    </button> */}
                 </div>
 
                 <div className="flex flex-1 min-h-0">
-                    <div className={`flex flex-1 min-h-0 transition-all duration-200 ${sidebarOpen ? 'mr-72' : 'mr-0'}`}>
+                    <div className={`relative flex flex-1 min-h-0 transition-all duration-200 ${sidebarOpen ? 'mr-72' : 'mr-0'}`}>
+                        <button
+                            onClick={() => setShowMerged((v) => !v)}
+                            className="absolute left-1/2 -translate-x-1/2 z-20"
+                            style={{
+                                top: 44,
+                                fontSize: 11,
+                                padding: '3px 12px',
+                                borderRadius: 6,
+                                border: '1px solid #e5e7eb',
+                                background: showMerged ? '#fef9c3' : '#fff',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            {showMerged ? 'Show split view' : 'Show merged view'}
+                        </button>
                         {showMerged ? (
                             <MergedPanel details={details} />
                         ) : (
                             <>
                                 <Panel title="G_L — log case" accent="#3b82f6" side="left" details={details} />
-                                <Panel title="G_M — model case" accent="#f97316" side="right" details={details} />
+                                {/* <Panel title="G_M — model case" accent="#f97316" side="right" details={details} /> */}
+                                <Panel title={mode === 'case-case' ? 'G_M — log case' : 'G_M — model case'} accent="#f97316" side="right" details={details} />
                             </>
                         )}
                     </div>
