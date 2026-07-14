@@ -443,7 +443,6 @@ function AlignmentSidebar({
                         <StatRow label={isCaseCase ? 'Only in left' : 'Insertions (log)'} value={String(nodeInsertions ?? 0)} valueColor={COLORS.insertion} />
                         <StatRow label={isCaseCase ? 'Only in right' : 'Removals (model)'} value={String(nodeRemovals ?? 0)} valueColor={COLORS.removal} />
                         <div className="border-t pt-1 flex justify-between text-xs">
-                            {/* <span className="text-muted-foreground">G_L / G_M total</span> */}
                             <span className="text-muted-foreground">{isCaseCase ? 'G_L / G_R total' : 'G_L / G_M total'}</span>
                             <span className="font-semibold">{leftNodes ?? 0} / {rightNodes ?? 0}</span>
                         </div>
@@ -455,7 +454,6 @@ function AlignmentSidebar({
                         <StatRow label={isCaseCase ? 'Only in left' : 'Insertions (log)'} value={String(edgeInsertions ?? 0)} valueColor={COLORS.insertion} />
                         <StatRow label={isCaseCase ? 'Only in right' : 'Removals (model)'} value={String(edgeRemovals ?? 0)} valueColor={COLORS.removal} />
                         <div className="border-t pt-1 flex justify-between text-xs">
-                            {/* <span className="text-muted-foreground">G_L / G_M total</span> */}
                             <span className="text-muted-foreground">{isCaseCase ? 'G_L / G_R total' : 'G_L / G_M total'}</span>
                             <span className="font-semibold">{leftEdges ?? 0} / {rightEdges ?? 0}</span>
                         </div>
@@ -570,8 +568,7 @@ const AlignmentViewer: React.FC = () => {
                         ) : (
                             <>
                                 <Panel title="G_L — log case" accent="#3b82f6" side="left" details={details} />
-                                {/* <Panel title="G_M — model case" accent="#f97316" side="right" details={details} /> */}
-                                <Panel title={mode === 'case-case' ? 'G_M — log case' : 'G_M — model case'} accent="#f97316" side="right" details={details} />
+                                <Panel title={mode === 'case-case' ? 'G_R — log case' : 'G_M — model case'} accent="#f97316" side="right" details={details} />
                             </>
                         )}
                     </div>
