@@ -310,12 +310,12 @@ export interface OcgraphconfResult {
     fitness: number;
     precision: number | null;
     
-    left_case_nodes: number;
-    left_case_edges: number;
-    right_case_nodes: number;
-    right_case_edges: number;
-    left_case_size: number;
-    right_case_size: number;
+    left_nodes: number;
+    left_edges: number;
+    right_nodes: number;
+    right_edges: number;
+    left_size: number;
+    right_size: number;
     matched_node_count: number;
     matched_edge_count: number;
     left_unmatched_node_count: number;

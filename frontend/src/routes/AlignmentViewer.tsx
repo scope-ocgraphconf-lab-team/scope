@@ -381,11 +381,11 @@ function AlignmentSidebar({
     const edgeInsertions = result.left_unmatched_edge_count;
     const edgeRemovals = result.right_unmatched_edge_count;
     
-    const leftNodes = result.left_case_nodes;
-    const rightNodes = result.right_case_nodes;
-    const leftEdges = result.left_case_edges;
-    const rightEdges = result.right_case_edges;
-    
+    const leftNodes = result.left_nodes;
+    const rightNodes = result.right_nodes;
+    const leftEdges = result.left_edges;
+    const rightEdges = result.right_edges;
+
     return (
         <div
             className={`absolute right-0 top-0 h-full flex z-10 transition-transform duration-200 ease-in-out ${
@@ -529,20 +529,6 @@ const AlignmentViewer: React.FC = () => {
                     <LegendItem color={COLORS.removal} bg="#fff" dashed text="removal (in model)" />
                     <LegendLine color={COLORS.matchedBorder} text="DF (sequence)" />
                     <LegendLine color={COLORS.object} dashed text="E2O (event→object)" />
-                    {/* <button
-                        onClick={() => setShowMerged((v) => !v)}
-                        style={{
-                            marginLeft: 'auto',
-                            fontSize: 11,
-                            padding: '2px 10px',
-                            borderRadius: 4,
-                            border: '1px solid #e5e7eb',
-                            background: showMerged ? '#fef9c3' : '#fff',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        {showMerged ? 'Show split view' : 'Show merged view'}
-                    </button> */}
                 </div>
 
                 <div className="flex flex-1 min-h-0">

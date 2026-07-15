@@ -16,14 +16,15 @@ pub fn build_response(
     right_graph: &CaseGraph,
     alignment: &AlignmentResult,
 ) -> Result<OcgraphconfCaseCompareResponse, (StatusCode, String)> {
-    let left_case_nodes = left_graph.nodes.len();
-    let left_case_edges = left_graph.edges.len();
-    let right_case_nodes = right_graph.nodes.len();
-    let right_case_edges = right_graph.edges.len();
-    let left_case_size = left_case_nodes + left_case_edges;
-    let right_case_size = right_case_nodes + right_case_edges;
-    let normalizer = (left_case_size + right_case_size).max(1) as f64;
-    let fitness = (1.0 - (alignment.alignment_cost / normalizer)).max(0.0);
+    let GraphMetrics {
+        left_nodes,
+        left_edges,
+        right_nodes,
+        right_edges,
+        left_size,
+        right_size,
+        fitness,
+    } = graph_metrics(left_graph, right_graph, alignment.alignment_cost);
 
     Ok(OcgraphconfCaseCompareResponse {
         case_ocels_file_id: request.case_ocels_file_id.clone(),
@@ -36,12 +37,12 @@ pub fn build_response(
         alignment_cost: alignment.alignment_cost,
         fitness,
         precision: None,
-        left_case_nodes,
-        left_case_edges,
-        right_case_nodes,
-        right_case_edges,
-        left_case_size,
-        right_case_size,
+        left_nodes,
+        left_edges,
+        right_nodes,
+        right_edges,
+        left_size,
+        right_size,
         matched_node_count: alignment.matched_nodes.len(),
         matched_edge_count: alignment.matched_edges.len(),
         left_unmatched_node_count: alignment.left_unmatched_node_ids.len(),
@@ -67,8 +68,45 @@ pub fn build_response(
     })
 }
 
-fn attr_string(attributes: &HashMap<String, Value>, key: &str) -> Option<String> {
+pub(crate) fn attr_string(attributes: &HashMap<String, Value>, key: &str) -> Option<String> {
     attributes.get(key).and_then(Value::as_str).map(ToOwned::to_owned)
+}
+
+// Node/edge counts, derived sizes, and fitness — shared by both the case-case and
+// model-case build_response paths so the metric definition lives in exactly one place.
+pub(crate) struct GraphMetrics {
+    pub left_nodes: usize,
+    pub left_edges: usize,
+    pub right_nodes: usize,
+    pub right_edges: usize,
+    pub left_size: usize,
+    pub right_size: usize,
+    pub fitness: f64,
+}
+
+pub(crate) fn graph_metrics(
+    left_graph: &CaseGraph,
+    right_graph: &CaseGraph,
+    alignment_cost: f64,
+) -> GraphMetrics {
+    let left_nodes = left_graph.nodes.len();
+    let left_edges = left_graph.edges.len();
+    let right_nodes = right_graph.nodes.len();
+    let right_edges = right_graph.edges.len();
+    let left_size = left_nodes + left_edges;
+    let right_size = right_nodes + right_edges;
+    let normalizer = (left_size + right_size).max(1) as f64;
+    let fitness = (1.0 - (alignment_cost / normalizer)).max(0.0);
+
+    GraphMetrics {
+        left_nodes,
+        left_edges,
+        right_nodes,
+        right_edges,
+        left_size,
+        right_size,
+        fitness,
+    }
 }
 
 // Full-graph descriptor arrays: every node/edge, matched or not.

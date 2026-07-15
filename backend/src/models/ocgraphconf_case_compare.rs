@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct OcgraphconfCaseCompareRequest {
     pub case_ocels_file_id: String,
     pub left_case_index: usize,
@@ -9,7 +9,7 @@ pub struct OcgraphconfCaseCompareRequest {
     pub include_alignment_details: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct OcgraphconfCaseCompareResponse {
     pub case_ocels_file_id: String,
     pub left_case_index: usize,
@@ -25,12 +25,12 @@ pub struct OcgraphconfCaseCompareResponse {
     pub alignment_cost: f64,
     pub fitness: f64,
     pub precision: Option<f64>,
-    pub left_case_nodes: usize,
-    pub left_case_edges: usize,
-    pub right_case_nodes: usize,
-    pub right_case_edges: usize,
-    pub left_case_size: usize,
-    pub right_case_size: usize,
+    pub left_nodes: usize,
+    pub left_edges: usize,
+    pub right_nodes: usize,
+    pub right_edges: usize,
+    pub left_size: usize,
+    pub right_size: usize,
     pub matched_node_count: usize,
     pub matched_edge_count: usize,
     pub left_unmatched_node_count: usize,

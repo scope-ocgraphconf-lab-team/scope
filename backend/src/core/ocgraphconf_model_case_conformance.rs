@@ -8,7 +8,9 @@ use crate::core::struct_converters::ocpn_ocgraphconf::backend_to_ocgraphconf;
 use crate::models::ocgraphconf_case_compare::{
     CaseAlignmentDetails
 };
-use crate::core::ocgraphconf_case_compare::metrics::{all_node_details, all_edge_details};
+use crate::core::ocgraphconf_case_compare::metrics::{
+    GraphMetrics, all_edge_details, all_node_details, attr_string, graph_metrics,
+};
 use crate::models::ocgraphconf_model_case_conformance::{
     OcgraphconfModelCaseConformanceRequest, OcgraphconfModelCaseConformanceResponse,
 };
@@ -21,8 +23,6 @@ use ocgraphconf_process_mining::oc_petri_net::initialize_ocpn_from_json;
 use ocgraphconf_process_mining::oc_petri_net::marking::Marking;
 use ocgraphconf_process_mining::oc_state_space::r#impl::ocpn::{OCPNStateInterface, OCPNStateNode};
 use ocgraphconf_process_mining::oc_state_space::r#impl::ocpt::OCPTStateInterface;
-use serde_json::Value;
-use std::collections::HashMap;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::Arc;
 use tokio::task;
@@ -196,14 +196,15 @@ fn build_response(
     model_case_graph: &CaseGraph,
     alignment: &AlignmentResult,
 ) -> Result<OcgraphconfModelCaseConformanceResponse, (StatusCode, String)> {
-    let left_nodes = case_graph.nodes.len();
-    let left_edges = case_graph.edges.len();
-    let right_nodes = model_case_graph.nodes.len();
-    let right_edges = model_case_graph.edges.len();
-    let left_size = left_nodes + left_edges;
-    let right_size = right_nodes + right_edges;
-    let normalizer = (left_size + right_size).max(1) as f64;
-    let fitness = (1.0 - (alignment.alignment_cost / normalizer)).max(0.0);
+    let GraphMetrics {
+        left_nodes,
+        left_edges,
+        right_nodes,
+        right_edges,
+        left_size,
+        right_size,
+        fitness,
+    } = graph_metrics(case_graph, model_case_graph, alignment.alignment_cost);
 
     Ok(OcgraphconfModelCaseConformanceResponse {
         model_kind: model_kind.as_str().to_string(),
@@ -251,13 +252,6 @@ fn build_response(
             right_unmatched_edge_ids: alignment.right_unmatched_edge_ids.clone(),
         }),
     })
-}
-
-fn attr_string(attributes: &HashMap<String, Value>, key: &str) -> Option<String> {
-    attributes
-        .get(key)
-        .and_then(Value::as_str)
-        .map(ToOwned::to_owned)
 }
 
 fn map_convert_error(error: ConvertOcptToOcpnError) -> (StatusCode, String) {
