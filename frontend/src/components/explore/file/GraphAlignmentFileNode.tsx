@@ -1,9 +1,5 @@
-// ============================================================================
-// The result node for OCGraph Conformance. Reads graphAlignmentResult from the
-// upstream miner node (same fileNode -> outputAsset -> minerNode resolution as
-// ConformanceFileNode) and shows the meaningful ocgraphconf metrics, plus a
-// "View alignment" button that routes to the new alignment viewer.
-// ============================================================================
+// Result node for OCGraph Conformance: reads graphAlignmentResult from the upstream
+// miner node and links to the alignment viewer.
 
 import { useNavigate } from 'react-router-dom';
 import { GitCompare } from 'lucide-react';

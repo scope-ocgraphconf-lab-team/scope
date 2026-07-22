@@ -283,6 +283,7 @@ export interface EdgeMatch {
     right_edge_id: number;
 }
 
+// Full node/edge arrays + matched/unmatched id lists.
 export interface OcgraphconfAlignmentDetails {
     matched_nodes: NodeMatch[];
     matched_edges: EdgeMatch[];
@@ -295,6 +296,7 @@ export interface OcgraphconfAlignmentDetails {
     left_unmatched_edge_ids: number[];
     right_unmatched_edge_ids: number[];
 }
+// Unified result for both modes; left/right fields are what the viewer reads.
 export interface OcgraphconfResult {
     model_kind?: string;
     model_file_id?: string;

@@ -1,15 +1,5 @@
-// ============================================================================
-// A dedicated node for object-centric GRAPH-based conformance (ocgraphconf).
-// Separate from the existing ConformanceMinerNode so there is no ambiguity
-// between abstraction-based and graph-based conformance: placing THIS node is
-// the user's explicit choice of graph-based checking.
-//
-// Modes:
-//   - ocpt-case  : OCPT (model) + OCEL Collection (case)         [WORKS]
-//   - case-case  : OCEL Collection, two case indices (log-vs-log)[WORKS]
-//   - ocpn-case  : OCPN (model) + OCEL Collection                [DEFERRED]
-//                  No OCPN file type in the frontend yet — slot left ready.
-// ============================================================================
+// Graph-based OC conformance, kept separate from ConformanceMinerNode (abstraction-based).
+// Modes: ocpt-case, case-case. ocpn-case deferred — no OCPN file type yet.
 
 import { memo, useEffect, useMemo } from 'react';
 import type { NodeProps } from '@xyflow/react';

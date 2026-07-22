@@ -13,6 +13,7 @@ export interface CaseOcelResponse {
     case_ocels: OCEL[];
 }
 
+// Mirrors the backend alignment_details descriptors.
 export interface NodeDetail {
   id: number;
   label: string;

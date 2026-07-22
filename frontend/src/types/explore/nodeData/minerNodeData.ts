@@ -26,6 +26,7 @@ export interface ConformanceResult {
 
 export type OcgraphMode = 'ocpt-case-ocels' | 'case-case';
 
+// Written by the miner node, read by the file node + viewer.
 export interface GraphAlignmentResult {
     mode: OcgraphMode;
     ocgraphconf: OcgraphconfResult;
