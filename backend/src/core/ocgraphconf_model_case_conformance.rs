@@ -59,6 +59,7 @@ pub async fn compare_model_to_case_from_collection(
         })?;
 
     let query_graph_for_solver = query_graph.clone();
+    // spawn_blocking: the MIP solver is CPU-bound and would stall the async runtime.
     let computed = task::spawn_blocking(move || {
         solve_model_case_alignment(model_kind, model_json, query_graph_for_solver)
     })
@@ -86,6 +87,7 @@ struct ComputedModelAlignment {
     alignment: AlignmentResult,
 }
 
+// Runs the model checker under catch_unwind because the solver crate panics on bad input rather than returning errors.
 fn solve_model_case_alignment(
     model_kind: ModelKind,
     model_json: String,
@@ -124,6 +126,7 @@ fn solve_model_case_alignment(
         }
         ModelKind::Ocpt => {
             let initial_marking = Marking::new(solver_model.clone());
+            // OCPT was already converted to OCPN in load_backend_ocpn, so the node type stays OCPNStateNode.
             let mut checker: ModelCaseChecker<OCPNStateNode> =
                 ModelCaseChecker::new(Box::new(OCPTStateInterface::new(solver_model)));
             catch_unwind(AssertUnwindSafe(|| {
@@ -182,6 +185,7 @@ async fn load_backend_ocpn(
                     format!("Stored OCPT {model_file_id} is invalid"),
                 ));
             }
+            // OCPT models run through the OCPN solver path.
             convert_ocpt_to_ocpn(&ocpt).map_err(map_convert_error)
         }
     }
@@ -196,6 +200,7 @@ fn build_response(
     model_case_graph: &CaseGraph,
     alignment: &AlignmentResult,
 ) -> Result<OcgraphconfModelCaseConformanceResponse, (StatusCode, String)> {
+    // Maps onto the shared left/right shape: left = log case, right = model case.
     let GraphMetrics {
         left_nodes,
         left_edges,
@@ -218,7 +223,6 @@ fn build_response(
         alignment_cost: alignment.alignment_cost,
         fitness,
         precision: None,
-        
         left_nodes,
         left_edges,
         right_nodes,

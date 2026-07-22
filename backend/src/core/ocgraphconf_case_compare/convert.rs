@@ -1,3 +1,5 @@
+// CaseGraph → wire descriptors.
+use crate::models::ocgraphconf_case_compare::{NodeDetail, EdgeDetail};
 use crate::models::ocel::OCEL;
 use axum::http::StatusCode;
 use serde::Serialize;
@@ -210,8 +212,6 @@ where
         items
     }
 }
-
-use crate::models::ocgraphconf_case_compare::{NodeDetail, EdgeDetail};
 
 impl CaseEdgeType {
     // Single definition of the long-form display label — can't diverge across paths.

@@ -43,7 +43,7 @@ pub struct OcgraphconfCaseCompareResponse {
     pub alignment_details: Option<CaseAlignmentDetails>,
 }
 
-//define new Node and Edge
+// Wire descriptors for every node/edge; frontend keys off the stable `id`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NodeDetail {
     pub id: usize,
@@ -60,12 +60,14 @@ pub struct EdgeDetail {
     pub label: String,
 }
 
+// Full arrays for both sides + matched pairs + unmatched-id lists.
+// A node/edge is a deviation iff its id is in the unmatched list.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaseAlignmentDetails {
     pub matched_nodes: Vec<NodeMatch>,
     pub matched_edges: Vec<EdgeMatch>,
 
-    // Full-graph arrays — every node/edge, matched or not (Option 1, uniform)
+    // Full-graph arrays — every node/edge, matched or not
     pub left_graph_nodes: Vec<NodeDetail>,
     pub left_graph_edges: Vec<EdgeDetail>,
     pub right_graph_nodes: Vec<NodeDetail>,

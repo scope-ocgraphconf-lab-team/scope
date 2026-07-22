@@ -68,12 +68,12 @@ pub fn build_response(
     })
 }
 
+// pub(crate) so the model-case path can reuse it.
 pub(crate) fn attr_string(attributes: &HashMap<String, Value>, key: &str) -> Option<String> {
     attributes.get(key).and_then(Value::as_str).map(ToOwned::to_owned)
 }
 
-// Node/edge counts, derived sizes, and fitness — shared by both the case-case and
-// model-case build_response paths so the metric definition lives in exactly one place.
+// Counts, sizes, and fitness; shared by both build_response paths.
 pub(crate) struct GraphMetrics {
     pub left_nodes: usize,
     pub left_edges: usize,

@@ -25,6 +25,7 @@ import {
 import type { MinerExploreNodeData } from '~/types/explore/nodeData/minerNodeData';
 import type { OcgraphconfResult } from '~/services/api';
 
+// Deviation colour scheme; builders, sidebar, and legend all read from here.
 const COLORS = {
     matchedBorder: '#d97706',
     matchedBg: '#fef9c3',
@@ -43,6 +44,7 @@ interface GraphNodeData extends Record<string, unknown> {
     status: 'matched' | 'insertion' | 'removal';
 }
 
+// Custom ReactFlow node. Shape = kind (pill = object, box = event); border = status.
 function GraphNodeCmp({ data }: { data: GraphNodeData }) {
     const isObject = data.kind === 'object';
     const border =
@@ -89,6 +91,8 @@ const nodeTypes = { graphNode: GraphNodeCmp };
 
 type BuiltEdge = Edge & { data: { isDF: boolean } };
 
+// One side of the alignment → ReactFlow nodes/edges (positions set later by layoutNodes).
+// Deviation = id in the unmatched set: insertion on the left, removal on the right.
 function buildGraph(
     side: 'left' | 'right',
     details: OcgraphconfResult['alignment_details']
@@ -118,6 +122,8 @@ function buildGraph(
     }));
 
     const edges: BuiltEdge[] = graphEdges.map((e) => {
+        // E2O (event→object) edges are always dashed to distinguish them from DF
+        // (sequence) edges; an unmatched edge overrides that with the deviation colour.
         const isE2O = e.element_type === 'e2o';
         const isUnmatched = unmatchedEdgeIds.has(e.id);
         const deviationColor = side === 'left' ? COLORS.insertion : COLORS.removal;
@@ -145,6 +151,8 @@ function buildGraph(
     return { nodes, edges };
 }
 
+// Single combined graph: shared matched nodes plus left-only/right-only.
+// Ids namespaced m-/l-/r- so matched nodes aren't duplicated; resolveId maps to them.
 function buildMergedGraph(
     details: OcgraphconfResult['alignment_details']
 ): { nodes: Node[]; edges: BuiltEdge[] } {
@@ -242,6 +250,9 @@ function buildMergedGraph(
     return { nodes, edges };
 }
 
+// dagre left-to-right layout. IMPORTANT: only DF edges are fed to dagre for
+// ranking. Including E2O edges pulls object nodes up into the event row and
+// breaks the readable event sequence, so they are laid out but not ranked.
 function layoutNodes(nodes: Node[], edges: BuiltEdge[]): Node[] {
     const g = new dagre.graphlib.Graph();
     g.setGraph({ rankdir: 'LR', nodesep: 80, ranksep: 180, edgesep: 40 });
@@ -256,6 +267,7 @@ function layoutNodes(nodes: Node[], edges: BuiltEdge[]): Node[] {
     });
 }
 
+
 function MergedPanel({ details }: { details: OcgraphconfResult['alignment_details'] }) {
     const initial = useMemo(() => {
         const built = buildMergedGraph(details);
@@ -263,7 +275,7 @@ function MergedPanel({ details }: { details: OcgraphconfResult['alignment_detail
     }, [details]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
-
+    // Re-seed positions when the alignment changes; useNodesState won't pick it up otherwise.
     useEffect(() => {
         setNodes(initial.nodes);
     }, [initial.nodes, setNodes]);
@@ -308,7 +320,7 @@ function Panel({
     }, [side, details]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
-
+    // Re-seed positions when the alignment changes; useNodesState won't pick it up otherwise.
     useEffect(() => {
         setNodes(initial.nodes);
     }, [initial.nodes, setNodes]);
@@ -350,6 +362,9 @@ function StatRow({ label, value, valueColor }: { label: string; value: string; v
     );
 }
 
+// Unified response uses left_/right_ in both modes. In case-case these read as
+// "only in left / only in right"; in model-case, left = log (insertions),
+// right = model (removals). Labels below switch on isCaseCase.
 function AlignmentSidebar({
     open,
     onToggle,
@@ -467,7 +482,8 @@ function AlignmentSidebar({
 const AlignmentViewer: React.FC = () => {
     const { nodeId } = useParams<{ nodeId: string }>();
     const getNode = useExploreFlowStore((s) => s.getNode);
-
+    // Resolve the result like the file node does: this route's :nodeId is the file
+    // node, whose output asset points back to the miner node holding the result.
     const stored = useMemo(() => {
         if (!nodeId) return null;
         const fileNode = getNode(nodeId);
@@ -491,7 +507,7 @@ const AlignmentViewer: React.FC = () => {
 
     const { data: collection } = useGetOcelCollection(caseCollectionId);
     const caseCount = collection?.case_ocels.length ?? 0;
-
+    // Both hooks run (rules of hooks); only the active mode is enabled. Stored result is the fallback.
     const ocptQuery = useGetConformanceOcptCaseOcelsOcgraphconf(
         mode === 'ocpt-case-ocels' ? modelId : null,
         mode === 'ocpt-case-ocels' ? caseCollectionId : null,
@@ -507,7 +523,6 @@ const AlignmentViewer: React.FC = () => {
     const isFetching = mode === 'ocpt-case-ocels' ? ocptQuery.isFetching : caseQuery.isFetching;
     const r = liveResult ?? stored?.ocgraphconf ?? null;
     const details = r?.alignment_details ?? null;
-
     if (!stored || !r || !mode) {
         return (
             <div className="flex flex-col h-screen w-full">
