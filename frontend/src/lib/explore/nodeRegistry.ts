@@ -130,11 +130,11 @@ export const nodeRegistry = {
     },
     ocgraphConformanceMinerNode: {
         category: 'miner',
-        allowedAssetTypes: ['ocptAsset','ocptFile','identityOcptAsset','ocelCollectionFile'],
+        allowedAssetTypes: ['ocptAsset','ocptFile','ocelCollectionFile'],
         inputs: [
             {
                 label: 'Model / Left',
-                types: ['ocptAsset', 'ocptFile', 'identityOcptAsset', 'ocelCollectionFile'],
+                types: ['ocptAsset', 'ocptFile', 'ocelCollectionFile'],
             },
             {
                 label: 'Case collection',

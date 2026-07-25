@@ -19,7 +19,7 @@ import type { AssetType } from '~/types/files.types';
 type OcgraphKind = 'ocpt' | 'case_ocels'; // 'ocpn' added when OCPN exists
 
 function ocgraphAssetKind(type: AssetType): OcgraphKind | null {
-    if (type === 'ocptFile' || type === 'ocptAsset' || type === 'identityOcptAsset') return 'ocpt';
+    if (type === 'ocptFile' || type === 'ocptAsset') return 'ocpt';
     if (type === 'ocelCollectionFile') return 'case_ocels';
     return null;
 }
