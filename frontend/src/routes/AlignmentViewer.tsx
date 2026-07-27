@@ -23,7 +23,7 @@ import {
     useGetOcelCollection,
 } from '~/services/queries';
 import type { MinerExploreNodeData } from '~/types/explore/nodeData/minerNodeData';
-import type { OcgraphconfResult } from '~/services/api';
+import type { OcgraphconfResult } from '~/services/response.types';
 
 // Deviation colour scheme; builders, sidebar, and legend all read from here.
 const COLORS = {
