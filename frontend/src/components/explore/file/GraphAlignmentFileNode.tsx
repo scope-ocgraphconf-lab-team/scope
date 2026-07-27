@@ -23,10 +23,10 @@ const GraphAlignmentFileNode = (props: NodeProps<FileNode>) => {
     // Model-case and case-case responses name the same counts differently; pick
     // the right field per mode so neither path renders "undefined".
     const isCaseCase = graphAlignmentResult?.mode === 'case-case';
-    const nodeIns = isCaseCase ? r?.left_unmatched_node_count : r?.case_unmatched_node_count;
-    const nodeRem = isCaseCase ? r?.right_unmatched_node_count : r?.model_case_unmatched_node_count;
-    const edgeIns = isCaseCase ? r?.left_unmatched_edge_count : r?.case_unmatched_edge_count;
-    const edgeRem = isCaseCase ? r?.right_unmatched_edge_count : r?.model_case_unmatched_edge_count;
+    const nodeIns = r?.left_unmatched_node_count;
+    const nodeRem = r?.right_unmatched_node_count;
+    const edgeIns = r?.left_unmatched_edge_count;
+    const edgeRem = r?.right_unmatched_edge_count;
 
     // A short description of what this alignment compares, so the user knows
     // what "View alignment" will open. Cases shown 1-based to match the selector.
