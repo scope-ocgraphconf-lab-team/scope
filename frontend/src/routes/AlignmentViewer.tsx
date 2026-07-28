@@ -521,8 +521,19 @@ const AlignmentViewer: React.FC = () => {
 
     const liveResult = mode === 'ocpt-case-ocels' ? ocptQuery.data : caseQuery.data;
     const isFetching = mode === 'ocpt-case-ocels' ? ocptQuery.isFetching : caseQuery.isFetching;
+    const error = mode === 'ocpt-case-ocels' ? ocptQuery.error : caseQuery.error;
     const r = liveResult ?? stored?.ocgraphconf ?? null;
     const details = r?.alignment_details ?? null;
+    if (error) {
+        return (
+            <div className="flex flex-col h-screen w-full">
+                <BreadcrumbNav />
+                <div className="flex flex-1 items-center justify-center text-destructive text-sm px-8 text-center">
+                    Alignment failed: {error instanceof Error ? error.message : String(error)}
+                </div>
+            </div>
+        );
+    }
     if (!stored || !r || !mode) {
         return (
             <div className="flex flex-col h-screen w-full">

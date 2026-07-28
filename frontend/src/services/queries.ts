@@ -290,6 +290,7 @@ export const useGetConformanceOcptCaseOcelsOcgraphconf = (
         queryFn: () => getConformanceOcptCaseOcelsOcgraphconf(ocptFileId!, caseOcelsFileId!, caseIndex),
         enabled: Boolean(ocptFileId) && Boolean(caseOcelsFileId),
         refetchOnWindowFocus: false,
+        retry: false,
     });
 };
 
@@ -316,5 +317,6 @@ export const useGetConformanceCaseCaseOcgraphconf = (
             leftCaseIndex != null &&
             rightCaseIndex != null,
         refetchOnWindowFocus: false,
+        retry: false,
     });
 };
